@@ -1,0 +1,223 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Xml>
+  <Links>
+    <Type>
+      <keywords>modcompendium, mod compendium</keywords>
+      <Name>Mod Compendium Guides</Name>
+      <Description>
+        The guides below cover the basics of installing mods for Persona 3 and 4 (PS2) and Persona 5 (PS3).
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 5 Modding Guide</PageName>
+          <PageURL>https://shrinefox.github.io/guides/p5/mod-compendium</PageURL>
+        </Page>
+        <Page>
+          <PageName>Persona 3/4 Modding Guide</PageName>
+          <PageURL>https://shrinefox.github.io/guides/p3-p4/mod-compendium</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>mod.cpk, modcpk, mod cpk</keywords>
+      <Name>Mod.cpk support Guide</Name>
+      <Description>
+        The guides below cover the basics of installing mods for Persona 3 and 4 (PS2) and Persona 5 (PS3).
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 5 Modding Guide</PageName>
+          <PageURL>https://shrinefox.github.io/guides/p5/mod-compendium</PageURL>
+        </Page>
+        <Page>
+          <PageName>Persona 3/4 Modding Guide</PageName>
+          <PageURL>https://shrinefox.github.io/guides/p3-p4/mod-compendium</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>forum</keywords>
+      <Name>Amicitia Forum</Name>
+      <Description>
+        Share your mods, tools and guides on this message board or explore the works of other creators!
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Amicitia Forum Index</PageName>
+          <PageURL>http://s15.zetaboards.com/Amicitia/index/</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>subreddit, reddit</keywords>
+      <Name>/r/Amicitia</Name>
+      <Description>
+        1. Share your mods 2. ??? 3. Karma.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Amicitia Subreddit</PageName>
+          <PageURL>https://www.reddit.com/r/Amicitia/</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>wiki</keywords>
+      <Name>Amicitia Wiki</Name>
+      <Description>
+        Look up info on Atlus games and their filesystems, file formats, and modding techniques.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Amicitia Subreddit</PageName>
+          <PageURL>https://amicitia.miraheze.org/wiki/Main_Page</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p3lists, p3, p3list</keywords>
+      <Name>P3FES/P3P File Lists</Name>
+      <Description>
+        This thread includes a list of filenames and descriptions for P3FES and P3P, including: PERSONA models, FIELD models, NPC models, PACK models, SYMBOL models, WEAPON models, and BGM tracks.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 3 File Lists</PageName>
+          <PageURL>http://s15.zetaboards.com/Amicitia/topic/8061708/1</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p4lists, p4, p4list</keywords>
+      <Name>P4/P4G File Lists</Name>
+      <Description>
+        This thread includes a list of filenames and descriptions for P4 and P4G, including: PERSONA models, FIELD models, NPC models, ENEMY models, PACK models, WEAPON models, BGM tracks and SKILL IDs.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 4 File Lists</PageName>
+          <PageURL>http://s15.zetaboards.com/Amicitia/topic/8061702/1/</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p5lists, p5, p5list</keywords>
+      <Name>P5 File Lists</Name>
+      <Description>
+        This thread includes a list of filenames and descriptions for P5, including: BGM tracks, and ID numbers for: Accessories, Arcanas, Armors, Battle Actions, Confidants, Consumables, Enemies, Key Iems, Materials, Melee Weapons, Outfits, Party Member first names, last names, Personas, Ranged Weapons and Skills.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 5 File Lists</PageName>
+          <PageURL>http://s15.zetaboards.com/Amicitia/topic/10039711/1/</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p5models, p5 models</keywords>
+      <Name>P5 Character Models</Name>
+      <Description>
+        This wiki page includes a list of filenames and descriptions from the data.cpk's character model folder. Click on the ID numbers to view info on files in each character's subfolder, and the checkmarks to view lists of animations.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 5 Character Models Wiki Page</PageName>
+          <PageURL>https://amicitia.miraheze.org/wiki/Model%5Ccharacter</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p4dmodels, p4d models</keywords>
+      <Name>P4 Dancing Models</Name>
+      <Description>
+        This wiki page includes a list of filenames and descriptions from the data.cpk's dance player folder.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 4 Dancing Models Wiki Page</PageName>
+          <PageURL>https://amicitia.miraheze.org/wiki/Dance%5Cplayer</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p5bustups, p5 bustups, bustups</keywords>
+      <Name>P5 Bustups Models</Name>
+      <Description>
+        This wiki page includes a list of filenames and descriptions from the ps3.cpk's bustup folder.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 5 Bustups Wiki Page</PageName>
+          <PageURL>https://amicitia.miraheze.org/wiki/Bustup_(P5)</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>p5weapons, p5 weapons, weapons</keywords>
+      <Name>P5 Weapons List</Name>
+      <Description>
+        This wiki page includes a list of filenames, descriptions and images from the data.cpk's weapon model folder.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona 5 Weapon Models Wiki Page</PageName>
+          <PageURL>https://amicitia.miraheze.org/wiki/Model%5Cweapon_(P5)</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>mods</keywords>
+      <Name>Persona Mods List</Name>
+      <Description>
+        This site page includes a list of mods currently made available by us.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona Mods</PageName>
+          <PageURL>https://shrinefox.github.io/mods</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>tools</keywords>
+      <Name>Persona Tools List</Name>
+      <Description>
+        This site page includes a list of modding tools currently made available by us.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona Modding Tools</PageName>
+          <PageURL>https://shrinefox.github.io/tools</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+    <Type>
+      <keywords>guides</keywords>
+      <Name>Persona Modding Guides</Name>
+      <Description>
+        This site page includes a list of guides currently made available by us.
+      </Description>
+      <Downloads>
+        <Page>
+          <PageName>Persona Modding Guides</PageName>
+          <PageURL>https://shrinefox.github.io/guides</PageURL>
+        </Page>
+      </Downloads>
+    </Type>
+
+  </Links>
+</Xml>
