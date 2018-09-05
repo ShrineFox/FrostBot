@@ -15,7 +15,7 @@ namespace JackFrostBot
     public class InfoModule : ModuleBase
     {
         // ~say hello -> hello
-        [Command("say"), Summary("Echos a message.")]
+        [Command("say"), Summary("Echoes a message.")]
         public async Task Say([Remainder, Summary("The text to echo")] string echo)
         {
             if (Moderation.IsModerator((IGuildUser)Context.Message.Author) && Context.Message.Author.IsBot == false)

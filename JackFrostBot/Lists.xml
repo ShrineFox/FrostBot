@@ -8,11 +8,11 @@
       <Downloads>
         <Page>
           <Name>P5 GMD Maxscript</Name>
-          <URL>https://shrinefox.github.io/tools/p5#gmd-maxscript</URL>
+          <URL>https://amicitia.github.io/tools/p5#gmd-maxscript</URL>
         </Page>
         <Page>
           <Name>AtlusGfdEditor</Name>
-          <URL>https://shrinefox.github.io/tools/p5#atlusgfdeditor</URL>
+          <URL>https://amicitia.github.io/tools/p5#atlusgfdeditor</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -32,15 +32,15 @@
     <Type>
       <keywords>cvm</keywords>
       <Name>CVM</Name>
-      <Description>A **CVM** is an archive format developed by Criware and used in Persona 3 and 4 (PS2). It is based on ISO9660 so its contents can be extracted by several ISO editing programs (or even 7zip). To modify the contents of a CVM, you should use [TGE's Mod Compendium](https://shrinefox.github.io/guides/p3-p4/mod-compendium). Alternatively, you could also use [PersonaPatcher](https://shrinefox.github.io/guides/p3-p4/personapatcher).</Description>
+      <Description>A **CVM** is an archive format developed by Criware and used in Persona 3 and 4 (PS2). It is based on ISO9660 so its contents can be extracted by several ISO editing programs (or even 7zip). To modify the contents of a CVM, you should use [TGE's Mod Compendium](https://amicitia.github.io/guides/p3-p4/mod-compendium). Alternatively, you could also use [PersonaPatcher](https://amicitia.github.io/guides/p3-p4/personapatcher).</Description>
       <Downloads>
         <Page>
           <Name>Mod Compendium</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#modcompendium</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#modcompendium</URL>
         </Page>
         <Page>
           <Name>PersonaPatcher</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#personapatcher</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#personapatcher</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -52,11 +52,11 @@
       <Resources>
         <Page>
           <Name>Mod Compendium Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p3-p4/mod-compendium</URL>
+          <URL>https://amicitia.github.io/guides/p3-p4/mod-compendium</URL>
         </Page>
         <Page>
           <Name>PersonaPatcher Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p3-p4/personapatcher</URL>
+          <URL>https://amicitia.github.io/guides/p3-p4/personapatcher</URL>
         </Page>
       </Resources>
     </Type>
@@ -69,11 +69,11 @@
       <Downloads>
         <Page>
           <Name>Mod Compendium</Name>
-          <URL>https://shrinefox.github.io/tools/p5#modcompendium</URL>
+          <URL>https://amicitia.github.io/tools/p5#modcompendium</URL>
         </Page>
         <Page>
           <Name>P5 Mod Loader Patch</Name>
-          <URL>https://shrinefox.github.io/mods/p5#modloader</URL>
+          <URL>https://amicitia.github.io/mods/p5#modloader</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -85,11 +85,11 @@
       <Resources>
         <Page>
           <Name>Persona 5 Mod Loader Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p5/mod-cpk</URL>
+          <URL>https://amicitia.github.io/guides/p5/mod-cpk</URL>
         </Page>
         <Page>
           <Name>Mod Compendium Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p5/mod-compendium</URL>
+          <URL>https://amicitia.github.io/guides/p5/mod-compendium</URL>
         </Page>
       </Resources>
     </Type>
@@ -103,7 +103,7 @@
       <Downloads>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -133,7 +133,7 @@
         </Page>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -159,7 +159,7 @@
       <Downloads>
         <Page>
           <Name>PersonaFont</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4-2#personafont</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4-2#personafont</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -185,7 +185,7 @@
       <Downloads>
         <Page>
           <Name>P5 GMD Maxscript</Name>
-          <URL>https://shrinefox.github.io/tools/p5#gmd-maxscript</URL>
+          <URL>https://amicitia.github.io/tools/p5#gmd-maxscript</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -211,11 +211,11 @@
       <Downloads>
         <Page>
           <Name>P3/4 RMD Maxscript</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#rmd-importer</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#rmd-importer</URL>
         </Page>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -245,7 +245,7 @@
         </Page>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -275,7 +275,7 @@
         </Page>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -309,7 +309,7 @@
         </Page>
         <Page>
           <Name>AtomENCD</Name>
-          <URL>https://shrinefox.github.io/tools/p5#atomencd</URL>
+          <URL>https://amicitia.github.io/tools/p5#atomencd</URL>
         </Page>
         <Page>
           <Name>PES Sound File Converter</Name>
@@ -329,7 +329,7 @@
         </Page>
         <Page>
           <Name>Custom ADX Tutorial Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p5/custom-sound</URL>
+          <URL>https://amicitia.github.io/guides/p5/custom-sound</URL>
         </Page>
       </Resources>
     </Type>
@@ -343,7 +343,7 @@
       <Downloads>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
         <Page>
           <Name>PackTools</Name>
@@ -394,12 +394,12 @@
       <keywords>cpk</keywords>
       <Name>CPK</Name>
       <Description>
-        **CPK** is a archive format developed by Criware. It's used in P3P, P4G, P5, PQ and P4D to store all of the game's files. You can use either [CriPakGUI](https://shrinefox.github.io/tools/p5#cripaktools) or [QuickBMS](http://aluigi.altervista.org/quickbms.htm) (with the [CPK script](https://puu.sh/mNBEk/3cc2def391.bms)) to extract the contents of a CPK. To repack a CPK for P5, just use [CriPackedFileMaker](https://shrinefox.github.io/tools/p5#cripackedfilemaker). For all other games, you must use compression on specific files to avoid crashes. Use the [CpkFileListDumper](http://www.mediafire.com/file/7yy1vu4n1ybenbj/CpkFilelistDumper.7z) to generate a CSV from your original CPK and use it to repack. More info can be found in the guide below.
+        **CPK** is a archive format developed by Criware. It's used in P3P, P4G, P5, PQ and P4D to store all of the game's files. You can use either [CriPakGUI](https://amicitia.github.io/tools/p5#cripaktools) or [QuickBMS](http://aluigi.altervista.org/quickbms.htm) (with the [CPK script](https://puu.sh/mNBEk/3cc2def391.bms)) to extract the contents of a CPK. To repack a CPK for P5, just use [CriPackedFileMaker](https://amicitia.github.io/tools/p5#cripackedfilemaker). For all other games, you must use compression on specific files to avoid crashes. Use the [CpkFileListDumper](http://www.mediafire.com/file/7yy1vu4n1ybenbj/CpkFilelistDumper.7z) to generate a CSV from your original CPK and use it to repack. More info can be found in the guide below.
       </Description>
       <Downloads>
         <Page>
           <Name>CriPakGUI</Name>
-          <URL>https://shrinefox.github.io/tools/p5#cripaktools</URL>
+          <URL>https://amicitia.github.io/tools/p5#cripaktools</URL>
         </Page>
         <Page>
           <Name>CpkFileListDumper</Name>
@@ -415,7 +415,7 @@
         </Page>
         <Page>
           <Name>CriPackedFileMaker</Name>
-          <URL>https://shrinefox.github.io/tools/p5#cripackedfilemaker</URL>
+          <URL>https://amicitia.github.io/tools/p5#cripackedfilemaker</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -427,11 +427,11 @@
       <Resources>
         <Page>
           <Name>Extracting P5's CPK Files</Name>
-          <URL>https://shrinefox.github.io/guides/p5/cpk-extract</URL>
+          <URL>https://amicitia.github.io/guides/p5/cpk-extract</URL>
         </Page>
         <Page>
           <Name>Repacking P3P's CPK Files</Name>
-          <URL>https://shrinefox.github.io/guides/p3p/cpk-extract</URL>
+          <URL>https://amicitia.github.io/guides/p3p/cpk-extract</URL>
         </Page>
       </Resources>
     </Type>
@@ -445,7 +445,7 @@
       <Downloads>
         <Page>
           <Name>ACBEditor</Name>
-          <URL>https://shrinefox.github.io/tools/p5#acbeditor</URL>
+          <URL>https://amicitia.github.io/tools/p5#acbeditor</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -457,7 +457,7 @@
       <Resources>
         <Page>
           <Name>Custom ACB Tutorial Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p5/custom-sound</URL>
+          <URL>https://amicitia.github.io/guides/p5/custom-sound</URL>
         </Page>
       </Resources>
     </Type>
@@ -471,7 +471,7 @@
       <Downloads>
         <Page>
           <Name>AtlusGfdEditor</Name>
-          <URL>https://shrinefox.github.io/tools/p5#atlusgfdeditor</URL>
+          <URL>https://amicitia.github.io/tools/p5#atlusgfdeditor</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -497,7 +497,7 @@
       <Downloads>
         <Page>
           <Name>AtlusScriptCompiler</Name>
-          <URL>https://shrinefox.github.io/tools/p5#compiler</URL>
+          <URL>https://amicitia.github.io/tools/p5#compiler</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -523,7 +523,7 @@
       <Downloads>
         <Page>
           <Name>AtlusScriptCompiler</Name>
-          <URL>https://shrinefox.github.io/tools/p5#compiler</URL>
+          <URL>https://amicitia.github.io/tools/p5#compiler</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -570,16 +570,16 @@
       <keywords>elf, slus, eboot, personapatcher, rpcs3patcheboot</keywords>
       <Name>ELF</Name>
       <Description>
-        **ELF** (executable and linkable format) files are the main binary used to launch and run a game. Anything programmed within one is considered to be a \"hardcoded\" function of the game. In Persona 3 and 4 for the PS2, the ELF is contained in a file starting with \"**SLUS**\" at the root of the ``ISO``. The offsets of all the files are hardcoded and must be updated using TGE's [PersonaPatcher](https://shrinefox.github.io/tools/p3-p4#personapatcher) when creating new ``CVM`` files. In all other Persona titles, it is in an **EBOOT** file at the root of the game. TGE's [RPCS3PatchEboot](https://shrinefox.github.io/tools/p5#eboot-patch) program can apply patches from a ``patch.yml`` file to a Persona 5 EBOOT.
+        **ELF** (executable and linkable format) files are the main binary used to launch and run a game. Anything programmed within one is considered to be a \"hardcoded\" function of the game. In Persona 3 and 4 for the PS2, the ELF is contained in a file starting with \"**SLUS**\" at the root of the ``ISO``. The offsets of all the files are hardcoded and must be updated using TGE's [PersonaPatcher](https://amicitia.github.io/tools/p3-p4#personapatcher) when creating new ``CVM`` files. In all other Persona titles, it is in an **EBOOT** file at the root of the game. TGE's [RPCS3PatchEboot](https://amicitia.github.io/tools/p5#eboot-patch) program can apply patches from a ``patch.yml`` file to a Persona 5 EBOOT.
       </Description>
       <Downloads>
         <Page>
           <Name>PersonaPatcher</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#personapatcher</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#personapatcher</URL>
         </Page>
         <Page>
           <Name>RPCS3PatchEboot</Name>
-          <URL>https://shrinefox.github.io/tools/p5#eboot-patch</URL>
+          <URL>https://amicitia.github.io/tools/p5#eboot-patch</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -591,11 +591,11 @@
       <Resources>
         <Page>
           <Name>PersonaPatcher Guide (P3/4 PS2)</Name>
-          <URL>https://shrinefox.github.io/guides/p3-p4/personapatcher</URL>
+          <URL>https://amicitia.github.io/guides/p3-p4/personapatcher</URL>
         </Page>
         <Page>
           <Name>Eboot Patch Guide (P5 PS3)</Name>
-          <URL>https://shrinefox.github.io/guides/p5/patch-eboot</URL>
+          <URL>https://amicitia.github.io/guides/p5/patch-eboot</URL>
         </Page>
       </Resources>
     </Type>
@@ -604,16 +604,16 @@
       <keywords>patch.yml, patch</keywords>
       <Name>patch.yml</Name>
       <Description>
-        **patch.yml** is a text file that you can use to modify executable code of a PS3 game using ``RPCS3``. It goes in the root of the emulator's installation directory and uses a PPU hash to apply changes to the executable. TGE's [RPCS3PatchEboot](https://shrinefox.github.io/tools/p5#eboot-patch) program can apply patches from a patch.yml file to a Persona 5 EBOOT for use on modded consoles.
+        **patch.yml** is a text file that you can use to modify executable code of a PS3 game using ``RPCS3``. It goes in the root of the emulator's installation directory and uses a PPU hash to apply changes to the executable. TGE's [RPCS3PatchEboot](https://amicitia.github.io/tools/p5#eboot-patch) program can apply patches from a patch.yml file to a Persona 5 EBOOT for use on modded consoles.
       </Description>
       <Downloads>
         <Page>
           <Name>sample patch.yml for P5</Name>
-          <URL>https://shrinefox.github.io/mods/patch.yml</URL>
+          <URL>https://amicitia.github.io/mods/patch.yml</URL>
         </Page>
         <Page>
           <Name>RPCS3PatchEboot</Name>
-          <URL>https://shrinefox.github.io/tools/p5#eboot-patch</URL>
+          <URL>https://amicitia.github.io/tools/p5#eboot-patch</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -625,11 +625,11 @@
       <Resources>
         <Page>
           <Name>Persona 5 Mod Loader Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p5/mod-cpk</URL>
+          <URL>https://amicitia.github.io/guides/p5/mod-cpk</URL>
         </Page>
         <Page>
           <Name>Eboot Patch Guide (P5 PS3)</Name>
-          <URL>https://shrinefox.github.io/guides/p5/patch-eboot</URL>
+          <URL>https://amicitia.github.io/guides/p5/patch-eboot</URL>
         </Page>
       </Resources>
     </Type>
@@ -643,7 +643,7 @@
       <Downloads>
         <Page>
           <Name>Controllable Party Members for P3FES</Name>
-          <URL>https://shrinefox.github.io/mods/p3#party-member-control</URL>
+          <URL>https://amicitia.github.io/mods/p3#party-member-control</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -655,7 +655,7 @@
       <Resources>
         <Page>
           <Name>Pnach Usage Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p3-p4/cheats</URL>
+          <URL>https://amicitia.github.io/guides/p3-p4/cheats</URL>
         </Page>
       </Resources>
     </Type>
@@ -670,7 +670,7 @@
       <Downloads>
         <Page>
           <Name>Amicitia</Name>
-          <URL>https://shrinefox.github.io/tools/p3-p4#amicitia</URL>
+          <URL>https://amicitia.github.io/tools/p3-p4#amicitia</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -695,7 +695,7 @@
       <Downloads>
         <Page>
           <Name>Mod Compendium</Name>
-          <URL>https://shrinefox.github.io/tools/p5/mod-compendium</URL>
+          <URL>https://amicitia.github.io/tools/p5/mod-compendium</URL>
         </Page>
       </Downloads>
       <Wiki>
@@ -707,11 +707,11 @@
       <Resources>
         <Page>
           <Name>P5 Modding Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p5/mod-compendium</URL>
+          <URL>https://amicitia.github.io/guides/p5/mod-compendium</URL>
         </Page>
         <Page>
           <Name>P3/4 Modding Guide</Name>
-          <URL>https://shrinefox.github.io/guides/p3-p4/mod-compendium</URL>
+          <URL>https://amicitia.github.io/guides/p3-p4/mod-compendium</URL>
         </Page>
       </Resources>
     </Type>
