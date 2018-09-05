@@ -321,6 +321,14 @@ namespace JackFrostBot
                         "Failed to find the specified key. Make sure you're using the right case and separating the new value with an = sign.");
             } 
         }
+
+        //Get the ID of a role without pinging it
+        [Command("get id"), Summary("Get the ID of a role without pinging it.")]
+        public async Task GetID([Remainder, Summary("The name of the role to get the ID of.")] string roleName = null)
+        {
+            var role = Context.Guild.Roles.FirstOrDefault(x => x.Name == roleName);
+            await Context.Channel.SendMessageAsync(role.Id.ToString());
+        }
     }
 
     // Create a module with the 'sample' prefix

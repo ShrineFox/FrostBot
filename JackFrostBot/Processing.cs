@@ -135,6 +135,15 @@ namespace JackFrostBot
         {
             if (Setup.EnableWordFilter(channel.Guild.Id))
             {
+                if (!File.Exists($"{channel.Guild.Id.ToString()}\\filter.txt"))
+                {
+                    File.CreateText($"{channel.Guild.Id.ToString()}\\filter.txt").Close();
+                }
+                if (!File.Exists($"{channel.Guild.Id.ToString()}\\filterbypasscheck.txt"))
+                {
+                    File.CreateText($"{channel.Guild.Id.ToString()}\\filterbypasscheck.txt").Close();
+                }
+
                 foreach (string term in File.ReadLines($"{channel.Guild.Id.ToString()}\\filter.txt"))
                 {
                     bool filtered = false;
