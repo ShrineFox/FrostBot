@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +17,7 @@ namespace JackFrostBot
             if (File.Exists("token.txt"))
                 token = File.ReadAllText("token.txt");
             else
-                File.CreateText("token.txt");
+                File.CreateText("token.txt").Close();
 
             return token;
         }

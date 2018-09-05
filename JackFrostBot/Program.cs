@@ -43,7 +43,7 @@ namespace Bot
             if (File.Exists("game.txt"))
                 await client.SetGameAsync(File.ReadAllText("game.txt"));
             else
-                File.CreateText("game.txt");
+                File.CreateText("game.txt").Close();
 
             client.UserJoined += UserJoin;
 
@@ -81,11 +81,6 @@ namespace Bot
         {
             var message = messageParam as SocketUserMessage;
             var channel = (SocketGuildChannel)message.Channel;
-
-            if (File.Exists("game.txt"))
-                await client.SetGameAsync(File.ReadAllText("game.txt"));
-            else
-                File.CreateText("game.txt");
 
             // Don't process the command if it was a System Message
             if (message == null) return;
