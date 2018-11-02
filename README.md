@@ -6,7 +6,7 @@ A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.
 2. Extract the zip, place your bot user's token in Token.txt and run the exe.
 3. Fill out the generated Setup.ini to customize the bot for your server.
 Note: for channel IDs, use Discord's developer mode and right click each channel and Copy ID.
-For role IDs, use the command "?get id <role name>"
+For role IDs, use the command "?get id rolename"
 4. Give the bot a role with admin priveleges in order to manage permissions and post in any channel.
 
 # Features
