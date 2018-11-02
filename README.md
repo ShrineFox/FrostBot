@@ -13,7 +13,7 @@ A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.
 - Moderators can lock/unlock channels (updates everyone's sendMessages permission for the channel)
 ![Locking](https://i.imgur.com/lofuILg.gif)
 - Moderators can warn users and remove warns (warns are recorded in a local text doc)
-![Warns](https://i.imgur.com/lofuILg.gif)
+![Warns](https://i.imgur.com/Y5pzpXP.gif)
 - Moderators can set the name of the game the bot is currently "playing"
 ## Automation
 - Automatically verifies users and gives them access to other channels after proving that they read the rules
