@@ -9,8 +9,11 @@ A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.
 # Features
 ## Moderation
 - Moderators can mute/unmute users (automatically update their sendMessages permission in each channel)
+![Mutes](https://i.imgur.com/tDLt3Wx.gif)
 - Moderators can lock/unlock channels (updates everyone's sendMessages permission for the channel)
+![Locking](https://i.imgur.com/lofuILg.gif)
 - Moderators can warn users and remove warns (warns are recorded in a local text doc)
+![Warns](https://i.imgur.com/lofuILg.gif)
 - Moderators can set the name of the game the bot is currently "playing"
 ## Automation
 - Automatically verifies users and gives them access to other channels after proving that they read the rules
@@ -20,6 +23,7 @@ A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.
 - Automatically mutes users who leave and rejoin to reset their permissions
 - Announces warns/kicks/bans/locks etc. and their reason anonymously in the channel where the commands were used,
   but keeps track of who used them in a private #bot-logs channel
+  ![Log](https://i.imgur.com/oIvIdw1.png)
 - Automatically removes messages that don't have any attachments in media-only channels
 - Automatically removes messages from users that aren't in a voice channel in #voice-text
 - Automatically removes messages that are too short (one-character responses)
@@ -28,8 +32,10 @@ A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.
 - Users can grant themselves roles to access opt-in only channels
 - Users can make the bot repeat messages
 - Users can check a list of all warns and their reasons, or narrow it down to a specific user
+![Warns2](https://i.imgur.com/cWCV0JA.gif)
 - Users can see a list of all commands they can use
 - Users can look up a keyword to get a description and helpful links (references a local ini file)
+![Lists](https://i.imgur.com/1VtBD4Z.gif)
 - Users can look up a list of all available keywords
 - Users can create and assign themselves roles with a color value of their choice
 - Users can update existing color roles by changing the color value (if it's not already in use by someone else)
