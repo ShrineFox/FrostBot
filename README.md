@@ -1,5 +1,11 @@
 # JackFrostBot
+![Logo](https://i.imgur.com/revniHd.png)
 A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.Net).
+# Installation
+1. Create a bot user and invite it to your server.
+2. Extract the zip, place your bot user's token in Token.txt and run the exe.
+3. Fill out the generated Setup.ini to customize the bot for your server.
+
 # Features
 ## Moderation
 - Moderators can mute/unmute users (automatically update their sendMessages permission in each channel)
@@ -23,16 +29,11 @@ A Discord bot that uses [Discord.Net](https://github.com/RogueException/Discord.
 - Users can make the bot repeat messages
 - Users can check a list of all warns and their reasons, or narrow it down to a specific user
 - Users can see a list of all commands they can use
-- Users can look up a keyword to get a description and helpful links (references a local xml doc)
+- Users can look up a keyword to get a description and helpful links (references a local ini file)
 - Users can look up a list of all available keywords
+- Users can create and assign themselves roles with a color value of their choice
+- Users can update existing color roles by changing the color value (if it's not already in use by someone else)
 ## Customization
  - Filtered word list is kept as a local text doc that you can edit (filter.txt)
  - Filter bypass check is kept as a local text doc that you can edit (filterbypasscheck.txt)
- - Links.xml and Lists.xml can be edited to add/remove list entries
-# Future Plans for further customization
-- Local setup for channel and role IDs used by the bot (right now they're all specific to the Amicitia server)
-- Ability for moderators to adjust the local filter list via commands
-- Ability for moderators to adjust the levels for automatic mutes/kicks/bans
-# Planned Features
-- Slowmode (members can only post one message per minute when active as opposed to locking the channel)
-- Improvements to the XML parsing code (it's jank)
+ - Info.ini can be edited to add/remove list entries
