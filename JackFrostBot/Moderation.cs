@@ -30,6 +30,21 @@ namespace JackFrostBot
             return moderator;
         }
 
+        public static bool IsModder(IGuildUser user)
+        {
+            bool modder = false;
+            List<ulong> modRoleIds = Setup.ModderRoleIds(user.Guild.Id);
+            foreach (ulong roleID in user.RoleIds)
+            {
+                foreach (ulong modRoleId in modRoleIds)
+                {
+                    if (roleID == modRoleId)
+                        modder = true;
+                }
+            }
+            return modder;
+        }
+
         public static bool IsPublicChannel(IGuildChannel channel)
         {
             bool isPublic = true;
@@ -91,14 +106,14 @@ namespace JackFrostBot
             if (warns > 0)
             {
                 await channel.SendMessageAsync($"{user.Username} has been warned {warns} times.");
-                if (warns >= banLevel )
-                    Ban("Jack Frost", channel, user,
+                if (warns >= banLevel ) 
+                    Ban(Setup.BotName(user.Guild.Id), channel, user,
                                 "User was automatically banned for accumulating too many warnings.");
                 else if (warns >= kickLevel)
-                    Kick("Jack Frost", channel, user,
+                    Kick(Setup.BotName(user.Guild.Id), channel, user,
                                 "User was automatically kicked for accumulating too many warnings.");
                 else if (warns >= muteLevel)
-                    Mute("Jack Frost", channel, user);
+                    Mute(Setup.BotName(user.Guild.Id), channel, user);
             }
         }
 
@@ -230,7 +245,7 @@ namespace JackFrostBot
                 {
                     try
                     {
-                        await chan.AddPermissionOverwriteAsync(user, new OverwritePermissions(sendMessages: PermValue.Inherit, addReactions: PermValue.Inherit), RequestOptions.Default);
+                        await chan.RemovePermissionOverwriteAsync(user, RequestOptions.Default);
                     }
                     catch
                     {
@@ -272,12 +287,7 @@ namespace JackFrostBot
             {
                 try
                 {
-                    var roleId = Setup.MemberRoleId(guild.Id);
-                    var lurkRole = channel.Guild.GetRole(roleId);
-                    if (lurkRole != null && roleId != 0)
-                        await channel.AddPermissionOverwriteAsync(channel.Guild.GetRole(roleId), new OverwritePermissions(readMessages: PermValue.Allow, sendMessages: PermValue.Deny, addReactions: PermValue.Deny), RequestOptions.Default);
-                    else
-                        await channel.AddPermissionOverwriteAsync(channel.Guild.GetRole(guild.EveryoneRole.Id), new OverwritePermissions(readMessages: PermValue.Allow, sendMessages: PermValue.Deny, addReactions: PermValue.Deny), RequestOptions.Default);
+                    await channel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(readMessages: PermValue.Allow, sendMessages: PermValue.Deny, addReactions: PermValue.Deny), RequestOptions.Default);
                 }
                 catch
                 {
@@ -291,7 +301,8 @@ namespace JackFrostBot
 
             //Log the lock in the bot-logs channel
             embed = Embeds.LogLock(moderator, channel);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(channel.Guild.Id));
+            var channelId = Setup.BogLotChannelId(channel.Guild.Id);
+            var botlog = await channel.Guild.GetTextChannelAsync(channelId);
             await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
@@ -304,12 +315,7 @@ namespace JackFrostBot
             {
                 try
                 {
-                    var roleId = Setup.MemberRoleId(guild.Id);
-                    var lurkRole = channel.Guild.GetRole(roleId);
-                    if (lurkRole != null && roleId != 0)
-                        await channel.AddPermissionOverwriteAsync(channel.Guild.GetRole(roleId), new OverwritePermissions(readMessages: PermValue.Inherit, sendMessages: PermValue.Inherit, addReactions: PermValue.Inherit), RequestOptions.Default);
-                    else
-                        await channel.AddPermissionOverwriteAsync(channel.Guild.GetRole(guild.EveryoneRole.Id), new OverwritePermissions(readMessages: PermValue.Inherit, sendMessages: PermValue.Inherit, addReactions: PermValue.Inherit), RequestOptions.Default);
+                    await channel.RemovePermissionOverwriteAsync(guild.EveryoneRole, RequestOptions.Default);
                 }
                 catch
                 {
@@ -436,7 +442,7 @@ namespace JackFrostBot
             {
                 if (term == bypassTerm)
                 {
-                    Moderation.Warn("Jack Frost", (ITextChannel)channel, (SocketGuildUser)author, "Stop trying to bypass the word filter.");
+                    Moderation.Warn(Setup.BotName(guildchannel.Guild.Id), (ITextChannel)channel, (SocketGuildUser)author, "Stop trying to bypass the word filter.");
                     return true;
                 }
             }

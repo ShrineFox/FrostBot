@@ -43,7 +43,7 @@ namespace Bot
             if (File.Exists("game.txt"))
                 await client.SetGameAsync(File.ReadAllText("game.txt"));
             else
-                File.CreateText("game.txt");
+                File.CreateText("game.txt").Close();
 
             client.UserJoined += UserJoin;
 
@@ -85,7 +85,7 @@ namespace Bot
             if (File.Exists("game.txt"))
                 await client.SetGameAsync(File.ReadAllText("game.txt"));
             else
-                File.CreateText("game.txt");
+                File.CreateText("game.txt").Close();
 
             // Don't process the command if it was a System Message
             if (message == null) return;
@@ -98,7 +98,7 @@ namespace Bot
             await Processing.FilterCheck(message, channel);
 
             //Remove lurker role if member has one
-            if (Setup.AssignLurkerRoles(channel.Guild.Id))
+            if (Setup.AssignLurkerRoles(channel.Guild.Id) && Setup.RemoveLurkerRoles(channel.Guild.Id))
             {
                 var user = (IGuildUser)message.Author;
                 var lurkRole = user.Guild.GetRole(Setup.LurkerRoleId(user.Guild.Id));
@@ -109,7 +109,7 @@ namespace Bot
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!(message.HasCharPrefix('?', ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos))) return;
+            if (!(message.HasCharPrefix(Setup.CommandPrefix(channel.Guild.Id), ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos))) return;
             // Create a Command Context
             var context = new CommandContext(client, message);
             // Execute the command. (result does not indicate a return value, 
@@ -144,9 +144,9 @@ namespace Bot
                 await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
                 Moderation.Mute(client.CurrentUser.Username, defaultChannel, user);
             }
-            else
+            else if (Setup.WelcomeUsers(user.Guild.Id))
             {
-                await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** Be sure to read <#{Setup.WelcomeChannelId(user.Guild.Id)}> and enjoy your stay, hee-ho!");
+                await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** Be sure to read <#{Setup.WelcomeChannelId(user.Guild.Id)}> and enjoy your stay!");
             }
         }
 

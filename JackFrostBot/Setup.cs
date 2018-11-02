@@ -17,7 +17,7 @@ namespace JackFrostBot
             if (File.Exists("token.txt"))
                 token = File.ReadAllText("token.txt");
             else
-                File.CreateText("token.txt");
+                File.CreateText("token.txt").Close();
 
             return token;
         }
@@ -82,6 +82,34 @@ namespace JackFrostBot
             foreach (KeyData key in data["ModeratorRoles"])
             {
                 roleIds.Add(Convert.ToUInt64(key.Value));
+            }
+            return roleIds;
+        }
+
+        public static List<ulong> ModderRoleIds(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            List<ulong> roleIds = new List<ulong>();
+            foreach (KeyData key in data["ModderRoles"])
+            {
+                roleIds.Add(Convert.ToUInt64(key.Value));
+            }
+            return roleIds;
+        }
+
+        public static List<string> RequiredURLs(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            List<string> roleIds = new List<string>();
+            foreach (KeyData key in data["RequiredURLs"])
+            {
+                roleIds.Add(key.Value.ToString());
             }
             return roleIds;
         }
@@ -299,6 +327,20 @@ namespace JackFrostBot
             return channelId;
         }
 
+        public static ulong ModReleaseChannelId(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            ulong channelId = 0;
+            foreach (KeyData key in data["ModReleaseChannel"])
+            {
+                channelId = Convert.ToUInt64(key.Value);
+            }
+            return channelId;
+        }
+
         public static ulong LurkerRoleId(ulong guildId)
         {
             var parser = new FileIniDataParser();
@@ -314,6 +356,20 @@ namespace JackFrostBot
         }
 
         //Strings
+
+        public static string BotIconImage(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            string iconurl = "";
+            foreach (KeyData key in data["BotIconImage"])
+            {
+                iconurl = key.Value.ToString();
+            }
+            return iconurl;
+        }
 
         public static string PasswordString(ulong guildId)
         {
@@ -369,6 +425,24 @@ namespace JackFrostBot
             return data["Strings"]["noPermissionMessage"];
         }
 
+        public static char CommandPrefix(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+            char[] chars = data["Strings"]["commandPrefix"].ToCharArray();
+            return chars[0];
+        }
+
+        public static string BotName(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return data["Strings"]["botName"];
+        }
+
         //Bools
 
         public static bool ModeratorsCanUpdateSetup(ulong guildId)
@@ -389,6 +463,15 @@ namespace JackFrostBot
             return Convert.ToBoolean(data["Bools"]["assignLurkerRoles"]);
         }
 
+        public static bool RemoveLurkerRoles(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToBoolean(data["Bools"]["removeLurkerRoles"]);
+        }
+
         public static bool EnableSayCommand(ulong guildId)
         {
             var parser = new FileIniDataParser();
@@ -407,6 +490,25 @@ namespace JackFrostBot
             return Convert.ToBoolean(data["Bools"]["enableWordFilter"]);
         }
 
+        public static bool WelcomeUsers(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToBoolean(data["Bools"]["welcomeUsers"]);
+        }
+
+        public static bool RequireDownloadsForRelease(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToBoolean(data["Bools"]["requireDownloadsForRelease"]);
+        }
+
+
         public static void CreateIni(string fileName)
         {
             File.WriteAllText(fileName, @"#
@@ -416,6 +518,10 @@ namespace JackFrostBot
 #IDs of roles that can use the bot's moderation commands
 Moderators=215043129663815680
 TGE=143152214247079936
+ShrineFox = 480449512104656906
+[ModderRoles]
+#IDs of roles that can use the bot's mod showcase feature
+Modders=489102428273377288
 [PrivateChannels]
 #IDs of channels that most members can't post in. 
 #Permissions will not be altered by the bot when muting/unmuting users in other channels.
@@ -428,6 +534,9 @@ staff=417170700936413224
 bot-logs=424670454230417409
 adachi-project=407950867988348928
 p3fes-femc=419824275898236941
+[BotIconImage]
+#URL of an icon to use for the bot's embedded posts
+img=https://i.imgur.com/5I5Vos8.png
 #
 ## CHANNELS
 #
@@ -456,6 +565,15 @@ art=380393842844893184
 [BotSandBoxChannel]
 #ID of a channel users will be redirected to in order to use lengthy bot commands.
 bot-sandbox=473675595088134159
+[ModReleaseChannel]
+#ID of a channel where only Modders can post mod releases using the bot.
+mod-showcase=410951708274065409
+[RequiredURLs]
+#A mod release post must contain one of the following values if the Bool requireDownloadsForRelease is True.
+gamebanana = gamebanana.com
+mega = mega.co.nz
+mediafire = mediafire.com
+gdrive = drive.google.com
 #
 ## ROLES
 #
@@ -484,7 +602,7 @@ ban=4
 [MessageLimits]
 #Messages will be automatically deleted if they fail to meet the following requirements
 maximumDuplicates=3
-minimumLength=2
+minimumLength=0
 [Strings]
 #Verification Password is what users must type in the Verification Channel to get the Member Role (not case sensitive)
 verificationPassword=h
@@ -493,11 +611,16 @@ unlockMessage=Be mindful of the rules and don't forget to have fun.
 muteMessage=Shut your hee-ho!
 unmuteMessage=Hee ur ho m8
 noPermissionMessage=You don't have permission to hee this command, ho!
+commandPrefix=?
+botName = Jack Frost
 [Bools]
 moderatorsCanUpdateSetup=true
 assignLurkerRoles=true
+removeLurkerRoles=true
 enableSayCommand=true
-enableWordFilter=true");
+enableWordFilter=true
+welcomeUsers=true
+requireDownloadsForRelease = false");
         }
     }
 }

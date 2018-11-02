@@ -8,197 +8,80 @@ using Discord.Commands;
 using System.Xml;
 using Discord.WebSocket;
 using System.IO;
+using IniParser;
+using IniParser.Model;
 
 namespace JackFrostBot
 {
     class Embeds
     {
-        static public Embed List()
+        static public Embed List(ulong guildId)
         {
-            List<string> filetypes = new List<string>();
-            List<string> programs = new List<string>();
-            List<string> links = new List<string>();
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            parser.Parser.Configuration.CaseInsensitive = true;
+            IniData data = parser.ReadFile($"{guildId}\\info.ini");
 
-            XmlDocument xdc = new XmlDocument();
-            xdc.Load(@"Lists.xml");
-            var nodes = xdc.SelectNodes("//FileTypes/Type//keywords");
-            foreach (XmlNode node in nodes)
+            string keywords = "";
+
+            foreach (var section in data.Sections)
             {
-                filetypes.Add(node.InnerText);
-            }
-            nodes = xdc.SelectNodes("//Programs/Type//keywords");
-            foreach (XmlNode node in nodes)
-            {
-                programs.Add(node.InnerText);
-            }
-            xdc.Load(@"Links.xml");
-            nodes = xdc.SelectNodes("//Links/Type//keywords");
-            foreach (XmlNode node in nodes)
-            {
-                links.Add(node.InnerText);
+                keywords = $"{keywords}\n{section.SectionName}";
             }
 
             var builder = new EmbedBuilder()
-                .WithDescription("Use ``?about <term>`` for filetypes and programs, or ``?link <term>`` for links. ``?help`` for more info.")
+                .WithDescription($"Use ``{Setup.CommandPrefix(guildId)}about <term>`` for info about the following. ``{Setup.CommandPrefix(guildId)}help`` for more info.")
                 .WithColor(new Color(0x4A90E2))
-                .WithThumbnailUrl("https://i.imgur.com/5I5Vos8.png")
-                .AddField("Filetypes", string.Join("\n", filetypes.ToArray()))
-                .AddField("Links", string.Join("\n", links.ToArray()))
-                .AddField("Programs", string.Join("\n", programs.ToArray()));
+                .WithThumbnailUrl(Setup.BotIconImage(guildId))
+                .AddField("Keywords", keywords);
             var embed = builder.Build();
 
             return embed;
         }
 
-        static public Embed BotInfo()
+        static public Embed BotInfo(ulong guildId)
         {
             var builder = new EmbedBuilder()
-            .WithDescription(@"__**Moderation**__
-:mag: **?show warns @username** show a numbered list of all warnings a user has received.
+            .WithDescription($@"__**Moderation**__
+:mag: **{Setup.CommandPrefix(guildId)}show warns <@username>** show a numbered list of all warnings a user has received.
 @username is optional, and will show a list of all warnings ever issued if omitted.
-:mag_right: **?show msginfo** show the time, author and reason of the last auto-deleted message.
+:mag_right: **{Setup.CommandPrefix(guildId)}show msginfo** show the time, author and reason of the last auto-deleted message.
 
 __**Fun**__
-:microphone2: **?say message** make Jack Frost say something (when used in #bot-sandbox).
+:microphone2: **{Setup.CommandPrefix(guildId)}say <message>** make {Setup.BotName(guildId)} say something (when used in the bot sandbox channel).
+:crayon: **{Setup.CommandPrefix(guildId)}create color <#hexvalue> <roleName>** create a new role with a specific hexidecimal color.
+:crayon: **{Setup.CommandPrefix(guildId)}update color <#hexvalue> <roleName>** show a list of all color roles you can pick from.
+:crayon: **{Setup.CommandPrefix(guildId)}give color <roleName>** assign yourself a role with a specific color.
+:crayon: **{Setup.CommandPrefix(guildId)}show colors** show a list of all color roles you can pick from.
 
 __**Modding**__
-:pencil: **?list** show a list of all available keywords in #bot-sandbox.
-:question: **?about keyword** gives all available resources on a keyword along with a description.
-:grey_question: **?link keyword** used to link directly to available resources.
-
-__**Roles**__
-:sparkles: **?grant serious** grant yourself the Serious Talk role.
-:leaves: **?remove serious** revoke your access to the Serious Talk channel.
-:sparkles: **?grant artist** grant yourself the Artists role.
+:pencil: **{Setup.CommandPrefix(guildId)}list** show a list of all available keywords in the bot sandbox channel.
+:question: **{Setup.CommandPrefix(guildId)}about <keyword>** gives all available resources on a keyword along with a description.
+:warning: **{Setup.CommandPrefix(guildId)}release <url> <description>** announces a mod release if you have the Modders role. Images and YouTube links are automatically embedded.
                             
-** Note:** While Jack Frost anonymously issues these commands, a local log is kept of who uses them. Please use responsibly!")
+** Note:** While the bot anonymously issues these commands, a local log is kept of who uses them. Please use responsibly!")
             .WithColor(new Color(0x4A90E2))
-            .WithThumbnailUrl("https://i.imgur.com/5I5Vos8.png");
+            .WithThumbnailUrl(Setup.BotIconImage(guildId));
             var embed = builder.Build();
 
             return embed;
         }
 
-        static public Embed GetLinks(string format)
+        static public Embed FormatInfo(string format, ulong guildId)
         {
-            List<string> keywords = new List<string>();
-
-            XmlDocument xdc = new XmlDocument();
-            xdc.Load(@"Links.xml");
-            var nodes = xdc.SelectNodes("//keywords");
-            foreach (XmlNode node in nodes)
-            {
-                string[] splitKeywords = node.InnerText.Split(new string[] { ", " }, StringSplitOptions.None);
-                foreach (string keyword in splitKeywords)
-                {
-                    keywords.Add(keyword);
-                }
-            }
-
-            string name = "n/a";
-            string description = "n/a";
-            string downloads = "n/a";
-
-            foreach (string keyword in keywords)
-            {
-                if (format == keyword)
-                {
-                    //Name and Description
-                    var node = xdc.SelectSingleNode($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Name");
-                    name = node.InnerText;
-                    node = xdc.SelectSingleNode($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Description");
-                    description = node.InnerText;
-                    //Downloads
-                    nodes = xdc.SelectNodes($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Downloads//Page");
-                    List<string> dls = new List<string>();
-                    foreach (XmlNode page in nodes)
-                    {
-                        dls.Add($"[{page.FirstChild.InnerText}]({page.LastChild.InnerText})");
-                    }
-                    if (dls.ToArray() != null && dls.ToArray().Length != 0)
-                        downloads = string.Join("\n", dls.ToArray());
-                }
-            }
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            parser.Parser.Configuration.CaseInsensitive = true;
+            IniData data = parser.ReadFile($"{guildId}\\info.ini");
 
             var builder = new EmbedBuilder()
-                .WithTitle(name)
-                .WithDescription(description)
+                .WithTitle(format)
+                .WithDescription(data[format]["Description"])
                 .WithColor(new Color(0x4A90E2))
-                .WithThumbnailUrl("https://i.imgur.com/5I5Vos8.png")
-                .AddField("Downloads", downloads);
-            var embed = builder.Build();
-            return embed;
-        }
-
-        static public Embed FormatInfo(string format)
-        {
-            List<string> keywords = new List<string>();
-
-            XmlDocument xdc = new XmlDocument();
-            xdc.Load(@"Lists.xml");
-            var nodes = xdc.SelectNodes("//keywords");
-            foreach (XmlNode node in nodes)
-            {
-                string[] splitKeywords = node.InnerText.Split(new string[] { ", " }, StringSplitOptions.None);
-                foreach (string keyword in splitKeywords)
-                {
-                    keywords.Add(keyword);
-                }
-            }
-
-            string name = "n/a";
-            string description = "n/a";
-            string downloads = "n/a";
-            string wikis = "n/a";
-            string guides = "n/a";
-
-            foreach (string keyword in keywords)
-            {
-                if (format == keyword)
-                {
-                    //Name and Description
-                    var node = xdc.SelectSingleNode($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Name");
-                    name = node.InnerText;
-                    node = xdc.SelectSingleNode($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Description");
-                    description = node.InnerText;
-                    //Downloads
-                    nodes = xdc.SelectNodes($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Downloads//Page");
-                    List<string> dls = new List<string>();
-                    foreach (XmlNode page in nodes)
-                    {
-                        dls.Add($"[{page.FirstChild.InnerText}]({page.LastChild.InnerText})");
-                    }
-                    if (dls.ToArray() != null && dls.ToArray().Length != 0)
-                        downloads = string.Join("\n", dls.ToArray());
-                    //Wiki Pages
-                    nodes = xdc.SelectNodes($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Wiki//Page");
-                    List<string> wiki = new List<string>();
-                    foreach (XmlNode page in nodes)
-                    {
-                        wiki.Add($"[{page.FirstChild.InnerText}]({page.LastChild.InnerText})");
-                    }
-                    if (wiki.ToArray() != null && wiki.ToArray().Length != 0)
-                        wikis = string.Join("\n", wiki.ToArray());
-                    //Resources
-                    nodes = xdc.SelectNodes($"//*[text()[contains(., '{keyword}')] or @*[contains(., '{keyword}')]]/../Resources//Page");
-                    List<string> rsrc = new List<string>();
-                    foreach (XmlNode page in nodes)
-                    {
-                        rsrc.Add($"[{page.FirstChild.InnerText}]({page.LastChild.InnerText})");
-                    }
-                    if (rsrc.ToArray() != null && rsrc.ToArray().Length != 0)
-                        guides = string.Join("\n", rsrc.ToArray());
-                }
-            }
-
-            var builder = new EmbedBuilder()
-                .WithTitle(name)
-                .WithDescription(description)
-                .WithColor(new Color(0x4A90E2))
-                .WithThumbnailUrl("https://i.imgur.com/5I5Vos8.png")
-                .AddField("Downloads", downloads)
-                .AddField("Related Wiki Pages", wikis)
-                .AddField("Guides & Resources", guides);
+                .WithThumbnailUrl(Setup.BotIconImage(guildId))
+                .AddField("Downloads", data[format]["Downloads"].ToString().Replace(@"\n", Environment.NewLine))
+                .AddField("Related Wiki Pages", data[format]["Wiki"].Replace(@"\n", Environment.NewLine))
+                .AddField("Guides & Resources", data[format]["Resources"].Replace(@"\n", Environment.NewLine));
             var embed = builder.Build();
             return embed;
         }
@@ -436,6 +319,22 @@ __**Roles**__
             var eBuilder = new EmbedBuilder()
             .WithDescription($"Here's what I know about the last message I automatically deleted: \n\n{msgInfo}")
             .WithColor(new Color(0x37FF68));
+            return eBuilder.Build();
+        }
+
+        public static Embed PostRelease(string message, string username, string download)
+        {
+            var eBuilder = new EmbedBuilder()
+            .WithDescription($"**{username}** released a mod:\n\n{message}\n**Download:** {download}")
+            .WithColor(new Color(0xF5DA23));
+            return eBuilder.Build();
+        }
+
+        public static Embed ShowColors(IGuildChannel channel, List<string> colorRoleNames, ulong guildId)
+        {
+            var eBuilder = new EmbedBuilder()
+            .WithDescription($"You can assign yourself the following color roles using ``{Setup.CommandPrefix(guildId)}give color roleName``, or add your own using ``{Setup.CommandPrefix(guildId)}create color #hexValue roleName``: \n{String.Join(Environment.NewLine, colorRoleNames.ToArray())}")
+            .WithColor(new Color(0xF5DA23));
             return eBuilder.Build();
         }
     }

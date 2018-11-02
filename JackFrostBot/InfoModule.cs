@@ -9,6 +9,8 @@ using Discord.WebSocket;
 using System.Xml;
 using System.Xml.Linq;
 using System.IO;
+using System.Drawing;
+using System.Globalization;
 
 namespace JackFrostBot
 {
@@ -33,30 +35,14 @@ namespace JackFrostBot
         [Command("about"), Summary("Get info about a file format.")]
         public async Task GetInfo([Remainder, Summary("The format to get info about.")] string keyword)
         {
-                var embed = Embeds.FormatInfo(keyword.ToLower());
-                if (embed.Title != "n/a")
-                    await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                else
-                    await Context.Channel.SendMessageAsync(
-                        $"Sorry, ho! I've got no information on that. Try ``?list`` in <#{Setup.BotSandBoxChannelId(Context.Guild.Id)}> for all topics I know about.");
-        }
-
-        // ~link cvm
-        [Command("link"), Summary("Fetch links related to the keyword.")]
-        public async Task GetLink([Remainder, Summary("The keyword to get links from.")] string keyword)
-        {
-            var embed = Embeds.GetLinks(keyword.ToLower());
-            if (embed.Title != "n/a")
+                var embed = Embeds.FormatInfo(keyword, Context.Guild.Id);
                 await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-            else
-                await Context.Channel.SendMessageAsync(
-                    $"Sorry, ho! I've got no information on that. Try ``?list`` in <#{Setup.BotSandBoxChannelId(Context.Guild.Id)}> for all topics I know about.");
         }
 
         [Command("help"), Summary("Get info about using the bot.")]
         public async Task GetHelp()
         {
-            var embed = Embeds.BotInfo();
+            var embed = Embeds.BotInfo(Context.Guild.Id);
             await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
@@ -121,13 +107,60 @@ namespace JackFrostBot
             if (Context.Channel.Id != Setup.BotSandBoxChannelId(Context.Guild.Id))
             {
                 await Context.Channel.SendMessageAsync(
-                    $"Hee that command in <#{Setup.BotSandBoxChannelId(Context.Guild.Id)}> for all topics I know about, ho!");
+                    $"Use that command in <#{Setup.BotSandBoxChannelId(Context.Guild.Id)}> for all topics I know about!");
             }
             else
             {
-                var embed = Embeds.List();
+                var embed = Embeds.List(Context.Guild.Id);
                 await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
+        }
+
+        //Warn a user and log it
+        [Command("release"), Summary("Release a mod in the mod-releases channel.")]
+        public async Task Warn([Summary("The reason for the warn."), Remainder] string message)
+        {
+            if (Moderation.IsModerator((IGuildUser)Context.Message.Author) || Moderation.IsModder((IGuildUser)Context.Message.Author))
+            {
+                ulong ModReleaseChannelId = Setup.ModReleaseChannelId(Context.Guild.Id);
+                var releaseChannel = await Context.Guild.GetTextChannelAsync(Setup.ModReleaseChannelId(Context.Guild.Id));
+                bool includesDownload = false;
+                string download = "";
+
+                var links = message.Split("\t\n ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("http://") || s.StartsWith("www.") || s.StartsWith("https://"));
+                foreach (string link in links)
+                {
+                    if (link.ToLower().Contains("youtube") || link.ToLower().Contains("youtu.be") || link.ToLower().Contains(".png") || link.ToLower().Contains(".gif") || link.ToLower().Contains(".jpg"))
+                    {
+                        await releaseChannel.SendMessageAsync(link);
+                        message = message.Replace(link, "");
+                    }
+                    foreach (string requiredlink in Setup.RequiredURLs(Context.Guild.Id))
+                    {
+                        if (link.ToLower().Contains(requiredlink))
+                        {
+                            includesDownload = true;
+                            message = message.Replace(link, "");
+                            download = link;
+                        }
+                        else if (Context.Message.Attachments.Count > 0) {
+                            includesDownload = true;
+                            download = Context.Message.Attachments.FirstOrDefault().Url;
+                        }
+                    }
+                }
+                if (!includesDownload && Setup.RequireDownloadsForRelease(Context.Guild.Id)) {
+                    await Context.Channel.SendMessageAsync("The release didn't include a link to an allowed domain!");
+                }
+                else
+                {
+                    var embed = Embeds.PostRelease(message, Context.Message.Author.Username, download);
+                    await releaseChannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                }
+                    
+            }
+            else
+                await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));
         }
 
         //Warn a user and log it
@@ -161,17 +194,6 @@ namespace JackFrostBot
                 Moderation.Unmute((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, mention);
             else
                 await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));
-        }
-
-        //Slow down messages in a channel and log it (WIP)
-        [Command("slowmode"), Summary("Delete excess replies in a channel.")]
-        public async Task SlowMode()
-        {
-            await Context.Message.DeleteAsync();
-            /*if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
-                Moderation.SlowMode((SocketGuildUser)Context.User, (ITextChannel)Context.Channel);
-            else
-               await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));*/
         }
 
         //Lock a channel and log it
@@ -240,7 +262,7 @@ namespace JackFrostBot
                 await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));
         }
 
-        //Remove all of a user's warns
+        //Remove one of a user's warns
         [Command("clear warn"), Summary("Clears a warn that a user received.")]
         public async Task ClearWarn([Summary("The index of the warn to clear.")] int index, [Summary("The user whose warn to clear.")] SocketGuildUser mention = null)
         {
@@ -329,6 +351,108 @@ namespace JackFrostBot
             var role = Context.Guild.Roles.FirstOrDefault(x => x.Name == roleName);
             await Context.Channel.SendMessageAsync(role.Id.ToString());
         }
+
+        //Create a role with a specific color
+        [Command("create color"), Summary("Create a role with a specific color")]
+        public async Task CreateColor([Summary("The hex value of the Color Role.")] string colorValue, [Remainder, Summary("The name of the Color Role.")] string roleName)
+        {
+            try
+            {
+                colorValue = colorValue.Replace("#","");
+                Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
+
+                await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor);
+                await Context.Channel.SendMessageAsync("Role successfully created!");
+            }
+            catch
+            {
+                await Context.Channel.SendMessageAsync("Role couldn't be created. Make sure you entered a valid hexadecimal value!");
+            }
+            
+        }
+
+        //Assign yourself a role with a specific color
+        [Command("give color"), Summary("Assigns yourself a role with a specific color")]
+        public async Task CreateColor([Remainder, Summary("The name of the Color Role.")] string roleName)
+        {
+            try
+            {
+                SocketGuildUser user = (SocketGuildUser)Context.User;
+                await user.AddRoleAsync(Context.Guild.Roles.FirstOrDefault(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase)));
+                await Context.Channel.SendMessageAsync("Role successfully added!");
+                foreach (var role in user.Roles) {
+                    if (role.Name.ToUpper().Contains("COLOR: ") && !role.Name.ToUpper().Contains(roleName.ToUpper()))
+                    {
+                        await user.RemoveRoleAsync(role);
+                    }
+                }
+            }
+            catch
+            {
+                await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact role name!");
+            }
+
+        }
+
+        //List all color roles that you can assign to yourself
+        [Command("show colors"), Summary("Lists all color roles that you can assign to yourself")]
+        public async Task ShowColors()
+        {
+            List<string> colorRoleNames = new List<string>();
+
+            foreach (var role in Context.Guild.Roles)
+            {
+                if (role.Name.Contains("Color: ")) {
+                    colorRoleNames.Add(role.Name);
+                }
+            }
+
+            var embed = Embeds.ShowColors((IGuildChannel)Context.Channel, colorRoleNames, Context.Guild.Id);
+            await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+
+        }
+
+        //Change an existing role's color value
+        [Command("update color"), Summary("Change an existing role's color value.")]
+        public async Task UpdateColor([Summary("The hex value of the Color Role.")] string colorValue, [Remainder, Summary("The name of the Color Role.")] string roleName)
+        {
+            var users = await Context.Guild.GetUsersAsync();
+            var colorRole = Context.Guild.Roles.FirstOrDefault(r => r.Name.ToUpper().Contains($"COLOR: {roleName.ToUpper()}"));
+            bool inUse = false;
+
+            foreach (var user in users)
+            {
+                if (user.RoleIds.Contains(colorRole.Id) && user.Id != Context.User.Id)
+                {
+                    inUse = true;
+                }
+
+            }
+
+            if (!inUse)
+            {
+
+                colorValue = colorValue.Replace("#", "");
+                Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
+
+                try
+                {
+                    await colorRole.ModifyAsync(r => r.Color = roleColor);
+                    await Context.Channel.SendMessageAsync("Role successfully updated!");
+                }
+                catch
+                {
+                    await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact role name!");
+                }
+            }
+            else
+            {
+                await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' is already in use by a different Member, so you can't update it. Try creating a new color role with ``?create color``");
+            }
+
+        }
+
+
     }
 
     // Create a module with the 'sample' prefix

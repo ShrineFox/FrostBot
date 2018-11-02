@@ -115,7 +115,7 @@ namespace JackFrostBot
                         if (matches >= Setup.DuplicateMsgLimit(channel.Guild.Id))
                         {
                             await LogDeletedMessage(message, "Duplicate message");
-                            Moderation.Warn("Jack Frost", (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
+                            Moderation.Warn(Setup.BotName(channel.Guild.Id), (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
                         }
                     }
                     runs++;
@@ -165,7 +165,7 @@ namespace JackFrostBot
                             if (term == bypassTerm)
                             {
                                 deleteReason = $"Message included matched a banned term: {term}\nA clear attempt was made to bypass the word filter.";
-                                Moderation.Warn("Jack Frost", (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop trying to bypass the word filter.");
+                                Moderation.Warn(Setup.BotName(channel.Guild.Id), (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop trying to bypass the word filter.");
                                 filtered = true;
                             }
                         }
