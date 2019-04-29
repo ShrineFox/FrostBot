@@ -46,13 +46,21 @@ namespace JackFrostBot
 :mag: **{Setup.CommandPrefix(guildId)}show warns <@username>** show a numbered list of all warnings a user has received.
 @username is optional, and will show a list of all warnings ever issued if omitted.
 :mag_right: **{Setup.CommandPrefix(guildId)}show msginfo** show the time, author and reason of the last auto-deleted message.
+:recycle: **{Setup.CommandPrefix(guildId)}reset markov** delete the current Markov dictionary and start over.
 
-__**Fun**__
-:microphone2: **{Setup.CommandPrefix(guildId)}say <message>** make {Setup.BotName(guildId)} say something (when used in the bot sandbox channel).
+__**Fun (Bot channel only)**__
+:microphone2: **{Setup.CommandPrefix(guildId)}say <message>** make {Setup.BotName(guildId)} say something.
+:congratulations: **{Setup.CommandPrefix(guildId)}translate <message>** run your message through several languages and back to English.
+:repeat: **{Setup.CommandPrefix(guildId)}markov <message>** return a randomly generated message from the chat history.
+
+__**Customization**__
+:sparkles: **{Setup.CommandPrefix(guildId)}grant <roleName>** opt into a role.
+:leftwards_arrow_with_hook: **{Setup.CommandPrefix(guildId)}remove <roleName>** opt out of a role.
 :crayon: **{Setup.CommandPrefix(guildId)}create color <#hexvalue> <roleName>** create a new role with a specific hexidecimal color.
-:crayon: **{Setup.CommandPrefix(guildId)}update color <#hexvalue> <roleName>** show a list of all color roles you can pick from.
+:crayon: **{Setup.CommandPrefix(guildId)}update color <#hexvalue> <roleName>** change the color value of an existing role.
 :crayon: **{Setup.CommandPrefix(guildId)}give color <roleName>** assign yourself a role with a specific color.
 :crayon: **{Setup.CommandPrefix(guildId)}show colors** show a list of all color roles you can pick from.
+:crayon: **{Setup.CommandPrefix(guildId)}rename color <roleName>** change the name of the color you're currently using.
 
 __**Modding**__
 :pencil: **{Setup.CommandPrefix(guildId)}list** show a list of all available keywords in the bot sandbox channel.
@@ -147,22 +155,6 @@ __**Modding**__
             var builder = new EmbedBuilder()
             .WithDescription($":speaker: **{moderator.Username} unmuted {user.Username}** in #{channel}.")
             .WithColor(new Color(0x37FF68));
-            return builder.Build();
-        }
-
-        static public Embed SlowMode()
-        {
-            var builder = new EmbedBuilder()
-            .WithDescription($":timer: **Slowmode Activated.** Take your time with your replies or your messages will be de-hee-ted, ho!")
-            .WithColor(new Color(0xD0021B));
-            return builder.Build();
-        }
-
-        static public Embed LogSlowMode(SocketGuildUser moderator, ITextChannel channel)
-        {
-            var builder = new EmbedBuilder()
-            .WithDescription($":timer: **{moderator.Username} slowed down** #{channel}.")
-            .WithColor(new Color(0xD0021B));
             return builder.Build();
         }
 
@@ -336,6 +328,15 @@ __**Modding**__
             .WithDescription($"You can assign yourself the following color roles using ``{Setup.CommandPrefix(guildId)}give color roleName``, or add your own using ``{Setup.CommandPrefix(guildId)}create color #hexValue roleName``: \n{String.Join(Environment.NewLine, colorRoleNames.ToArray())}")
             .WithColor(new Color(0xF5DA23));
             return eBuilder.Build();
+        }
+
+        static public Embed LevelUp(IUser user, int level, int maxLevel, int posts, int posts2)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":up: **{user.Username} has reached Level {level}!**")
+            .WithColor(new Color(0x37FF68))
+            .AddField("Next Level", $"**Posts required**: {posts}/{posts2}");
+            return builder.Build();
         }
     }
 }

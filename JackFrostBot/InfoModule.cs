@@ -11,6 +11,13 @@ using System.Xml.Linq;
 using System.IO;
 using System.Drawing;
 using System.Globalization;
+using ImageProcessor.Plugins.Cair;
+using ImageProcessor;
+using System.Net;
+using SoundInTheory.DynamicImage;
+using System.Windows.Media.Imaging;
+using ImageResizer;
+using AtlusRandomizer;
 
 namespace JackFrostBot
 {
@@ -51,49 +58,37 @@ namespace JackFrostBot
         {
             var client = (DiscordSocketClient)Context.Client;
             if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
-            {
                 await client.SetGameAsync(game);
-                using (StreamWriter stream = File.CreateText(@"game.txt"))
-                    stream.Write($"{game}");
-            } 
             else
                 await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));
         }
 
-        [Command("grant serious"), Summary("Grant yourself the Serious Talk role.")]
-        public async Task GrantSrs()
+        [Command("grant"), Summary("Grant yourself the specified opt-in role..")]
+        public async Task GrantRole([Remainder, Summary("The name of the role.")] string roleName)
         {
-            await Context.Message.DeleteAsync();
             var user = (IGuildUser)Context.Message.Author;
-            var srsRole = user.Guild.GetRole(Setup.NsfwRoleId(user.Guild.Id));
-            if (srsRole != null)
-                await user.AddRoleAsync(srsRole);
+            var role = user.Guild.GetRole(Setup.OptInRoleId(user.Guild.Id, roleName));
+            if (role != null)
+            {
+                await user.AddRoleAsync(role);
+                await Context.Channel.SendMessageAsync("Role successfully added!");
+            }
             else
-                await Context.Channel.SendMessageAsync("The specified role has to be saved in the setup.ini first!");
+                await Context.Channel.SendMessageAsync("The specified role isn't available for opt-in!");
         }
 
-        [Command("remove serious"), Summary("Remove your Serious Talk role.")]
-        public async Task RemoveSrs()
+        [Command("remove"), Summary("Remove the specified role from yourself.")]
+        public async Task RemoveRole([Remainder, Summary("The name of the role.")] string roleName)
         {
-            await Context.Message.DeleteAsync();
             var user = (IGuildUser)Context.Message.Author;
-            var srsRole = user.Guild.GetRole(Setup.NsfwRoleId(user.Guild.Id));
-            if (srsRole != null)
-                await user.RemoveRoleAsync(srsRole);
+            var role = user.Guild.GetRole(Setup.OptInRoleId(user.Guild.Id, roleName));
+            if (role != null)
+            {
+                await user.RemoveRoleAsync(role);
+                await Context.Channel.SendMessageAsync("Role successfully removed!");
+            }
             else
-                await Context.Channel.SendMessageAsync("The specified role has to be saved in the setup.ini first!");
-        }
-
-        [Command("grant artist"), Summary("Grant yourself the Artist role.")]
-        public async Task GrantArtist()
-        {
-            await Context.Message.DeleteAsync();
-            var user = (IGuildUser)Context.Message.Author;
-            var artRole = user.Guild.GetRole(Setup.ArtRoleId(user.Guild.Id));
-            if (artRole != null)
-                await user.AddRoleAsync(artRole);
-            else
-                await Context.Channel.SendMessageAsync("The specified role has to be saved in the setup.ini first!");
+                await Context.Channel.SendMessageAsync("The specified role cannot be found!");
         }
     }
 
@@ -329,7 +324,7 @@ namespace JackFrostBot
                 await Context.Channel.SendMessageAsync($"```cs\n{Setup.GetIniCategory(Context.Guild.Id, category)}```");
         }
 
-        //Post the entirety of the .ini file
+        //Update the value of an ini entry
         [Command("set"), Summary("Change the value of a key in the setup.ini file.")]
         public async Task SetIni([Remainder, Summary("The string to add to the ini.")] string value)
         {
@@ -452,7 +447,189 @@ namespace JackFrostBot
 
         }
 
+        //Change an existing color role's name
+        [Command("rename color"), Summary("Change an existing color role's name.")]
+        public async Task RenameColor([Remainder, Summary("The new name of the Color Role.")] string roleName)
+        {
+            var users = await Context.Guild.GetUsersAsync();
+            var user = (SocketGuildUser)Context.User;
+            var colorRole = user.Roles.FirstOrDefault(r => r.Name.ToUpper().Contains($"COLOR: "));
+            bool inUse = false;
 
+            foreach (var guildUser in users)
+            {
+                if (guildUser.RoleIds.Contains(colorRole.Id) && guildUser.Id != Context.User.Id)
+                {
+                    inUse = true;
+                }
+
+            }
+
+            if (!inUse)
+            {
+                try
+                {
+                    await colorRole.ModifyAsync(r => r.Name = $"Color: {roleName}");
+                    await Context.Channel.SendMessageAsync("Color name successfully updated!");
+                }
+                catch
+                {
+                    await Context.Channel.SendMessageAsync($"Role could not be found. Make sure you have a color role first!");
+                }
+            }
+            else
+            {
+                await Context.Channel.SendMessageAsync($"Role 'Color: {colorRole.Name}' is already in use by a different Member, so you can't update it. Try creating a new color role with ``?create color``");
+            }
+
+        }
+
+        //NOT YET WORKING
+        [Command("magik"), Summary("Content Aware Scaling")]
+        public async Task Magik()
+        {
+            string imgPath = $"{Directory.GetCurrentDirectory()}\\{Context.Guild.Id.ToString()}\\image.png";
+            if (Context.Message.Attachments.Count > 0)
+                foreach (var attachment in Context.Message.Attachments)
+                    using (var client = new WebClient())
+                        client.DownloadFile(attachment.Url, imgPath);
+
+            /*System.Drawing.Image imgInfo = System.Drawing.Image.FromFile(imgPath);
+            ImageFactory img = new ImageFactory();
+            Size imgSize = new Size();
+            imgSize.Height = imgInfo.Height;
+            imgSize.Width = imgInfo.Width;
+            img.Load(imgPath);
+            ImageFactoryExtensions.ContentAwareResize(img, imgSize);
+            img.Save(imgPath);
+            await Context.Channel.SendFileAsync(imgPath);*/
+
+            /*Composition composition = new Composition();
+            
+            var layerBuild = SoundInTheory.DynamicImage.Fluent.LayerBuilder.Image.SourceFile(imgPath)
+        .WithFilter(SoundInTheory.DynamicImage.Fluent.FilterBuilder.Resize.ToWidth(500))
+        .WithFilter(new SoundInTheory.DynamicImage.Fluent.ContentAwareResizeFilterBuilder().ToWidth(350)
+            .ConvolutionType(SoundInTheory.DynamicImage.Filters.ContentAwareResizeFilterConvolutionType.V1));
+            composition.Layers.Add(layerBuild.ToLayer());
+            composition.ImageFormat = DynamicImageFormat.Png;
+            var newimg = composition.GenerateImage();
+            imgPath = imgPath.Replace("image", "image_magik");
+            newimg.Save(imgPath);*/
+
+            var config = new ImageResizer.Configuration.Config();
+            new ImageResizer.Plugins.SeamCarving.SeamCarvingPlugin().Install(config);
+
+            var job = new ImageJob(imgPath, imgPath, new Instructions("width=500"));
+            config.Build(job);
+
+            await Context.Channel.SendFileAsync(imgPath);
+        }
+
+        [Command("markov"), Summary("Replies with a randomly generated message.")]
+        public async Task Markov([Remainder, Summary("The rest of your message.")] string msg)
+        {
+            if (!Context.Message.Author.IsBot && Moderation.IsPublicChannel((IGuildChannel)Context.Message.Channel))
+                await Processing.Markov(Context.Message.Content, (SocketGuildChannel)Context.Channel, 100);
+        }
+
+        [Command("reset markov"), Summary("Resets the markov dictionary.")]
+        public async Task ResetMarkov()
+        {
+            if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
+            {
+                File.Delete($"{Directory.GetCurrentDirectory()}\\{Context.Guild.Id.ToString()}\\{Context.Guild.Id.ToString()}.bin");
+                await Context.Channel.SendMessageAsync("Markov dictionary successfully reset!");
+            }
+            else
+                await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));
+        }
+
+        //Add an entry to the ini file
+        [Command("add"), Summary("Remotely add an entry to the setup.ini file.")]
+        public async Task AddIni(string categoryName, [Remainder, Summary("The string to add to the ini.")] string value)
+        {
+            if (Moderation.IsModerator((IGuildUser)Context.Message.Author) && Setup.ModeratorsCanUpdateSetup(Context.Guild.Id) && Context.Message.Content.Contains("="))
+            {
+                string[] valueParts = value.Split('=');
+                if (Setup.AddIniValue(Context.Guild.Id, categoryName, valueParts[0], valueParts[1]))
+                    await Context.Channel.SendMessageAsync("Key successfully updated!");
+                else
+                    await Context.Channel.SendMessageAsync(
+                        "Failed to find the specified category or value. Make sure you're using the right case and separating the new value with an = sign.");
+            }
+        }
+
+        //Remove an entry from the ini file
+        //NOT YET WORKING
+        [Command("remove"), Summary("Remotely remove an entry from the setup.ini file.")]
+        public async Task RemoveIni(string value)
+        {
+            if (Moderation.IsModerator((IGuildUser)Context.Message.Author) && Setup.ModeratorsCanUpdateSetup(Context.Guild.Id) && Context.Message.Content.Contains("="))
+            {
+                if (Setup.RemoveIniValue(Context.Guild.Id, value))
+                    await Context.Channel.SendMessageAsync("Key or Section successfully removed!");
+                else
+                    await Context.Channel.SendMessageAsync(
+                        "Failed to find the specified category or value. Make sure you're using the right case.");
+            }
+        }
+
+        [Command("translate"), Summary("Run the message through multiple languages and back.")]
+        public async Task SetGame([Remainder, Summary("The text to translate.")] string text)
+        {
+            if (Context.Channel.Id == Setup.BotSandBoxChannelId(Context.Guild.Id))
+                await Context.Channel.SendMessageAsync(BadTranslator.Translate(text));
+        }
+
+        [Command("show level"), Summary("Show the user's current level.")]
+        public async Task ShowLevel([Summary("The (optional) user to get info for")] IUser user = null)
+        {
+            var userInfo = user ?? Context.Client.CurrentUser;
+            
+            //Get level reached
+            int posts = Setup.GetPostNumber(Context.Guild.Id, user.Id.ToString());
+            int level = 0;
+            int posts2 = 0;
+            int maxLevel = Setup.Levels(Context.Guild.Id).Count() + 1;
+            for (int i = Setup.Levels(Context.Guild.Id).Count(); i > 0;  i--)
+            {
+                if (Setup.Levels(Context.Guild.Id)[i] <= posts)
+                {
+                    level = i + 1;
+                    if (i + 1 != maxLevel)
+                        posts2 = Setup.Levels(Context.Guild.Id)[i + 1];
+                    return;
+                }
+            }
+            
+            if (Context.Channel.Id == Setup.BotSandBoxChannelId(Context.Guild.Id) && Setup.EnableLevelup(Context.Guild.Id) && Context.Message.Author.IsBot == false)
+            {
+                var embed = Embeds.LevelUp(userInfo, level, maxLevel, posts, posts2);
+                await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            }
+        }
+
+        //Manually check forum for new posts
+        [Command("forumcheck"), Summary("Check if new posts have been added to the forum.")]
+        public async Task ForumCheck()
+        {
+            if (Moderation.IsModerator((IGuildUser)Context.Message.Author) && Context.Message.Author.IsBot == false)
+            {
+                await Webscraper.NewForumPostCheck(Context.Guild);
+            }
+            try { await Context.Channel.SendMessageAsync(""); } catch{ }
+        }
+
+        //Manually check wiki for new changes
+        [Command("wikicheck"), Summary("Check if new changes have been saved on the wiki.")]
+        public async Task WikiCheck()
+        {
+            if (Moderation.IsModerator((IGuildUser)Context.Message.Author) && Context.Message.Author.IsBot == false)
+            {
+                await Webscraper.NewWikiChangeCheck(Context.Guild);
+            }
+            try { await Context.Channel.SendMessageAsync(""); } catch { }
+        }
     }
 
     // Create a module with the 'sample' prefix

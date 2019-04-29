@@ -263,21 +263,6 @@ namespace JackFrostBot
             await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
-        public static async void SlowMode(SocketGuildUser moderator, ITextChannel channel)
-        {
-            //Slow the channel
-            Program.slow = true;
-
-            //Announce the slow
-            var embed = Embeds.SlowMode();
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-            //Log the slow in the bot-logs channel
-            embed = Embeds.LogSlowMode(moderator, channel);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(channel.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-        }
-
         public static async void Lock(SocketGuildUser moderator, ITextChannel channel)
         {
             //Lock the channel
@@ -287,7 +272,7 @@ namespace JackFrostBot
             {
                 try
                 {
-                    await channel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(readMessages: PermValue.Allow, sendMessages: PermValue.Deny, addReactions: PermValue.Deny), RequestOptions.Default);
+                    await channel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(readMessageHistory: PermValue.Allow, sendMessages: PermValue.Deny, addReactions: PermValue.Deny), RequestOptions.Default);
                 }
                 catch
                 {

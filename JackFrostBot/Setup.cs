@@ -45,6 +45,61 @@ namespace JackFrostBot
             return success;
         }
 
+        public static bool AddIniValue(ulong guildId, string categoryName, string keyName, string newKeyValue)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+            bool success = false;
+
+            if (data.Sections.ContainsSection(categoryName))
+            {
+                data[categoryName].AddKey(keyName, newKeyValue);
+                parser.WriteFile($"{guildId}\\setup.ini", data);
+                success = true;
+            }
+            else
+            {
+                data.Sections.AddSection(categoryName);
+                parser.WriteFile($"{guildId}\\setup.ini", data);
+                success = true;
+            }
+
+            return success;
+        }
+
+        public static bool RemoveIniValue(ulong guildId, string categoryOrKeyName)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+            bool success = false;
+
+            if (data.Sections.ContainsSection(categoryOrKeyName))
+            {
+                data.Sections.RemoveSection(categoryOrKeyName);
+                parser.WriteFile($"{guildId}\\setup.ini", data);
+                success = true;
+            }
+            else
+            {
+                foreach (SectionData section in data.Sections)
+                {
+                    foreach (KeyData key in section.Keys)
+                    {
+                        if (key.KeyName == categoryOrKeyName)
+                        {
+                            data[$"{section.SectionName}"].RemoveKey(categoryOrKeyName);
+                            parser.WriteFile($"{guildId}\\setup.ini", data);
+                            success = true;
+                        }
+                    }
+                }
+            }
+
+            return success;
+        }
+
         public static string GetIniCategory(ulong guildId, string categoryName)
         {
             var parser = new FileIniDataParser();
@@ -98,6 +153,21 @@ namespace JackFrostBot
                 roleIds.Add(Convert.ToUInt64(key.Value));
             }
             return roleIds;
+        }
+
+        public static ulong OptInRoleId(ulong guildId, string roleName)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            ulong roleId = 0;
+            foreach (KeyData key in data["OptInRoles"])
+            {
+                if (key.KeyName.ToLower() == roleName.ToLower())
+                    roleId = Convert.ToUInt64(key.Value);
+            }
+            return roleId;
         }
 
         public static List<string> RequiredURLs(ulong guildId)
@@ -257,6 +327,37 @@ namespace JackFrostBot
             return Convert.ToInt32(data["MessageLimits"]["minimumLength"]);
         }
 
+        public static int MarkovFrequency(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+            return Convert.ToInt32(data["MessageLimits"]["markovFrequency"]);
+        }
+
+        public static int[] Levels(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+            List<int> levelRequirements = new List<int>();
+            levelRequirements.Add(0);
+            foreach (KeyData key in data["Levels"])
+            {
+                levelRequirements.Add(Convert.ToInt32(key.Value));
+            }
+            return levelRequirements.ToArray();
+        }
+
+        public static ulong LevelUpRoleId(ulong guildId, int level)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToUInt64(data["LevelUpRoles"][$"{level}"]);
+        }
+
         public static ulong NsfwRoleId(ulong guildId)
         {
             var parser = new FileIniDataParser();
@@ -353,6 +454,48 @@ namespace JackFrostBot
                 roleId = Convert.ToUInt64(key.Value);
             }
             return roleId;
+        }
+
+        public static ulong HelpersRoleId(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            ulong roleId = 0;
+            foreach (KeyData key in data["HelpersRole"])
+            {
+                roleId = Convert.ToUInt64(key.Value);
+            }
+            return roleId;
+        }
+
+        public static ulong ForumPostsChannelId(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            ulong channelId = 0;
+            foreach (KeyData key in data["ForumPostsChannel"])
+            {
+                channelId = Convert.ToUInt64(key.Value);
+            }
+            return channelId;
+        }
+
+        public static ulong WikiChangesChannelId(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            ulong channelId = 0;
+            foreach (KeyData key in data["WikiChangesChannel"])
+            {
+                channelId = Convert.ToUInt64(key.Value);
+            }
+            return channelId;
         }
 
         //Strings
@@ -508,6 +651,33 @@ namespace JackFrostBot
             return Convert.ToBoolean(data["Bools"]["requireDownloadsForRelease"]);
         }
 
+        public static bool EnableMarkov(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToBoolean(data["Bools"]["enableMarkov"]);
+        }
+
+        public static bool EnableLevelup(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToBoolean(data["Bools"]["enableLevelup"]);
+        }
+
+        public static bool EnableHelpersPing(ulong guildId)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\setup.ini");
+
+            return Convert.ToBoolean(data["Bools"]["enableHelpersPing"]);
+        }
+
 
         public static void CreateIni(string fileName)
         {
@@ -522,18 +692,26 @@ ShrineFox = 480449512104656906
 [ModderRoles]
 #IDs of roles that can use the bot's mod showcase feature
 Modders=489102428273377288
+[OptInRoles]
+#IDs of roles that users can grant themselves at any time
+Dataminers = 517388291243376641
+Artists = 517393894795771915
+Serious = 517393951125274634
+Helpers = 535185014636412929
 [PrivateChannels]
 #IDs of channels that most members can't post in. 
 #Permissions will not be altered by the bot when muting/unmuting users in other channels.
-welcome=390626625433239552
-announcements=207352829881483285
-tool-releases=316238229948989450
-mod-showcase=410951708274065409
-github=478986023536295937
-staff=417170700936413224
-bot-logs=424670454230417409
-adachi-project=407950867988348928
-p3fes-femc=419824275898236941
+welcome = 390626625433239552
+announcements = 207352829881483285
+tool-releases = 316238229948989450
+mod-showcase = 410951708274065409
+github = 478986023536295937
+staff = 417170700936413224
+bot-logs = 424670454230417409
+p3fes-femc = 419824275898236941
+serious-talk = 473651223363452950
+datamining = 448202199852646431
+forum-posts = 535189363542196244
 [BotIconImage]
 #URL of an icon to use for the bot's embedded posts
 img=https://i.imgur.com/5I5Vos8.png
@@ -556,6 +734,12 @@ new-arrivals=473652163634003969
 [MediaChannel]
 #ID of a channel where any messages without attachments will be deleted
 memes=474128982262939648
+[ForumPostsChannel]
+#ID of a channel where new forum posts will be added
+forum-posts=535189363542196244
+[WikiChangesChannel]
+#ID of a channel where new wiki updates will be added
+wiki-changes=559319039697223680
 [NsfwChannel]
 #ID of a channel where users must gain the Nsfw Role in order to access it
 serious-talk=473651223363452950
@@ -591,6 +775,9 @@ Artist=441517400081563661
 [LurkerRole]
 #Role that users are given upon joining, will be removed after one post
 Lurkers=480511070717607936
+[HelpersRole]
+#Users with this role can be pinged when a Member is seeking assistance
+Lurkers=535185014636412929
 #
 ## SETTINGS
 #
@@ -601,8 +788,25 @@ kick=3
 ban=4
 [MessageLimits]
 #Messages will be automatically deleted if they fail to meet the following requirements
+#markovFrequency is the percentage of times the bot will randomly respond in the bot sandbox channel
 maximumDuplicates=3
 minimumLength=0
+markovFrequency=100
+[Levels]
+#Users with this number of posts will reach the specified level
+1=1
+2=10
+3=50
+4=100
+5=150
+6=200
+7=300
+8=400
+9=500
+10=600
+[LevelUpRoles]
+#Users will be granted the role of the specified ID upon reaching the specified level
+2=488963472994992128
 [Strings]
 #Verification Password is what users must type in the Verification Channel to get the Member Role (not case sensitive)
 verificationPassword=h
@@ -620,7 +824,51 @@ removeLurkerRoles=true
 enableSayCommand=true
 enableWordFilter=true
 welcomeUsers=true
-requireDownloadsForRelease = false");
+requireDownloadsForRelease = false
+enableMarkov = true
+enableLevelup = false
+enableHelpersPing = false");
+        }
+
+        public static int GetPostNumber(ulong guildId, string keyName)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\levelsystem.ini");
+            int posts = 0;
+            foreach (SectionData section in data.Sections)
+                foreach (KeyData key in section.Keys)
+                {
+                    if (keyName.Trim(' ') == key.KeyName)
+                        posts = Convert.ToInt32(data[$"{section.SectionName}"][$"{key.KeyName}"]);
+                }
+                    
+            return posts;
+        }
+
+        public static void UpdatePostNumber(ulong guildId, string keyName, string newKeyValue)
+        {
+            var parser = new FileIniDataParser();
+            parser.Parser.Configuration.CommentString = "#";
+            IniData data = parser.ReadFile($"{guildId}\\levelsystem.ini");
+            bool userFound = false;
+            foreach (SectionData section in data.Sections)
+            {
+                foreach (KeyData key in section.Keys)
+                {
+                    if (keyName.Trim(' ') == key.KeyName)
+                    {
+                        userFound = true;
+                        data[$"{section.SectionName}"][$"{key.KeyName}"] = newKeyValue;
+                        parser.WriteFile($"{guildId}\\levelsystem.ini", data);
+                    }
+                }
+            }
+            if (!userFound)
+            {
+                data["Posts"].AddKey(keyName, newKeyValue);
+                parser.WriteFile($"{guildId}\\levelsystem.ini", data);
+            }
         }
     }
 }

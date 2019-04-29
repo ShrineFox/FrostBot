@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ClutteredMarkov;
 
 namespace JackFrostBot
 {
@@ -130,9 +131,12 @@ namespace JackFrostBot
             }
         }
 
-        //Check if a message is filtered and if so, delete it
-        public static async Task FilterCheck(SocketMessage message, SocketGuildChannel channel)
+        //Check if a message is filtered 
+        public static bool FilterCheck(SocketMessage message, SocketGuildChannel channel, out string deleteReason)
         {
+            bool filtered = false;
+            deleteReason = "";
+
             if (Setup.EnableWordFilter(channel.Guild.Id))
             {
                 if (!File.Exists($"{channel.Guild.Id.ToString()}\\filter.txt"))
@@ -146,18 +150,12 @@ namespace JackFrostBot
 
                 foreach (string term in File.ReadLines($"{channel.Guild.Id.ToString()}\\filter.txt"))
                 {
-                    bool filtered = false;
-                    string deleteReason = "";
-
                     var msgText = message.Content.ToLower();
-                    if (Regex.IsMatch(msgText, string.Format(@"\b{0}\b|\b{0}d\b|\b{0}s\b|\b{0}ing\b|\b{0}ed\b|\b{0}er\b|\b{0}ers\b", Regex.Escape(term))) && !message.Content.Contains("?warn"))
+                    if (Regex.IsMatch(msgText, string.Format(@"\b{0}\b|\b{0}d\b|\b{0}s\b|\b{0}ing\b|\b{0}ed\b|\b{0}er\b|\b{0}ers\b", Regex.Escape(term))))
                     {
-                        //if so then delete it if it's outside nsfw channel
-                        if (message.Channel.Id != Setup.NsfwRoleId(channel.Guild.Id))
-                        {
-                            deleteReason = $"Message included a banned term: {term}\nDiscussion involving this term is not allowed outside of #serious-talk.";
-                            filtered = true;
-                        }
+                        //if so then delete it
+                        deleteReason = $"Message included a banned term: {term}\nDiscussion involving this term is not prohibited.";
+                        filtered = true;
 
                         //Check if a message is clearly bypassing the filter, if so then warn
                         foreach (string bypassTerm in File.ReadLines($"{channel.Guild.Id.ToString()}\\filterbypasscheck.txt"))
@@ -170,11 +168,71 @@ namespace JackFrostBot
                             }
                         }
                     }
-                    if (filtered == true)
+                }
+            }
+
+            return filtered;
+        }
+
+        //Log replies and respond with a random reply
+        public static async Task Markov(string message, SocketGuildChannel channel, int frequency)
+        {
+            string binFilePath = $"{Directory.GetCurrentDirectory()}\\{channel.Guild.Id.ToString()}\\{channel.Guild.Id.ToString()}";
+            Markov mkv = new Markov();
+            try { mkv.LoadChainState(binFilePath); }
+            catch { }
+            //Sanitize message content
+            string newMessage = message;
+            var links = newMessage.Split("\t\n ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("http://") || s.StartsWith("www.") || s.StartsWith("https://") || s.StartsWith("@"));
+            foreach (var link in links)
+            {
+                newMessage = newMessage.Replace(link, "");
+            }
+            if (newMessage != "")
+                mkv.Feed(newMessage);
+
+            mkv.SaveChainState(binFilePath);
+            if (channel.Id == Setup.BotSandBoxChannelId(channel.Guild.Id))
+            {
+                var socketChannel = (ISocketMessageChannel)channel;
+                Random rnd = new Random();
+                if (rnd.Next(1, 100) <= frequency)
+                    await socketChannel.SendMessageAsync(MarkovGenerator.Create(mkv));
+                else
+                {
+                    await socketChannel.SendMessageAsync("");
+                }
+            }
+        }
+
+        //Check if a user levelled up
+        public static async Task LevelUpCheck(SocketMessage message)
+        {
+            var user = (IGuildUser)message.Author;
+            var guild = user.Guild;
+            string levelTxtPath = $"{guild.Id.ToString()}\\levelsystem.ini";
+            if (!File.Exists(levelTxtPath))
+                using (StreamWriter sw = File.CreateText(levelTxtPath))
+                    sw.WriteLine("[Posts]\n");
+
+            if (Setup.EnableLevelup(guild.Id) && !message.Author.IsBot)
+            {
+                int postNo = Setup.GetPostNumber(guild.Id, user.Id.ToString());
+                for (int i = 0; i < Setup.Levels(guild.Id).Count(); i++)
+                {
+                    if (postNo + 1 == Setup.Levels(guild.Id)[i])
                     {
-                        await LogDeletedMessage(message, deleteReason);
+                        //Announce the levelup
+                        var embed = Embeds.LevelUp((IUser)message.Author, i + 1, Setup.Levels(guild.Id).Last(), Setup.Levels(guild.Id)[i], Setup.Levels(guild.Id)[i + 1]);
+                        await message.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                        //Award the user a new role if one is specified for the level
+                        var newRole = guild.GetRole(Setup.LevelUpRoleId(user.Guild.Id, i + 1));
+                        if (newRole != null)
+                            await user.AddRoleAsync(newRole);
                     }
                 }
+                postNo = postNo + 1;
+                Setup.UpdatePostNumber(guild.Id, message.Author.Id.ToString(), postNo.ToString());
             }
         }
     }
