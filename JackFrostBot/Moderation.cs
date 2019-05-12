@@ -235,7 +235,7 @@ namespace JackFrostBot
             await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
-        public static async void Unmute(SocketGuildUser moderator, ITextChannel channel, SocketGuildUser user)
+        public static async void Unmute(string moderator, ITextChannel channel, SocketGuildUser user)
         {
             foreach (SocketTextChannel chan in user.Guild.TextChannels)
             {
@@ -358,6 +358,13 @@ namespace JackFrostBot
             {
                 await channel.SendMessageAsync(Setup.NoPermissionMessage(channel.Guild.Id));
             }
+        }
+
+        public static async void DeleteMessages(ITextChannel channel, int amount)
+        {
+            var msgs = await channel.GetMessagesAsync(amount).FlattenAsync();
+
+            await channel.DeleteMessagesAsync(msgs);
         }
 
         public static async void PruneLurkers(SocketGuildUser moderator, ITextChannel channel, IReadOnlyCollection<IGuildUser> users)

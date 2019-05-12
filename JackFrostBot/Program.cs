@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using JackFrostBot;
 using System.Timers;
+using System.Windows.Forms;
 
 namespace Bot
 {
@@ -19,8 +20,6 @@ namespace Bot
         private CommandService commands;
         private DiscordSocketClient client;
         private IServiceProvider services;
-        Timer theTimer = new Timer(180000000);
-
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -33,9 +32,6 @@ namespace Bot
             client.Log += Log;
             client.Ready += Ready;
             client.JoinedGuild += BotJoined;
-            theTimer.AutoReset = true;
-            theTimer.Start();
-            theTimer.Elapsed += PollUpdates;
 
             string token = Setup.Token();
 
@@ -67,6 +63,13 @@ namespace Bot
         public async Task Ready()
         {
             var guilds = client.Guilds.ToList();
+
+            //Open Form
+            //await OpenForm(guilds);
+            JackFrostBot.FrostForm form = new JackFrostBot.FrostForm(client);
+            await Task.Run(() => { form.ShowDialog(); });
+
+
             foreach (var guild in guilds)
             {
                 if (!Directory.Exists(guild.Id.ToString()))
@@ -79,6 +82,7 @@ namespace Bot
                         "\nYou can find this file in a new folder at the directory where this bot lives. In order to get channel IDs, enable Discord developer mode. " +
                         "\nYou can get role IDs using ``?get id <role name>``.");
                 }
+                Xml.Setup(client.Guilds.ToList());
             }
         }
 
@@ -177,7 +181,7 @@ namespace Bot
                 if (lurkRole != null)
                 await newUser.AddRoleAsync(lurkRole);
             }
-            
+
             int warnLevel = Moderation.WarnLevel(user);
             var defaultChannel = (SocketTextChannel)user.Guild.GetChannel(Setup.DefaultChannelId(user.Guild.Id));
 
@@ -194,12 +198,12 @@ namespace Bot
 
         private Task Log(LogMessage msg)
         {
-            if (!msg.Message.Contains("A MessageReceived handler is blocking the gateway task."))
+            if (!msg.ToString().Contains("handler is blocking the gateway task"))
             {
                 Console.WriteLine(msg.ToString());
                 File.AppendAllText("Log.txt", msg + Environment.NewLine);
-                return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
     }
 }

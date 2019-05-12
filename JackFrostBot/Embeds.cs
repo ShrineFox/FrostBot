@@ -150,10 +150,10 @@ __**Modding**__
             return builder.Build();
         }
 
-        static public Embed LogUnmute(SocketGuildUser moderator, ITextChannel channel, SocketGuildUser user)
+        static public Embed LogUnmute(string moderator, ITextChannel channel, SocketGuildUser user)
         {
             var builder = new EmbedBuilder()
-            .WithDescription($":speaker: **{moderator.Username} unmuted {user.Username}** in #{channel}.")
+            .WithDescription($":speaker: **{moderator} unmuted {user.Username}** in #{channel}.")
             .WithColor(new Color(0x37FF68));
             return builder.Build();
         }

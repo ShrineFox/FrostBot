@@ -186,7 +186,7 @@ namespace JackFrostBot
         {
             await Context.Message.DeleteAsync();
             if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
-                Moderation.Unmute((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, mention);
+                Moderation.Unmute(Context.User.Username, (ITextChannel)Context.Channel, mention);
             else
                 await Context.Channel.SendMessageAsync(Setup.NoPermissionMessage(Context.Guild.Id));
         }
@@ -629,6 +629,16 @@ namespace JackFrostBot
                 await Webscraper.NewWikiChangeCheck(Context.Guild);
             }
             try { await Context.Channel.SendMessageAsync(""); } catch { }
+        }
+
+        //Remove one of a user's warns
+        [Command("delete"), Summary("Deletes a set number of messages from the channel.")]
+        public async Task DeleteMessages([Summary("The number of messages to delete.")] int amount)
+        {
+            var channel = (ITextChannel)Context.Channel;
+            var msgs = await channel.GetMessagesAsync(amount).FlattenAsync();
+
+            await channel.DeleteMessagesAsync(msgs);
         }
     }
 
