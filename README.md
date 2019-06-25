@@ -1,5 +1,12 @@
 # JackFrostBot
-![Logo](https://i.imgur.com/ohjqKCo.png) A flexible server moderation tool using [Discord.Net](https://github.com/RogueException/Discord.Net).
+![Logo](https://i.imgur.com/ohjqKCo.png)
+A flexible server moderation tool using [Discord.Net](https://github.com/RogueException/Discord.Net).
+# Installation
+1. [Create a bot user](https://discordapp.com/developers/applications/) and invite it to your server.
+2. Extract [the zip from releases](https://github.com/Amicitia/JackFrost-Bot/releases), place your bot user's token in token.txt and run the exe.
+3. Fill out the generated XML files in the Server folder to customize the bot for your server. To get IDs, use Discord's developer mode and right click channels/roles and choose Copy ID.
+4. Give the bot a role with admin priveleges in order to manage permissions and post in any channel.
+5. For more specific setup instructions, including how to use every feature, [check out the Wiki](https://github.com/Amicitia/JackFrost-Bot/wiki).
 # Features
 ## Verification
  • Optionally require members to type a specific message to gain access to the rest of the server.
@@ -22,10 +29,3 @@
 ## Easy Usage
  • All settings are in plaintext XML files that can be edited. They are auto-generated per server when you run the bot.
  • The host of the bot can use a GUI to manage moderation actions remotely.
- 
-# Installation
-1. [Create a bot user](https://discordapp.com/developers/applications/) and invite it to your server.
-2. Extract [the zip from releases](https://github.com/Amicitia/JackFrost-Bot/releases), place your bot user's token in token.txt and run the exe.
-3. Fill out the generated XML files in the Server folder to customize the bot for your server. To get IDs, use Discord's developer mode and right click channels/roles and choose Copy ID.
-4. Give the bot a role with admin priveleges in order to manage permissions and post in any channel.
-5. For more specific setup instructions, including how to use every feature, [check out the Wiki](https://github.com/Amicitia/JackFrost-Bot/wiki).
