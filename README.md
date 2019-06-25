@@ -19,6 +19,9 @@ A flexible server moderation tool using [Discord.Net](https://github.com/RogueEx
 ## Spam Prevention
  • You can filter specific phrases from incoming messages and, depending on severity, automatically issue warns.  
  • Set a cap on post length and duplicate messages. Users can check why their messages were auto-deleted.
+## Role Management
+ • Users can opt in and out of specific roles at will, allowing them to access optional sections of the server.  
+ • Users can create their own roles using a hex value to change their username color on their own.
 ## Moderation Logs
  • Turn a channel into an audit log to see who used certain commands.
 ## Purge Lurkers
