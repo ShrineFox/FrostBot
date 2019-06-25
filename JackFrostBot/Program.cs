@@ -42,7 +42,7 @@ namespace Bot
             await client.StartAsync();
             //Add the string of the game currently being played if game.txt exists
             if (File.Exists("game.txt"))
-                await client.SetGameAsync(File.ReadAllText("game.txt"));
+                await client.SetGameAsync(File.ReadLines("game.txt").First());
             else
                 File.CreateText("game.txt").Close();
 
@@ -64,57 +64,18 @@ namespace Bot
         {
             var guilds = client.Guilds.ToList();
 
+            //Set up bot if first time running
+            Xml.Setup(client.Guilds.ToList(), commands);
+
             //Open Form
-            //await OpenForm(guilds);
             JackFrostBot.FrostForm form = new JackFrostBot.FrostForm(client);
             await Task.Run(() => { form.ShowDialog(); });
-
-
-            foreach (var guild in guilds)
-            {
-                if (!Directory.Exists(guild.Id.ToString()))
-                    Directory.CreateDirectory(guild.Id.ToString());
-                string setupName = $"{guild.Id.ToString()}\\setup.ini";
-                if (!File.Exists(setupName))
-                {
-                    Setup.CreateIni(setupName);
-                    await guild.DefaultChannel.SendMessageAsync("Please fill out **setup.ini** in order to complete server setup and start using commands! " +
-                        "\nYou can find this file in a new folder at the directory where this bot lives. In order to get channel IDs, enable Discord developer mode. " +
-                        "\nYou can get role IDs using ``?get id <role name>``.");
-                }
-                Xml.Setup(client.Guilds.ToList());
-            }
         }
 
         public async Task BotJoined(SocketGuild guild)
         {
-            if (!Directory.Exists(guild.Id.ToString()))
-                Directory.CreateDirectory(guild.Id.ToString());
-            string setupName = $"{guild.Id.ToString()}\\setup.ini";
-            if (!File.Exists(setupName))
-            {
-                Setup.CreateIni(setupName);
-                await guild.DefaultChannel.SendMessageAsync("Please fill out **setup.ini** in order to complete server setup and start using commands! " +
-                    "\nYou can find this file in a new folder at the directory where this bot lives. In order to get channel IDs, enable Discord developer mode. " +
-                    "\nYou can get role IDs using ``?get id <role name>``.");
-            }
-        }
-
-        public async void PollUpdates(object sender, EventArgs e)
-        {
-            var guilds = client.Guilds.ToList();
-            foreach (var guild in guilds)
-            {
-                try
-                {
-                    await Webscraper.NewForumPostCheck(guild);
-                }
-                catch
-                {
-                    Processing.LogConsoleText("Forum check failed to complete", guild.Id);
-                }
-                
-            }
+            //Set up bot if first time running
+            Xml.Setup(client.Guilds.ToList(), commands);
         }
 
         public async Task HandleCommand(SocketMessage messageParam)
@@ -122,77 +83,79 @@ namespace Bot
             var message = messageParam as SocketUserMessage;
             var channel = (SocketGuildChannel)message.Channel;
 
-            if (File.Exists("game.txt"))
-                await client.SetGameAsync(File.ReadAllText("game.txt"));
-            else
-                File.CreateText("game.txt").Close();
-
-
             // Don't process the command if it was a System Message
             if (message == null) return;
 
             //Process message...
-            Processing.LogSentMessage(message);
-            if (Processing.FilterCheck(message, channel, out string deleteReason))
-                await Processing.LogDeletedMessage(message, deleteReason);
-            else
+            await Processing.LogSentMessage(message);
+            await Processing.DuplicateMsgCheck(message, channel);
+            await Processing.MsgLengthCheck(message, channel);
+            await Processing.VerificationCheck(message);
+            await Processing.MediaOnlyCheck(message);
+            //await Processing.FilterCheck(message, channel);
+            
+            //Remove lurker role if member has one
+            if (JackFrostBot.UserSettings.Roles.LurkerRoleAutoRemove(channel.Guild.Id))
             {
-                await Processing.NewArrivalsCheck(message);
-                await Processing.MemesCheck(message);
-                await Processing.DuplicateMsgCheck(message, channel);
-                await Processing.LevelUpCheck(message);
-                if (Setup.EnableMarkov(channel.Guild.Id) && !message.Author.IsBot)
-                    await Processing.Markov(message.Content, channel, Setup.MarkovFrequency(channel.Guild.Id));
-                //Remove lurker role if member has one
-                if (Setup.AssignLurkerRoles(channel.Guild.Id) && Setup.RemoveLurkerRoles(channel.Guild.Id))
+                try
                 {
                     var user = (IGuildUser)message.Author;
-                    var lurkRole = user.Guild.GetRole(Setup.LurkerRoleId(user.Guild.Id));
+                    var youlong = JackFrostBot.UserSettings.Roles.LurkerRoleID(user.Guild.Id);
+                    var lurkRole = user.Guild.GetRole(youlong);
                     if (lurkRole != null)
                         await user.RemoveRoleAsync(lurkRole);
                 }
+                catch { }
+            }
 
-                // Create a number to track where the prefix ends and the command begins
-                int argPos = 0;
-                // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-                if (!(message.HasCharPrefix(Setup.CommandPrefix(channel.Guild.Id), ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos))) return;
-                // Create a Command Context
-                var context = new CommandContext(client, message);
-                // Execute the command. (result does not indicate a return value, 
-                // rather an object stating if the command executed successfully)
-                var result = await commands.ExecuteAsync(context, argPos, services);
-                if (!result.IsSuccess)
+            // Create a number to track where the prefix ends and the command begins
+            int argPos = 0;
+            // Determine if the message is a command, based on if it starts with '!' or a mention prefix
+            if (!(message.HasCharPrefix(JackFrostBot.UserSettings.BotOptions.CommandPrefix(channel.Guild.Id), ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos)))
+            {
+                if (JackFrostBot.UserSettings.BotOptions.AutoMarkov(channel.Guild.Id) && !message.Author.IsBot)
+                    await Processing.Markov(message.Content, channel, JackFrostBot.UserSettings.BotOptions.AutoMarkovFrequency(channel.Guild.Id));
+                else
+                    return;
+            }
+
+            // Create a Command Context
+            var context = new CommandContext(client, message);
+            // Execute the command. (result does not indicate a return value, 
+            // rather an object stating if the command executed successfully)
+            var result = await commands.ExecuteAsync(context, argPos, services);
+            if (!result.IsSuccess)
+            {
+                if (result.Error != CommandError.UnknownCommand)
                 {
-                    if (result.Error != CommandError.UnknownCommand)
-                    {
-                        await context.Channel.SendMessageAsync(result.ErrorReason);
-                    }
+                    await context.Channel.SendMessageAsync(result.ErrorReason);
                 }
             }
+
         }
 
         public async Task UserJoin(SocketGuildUser user)
         {
-            if (Setup.AssignLurkerRoles(user.Guild.Id))
+            if (Convert.ToBoolean(JackFrostBot.UserSettings.Roles.LurkerRoleEnabled(user.Guild.Id)))
             {
                 //Give the new user the Lurker role if enabled
-                var lurkRole = (IRole)user.Guild.GetRole(Setup.LurkerRoleId(user.Guild.Id));
+                var lurkRole = (IRole)user.Guild.GetRole(JackFrostBot.UserSettings.Roles.LurkerRoleID(user.Guild.Id));
                 var newUser = (IGuildUser)user;
                 if (lurkRole != null)
                 await newUser.AddRoleAsync(lurkRole);
             }
 
             int warnLevel = Moderation.WarnLevel(user);
-            var defaultChannel = (SocketTextChannel)user.Guild.GetChannel(Setup.DefaultChannelId(user.Guild.Id));
+            var defaultChannel = (SocketTextChannel)user.Guild.GetChannel(JackFrostBot.UserSettings.Channels.WelcomeChannelId(user.Guild.Id));
 
-            if (warnLevel >= Setup.MuteLevel(user.Guild.Id))
+            if (warnLevel >= JackFrostBot.UserSettings.BotOptions.MuteLevel(user.Guild.Id))
             {
                 await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
                 Moderation.Mute(client.CurrentUser.Username, defaultChannel, user);
             }
-            else if (Setup.WelcomeUsers(user.Guild.Id))
+            else if (JackFrostBot.UserSettings.Channels.WelcomeOnJoin(user.Guild.Id))
             {
-                await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** Be sure to read <#{Setup.WelcomeChannelId(user.Guild.Id)}> and enjoy your stay!");
+                await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {JackFrostBot.UserSettings.BotOptions.GetString("WelcomeMessage", user.Guild.Id)}");
             }
         }
 

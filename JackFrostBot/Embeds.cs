@@ -15,83 +15,70 @@ namespace JackFrostBot
 {
     class Embeds
     {
-        static public Embed List(ulong guildId)
+        static public Embed ColorMsg(string msg, uint color)
         {
-            var parser = new FileIniDataParser();
-            parser.Parser.Configuration.CommentString = "#";
-            parser.Parser.Configuration.CaseInsensitive = true;
-            IniData data = parser.ReadFile($"{guildId}\\info.ini");
-
-            string keywords = "";
-
-            foreach (var section in data.Sections)
-            {
-                keywords = $"{keywords}\n{section.SectionName}";
-            }
-
             var builder = new EmbedBuilder()
-                .WithDescription($"Use ``{Setup.CommandPrefix(guildId)}about <term>`` for info about the following. ``{Setup.CommandPrefix(guildId)}help`` for more info.")
-                .WithColor(new Color(0x4A90E2))
-                .WithThumbnailUrl(Setup.BotIconImage(guildId))
-                .AddField("Keywords", keywords);
-            var embed = builder.Build();
-
-            return embed;
+            .WithDescription(msg)
+            .WithColor(new Color(color));
+            return builder.Build();
         }
 
-        static public Embed BotInfo(ulong guildId)
+        static public Embed ColorMsg(string msg, uint color, ulong guildId)
         {
             var builder = new EmbedBuilder()
-            .WithDescription($@"__**Moderation**__
-:mag: **{Setup.CommandPrefix(guildId)}show warns <@username>** show a numbered list of all warnings a user has received.
-@username is optional, and will show a list of all warnings ever issued if omitted.
-:mag_right: **{Setup.CommandPrefix(guildId)}show msginfo** show the time, author and reason of the last auto-deleted message.
-:recycle: **{Setup.CommandPrefix(guildId)}reset markov** delete the current Markov dictionary and start over.
+            .WithDescription(msg)
+            .WithColor(new Color(color))
+            .WithThumbnailUrl(UserSettings.BotOptions.GetString("BotIconURL", guildId));
+            return builder.Build();
+        }
 
-__**Fun (Bot channel only)**__
-:microphone2: **{Setup.CommandPrefix(guildId)}say <message>** make {Setup.BotName(guildId)} say something.
-:congratulations: **{Setup.CommandPrefix(guildId)}translate <message>** run your message through several languages and back to English.
-:repeat: **{Setup.CommandPrefix(guildId)}markov <message>** return a randomly generated message from the chat history.
+        static public Embed ColorMsg(string msg, uint color, ulong guildId, Tuple<string, string> field)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription(msg)
+            .WithColor(new Color(color))
+            .WithThumbnailUrl(UserSettings.BotOptions.GetString("BotIconURL", guildId))
+            .AddField(field.Item1, field.Item2);
+            return builder.Build();
+        }
 
-__**Customization**__
-:sparkles: **{Setup.CommandPrefix(guildId)}grant <roleName>** opt into a role.
-:leftwards_arrow_with_hook: **{Setup.CommandPrefix(guildId)}remove <roleName>** opt out of a role.
-:crayon: **{Setup.CommandPrefix(guildId)}create color <#hexvalue> <roleName>** create a new role with a specific hexidecimal color.
-:crayon: **{Setup.CommandPrefix(guildId)}update color <#hexvalue> <roleName>** change the color value of an existing role.
-:crayon: **{Setup.CommandPrefix(guildId)}give color <roleName>** assign yourself a role with a specific color.
-:crayon: **{Setup.CommandPrefix(guildId)}show colors** show a list of all color roles you can pick from.
-:crayon: **{Setup.CommandPrefix(guildId)}rename color <roleName>** change the name of the color you're currently using.
+        static public Embed ColorMsg(string msg, uint color, ulong guildId, Tuple<string, string> field, Tuple<string, string> field2)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription(msg)
+            .WithColor(new Color(color))
+            .WithThumbnailUrl(UserSettings.BotOptions.GetString("BotIconURL", guildId))
+            .AddField(field.Item1, field.Item2)
+            .AddField(field2.Item1, field2.Item2);
+            return builder.Build();
+        }
 
-__**Modding**__
-:pencil: **{Setup.CommandPrefix(guildId)}list** show a list of all available keywords in the bot sandbox channel.
-:question: **{Setup.CommandPrefix(guildId)}about <keyword>** gives all available resources on a keyword along with a description.
-:warning: **{Setup.CommandPrefix(guildId)}release <url> <description>** announces a mod release if you have the Modders role. Images and YouTube links are automatically embedded.
-                            
-** Note:** While the bot anonymously issues these commands, a local log is kept of who uses them. Please use responsibly!")
-            .WithColor(new Color(0x4A90E2))
-            .WithThumbnailUrl(Setup.BotIconImage(guildId));
-            var embed = builder.Build();
+        static public Embed Keywords(ulong guildId)
+        {
+            string description = $"Use ``{UserSettings.BotOptions.CommandPrefix(guildId)}about <term>`` " +
+                $"for info about the following. ``{UserSettings.BotOptions.CommandPrefix(guildId)}help`` for more info.";
 
-            return embed;
+            var tuple = new Tuple<string, string>("Keywords", String.Join("\n", UserSettings.Info.Keywords(guildId).ToArray()));
+
+            return ColorMsg(description, 0x4A90E2, guildId, tuple);
+        }
+
+        static public Embed Help(ulong guildId, bool isModerator)
+        {
+            string commands = String.Join("\n", UserSettings.Commands.List(guildId, isModerator).ToArray());
+            if (commands.Length > 2048)
+                commands = commands.Remove(2048);
+
+            return ColorMsg(commands, 0x4A90E2, guildId);
         }
 
         static public Embed FormatInfo(string format, ulong guildId)
         {
-            var parser = new FileIniDataParser();
-            parser.Parser.Configuration.CommentString = "#";
-            parser.Parser.Configuration.CaseInsensitive = true;
-            IniData data = parser.ReadFile($"{guildId}\\info.ini");
+            string about = UserSettings.Info.About(guildId, format);
+            string links = UserSettings.Info.Links(guildId, format);
+            var tuple = new Tuple<string, string>("Links", links);
 
-            var builder = new EmbedBuilder()
-                .WithTitle(format)
-                .WithDescription(data[format]["Description"])
-                .WithColor(new Color(0x4A90E2))
-                .WithThumbnailUrl(Setup.BotIconImage(guildId))
-                .AddField("Downloads", data[format]["Downloads"].ToString().Replace(@"\n", Environment.NewLine))
-                .AddField("Related Wiki Pages", data[format]["Wiki"].Replace(@"\n", Environment.NewLine))
-                .AddField("Guides & Resources", data[format]["Resources"].Replace(@"\n", Environment.NewLine));
-            var embed = builder.Build();
-            return embed;
+            return ColorMsg(about, 0x4A90E2, guildId, tuple);
         }
 
         static public Embed Warn(SocketGuildUser user, string reason)
@@ -129,7 +116,7 @@ __**Modding**__
         static public Embed Mute(SocketGuildUser user)
         {
             var builder = new EmbedBuilder()
-            .WithDescription($":mute: **Muted {user.Username}**. {Setup.MuteMsg(user.Guild.Id)}")
+            .WithDescription($":mute: **Muted {user.Username}**. {UserSettings.BotOptions.GetString("MuteMessage", user.Guild.Id)}")
             .WithColor(new Color(0xD0021B));
             return builder.Build();
         }
@@ -145,7 +132,7 @@ __**Modding**__
         static public Embed Unmute(SocketGuildUser user)
         {
             var builder = new EmbedBuilder()
-            .WithDescription($":speaker: **Unmuted {user.Username}**. {Setup.UnmuteMsg(user.Guild.Id)}")
+            .WithDescription($":speaker: **Unmuted {user.Username}**. {UserSettings.BotOptions.GetString("UnmuteMessage", user.Guild.Id)}")
             .WithColor(new Color(0x37FF68));
             return builder.Build();
         }
@@ -161,7 +148,7 @@ __**Modding**__
         static public Embed Lock(ITextChannel channel)
         {
             var builder = new EmbedBuilder()
-            .WithDescription($":lock: **Channel Locked.** {Setup.LockMsg(channel.Guild.Id)}")
+            .WithDescription($":lock: **Channel Locked.** {UserSettings.BotOptions.GetString("LockMessage", channel.Guild.Id)}")
             .WithColor(new Color(0xD0021B));
             return builder.Build();
         }
@@ -177,7 +164,7 @@ __**Modding**__
         static public Embed Unlock(ITextChannel channel)
         {
             var builder = new EmbedBuilder()
-            .WithDescription($":unlock: **Channel Unlocked.** {Setup.UnlockMsg(channel.Guild.Id)}")
+            .WithDescription($":unlock: **Channel Unlocked.** {UserSettings.BotOptions.GetString("UnlockMessage", channel.Guild.Id)}")
             .WithColor(new Color(0x37FF68));
             return builder.Build();
         }
@@ -264,49 +251,16 @@ __**Modding**__
 
         public static Embed ShowWarns(IGuildChannel channel, SocketGuildUser user = null)
         {
-            string warnsTxtPath = $"{channel.Guild.Id.ToString()}\\warns.txt";
-            List<string> warnsToShow = new List<string>();
-
-            foreach (string line in File.ReadLines(warnsTxtPath))
-            {
-                if (user == null)
-                {
-                    warnsToShow.Add(line);
-                }
-                else if (Convert.ToUInt64(line.Split(' ')[0]) == user.Id)
-                {
-                    warnsToShow.Add(line);
-                }
-            }
-
-            StringBuilder sBuilder = new StringBuilder();
-            for (int i = 0; i < warnsToShow.Count; i++ )
-            {
-                sBuilder.AppendLine($"#{i + 1}: {warnsToShow[i]}");
-            }
-            int muteLevel = Setup.MuteLevel(channel.Guild.Id);
-            int kickLevel = Setup.KickLevel(channel.Guild.Id);
-            int banLevel = Setup.BanLevel(channel.Guild.Id);
-            if (user != null && warnsToShow.Count > 1)
-            {
-                sBuilder.AppendLine("\nWith this number of warns, the user should have been ");
-                if (warnsToShow.Count >= banLevel)
-                    sBuilder.Append("**Banned**.");
-                else if (warnsToShow.Count >= kickLevel)
-                    sBuilder.Append("**Kicked**.");
-                else if (warnsToShow.Count >= muteLevel)
-                    sBuilder.Append("**Muted**.");
-            }
-
+            List<string> warns = UserSettings.Warns.List(channel.Guild.Id);
             var eBuilder = new EmbedBuilder()
-            .WithDescription($"The following warns have been issued: \n{sBuilder.ToString()}")
+            .WithDescription($"The following warns have been issued: \n\n{String.Join($"\n", warns.ToArray())}")
             .WithColor(new Color(0xD0021B));
             return eBuilder.Build();
         }
 
         public static Embed ShowMsgInfo(ulong guildId)
         {
-            string msgInfo = File.ReadAllText($"{guildId.ToString()}\\LastDeletedMsg.txt");
+            string msgInfo = File.ReadAllText($"Servers\\{guildId.ToString()}\\LastDeletedMsg.txt");
 
             var eBuilder = new EmbedBuilder()
             .WithDescription($"Here's what I know about the last message I automatically deleted: \n\n{msgInfo}")
@@ -314,29 +268,37 @@ __**Modding**__
             return eBuilder.Build();
         }
 
-        public static Embed PostRelease(string message, string username, string download)
-        {
-            var eBuilder = new EmbedBuilder()
-            .WithDescription($"**{username}** released a mod:\n\n{message}\n**Download:** {download}")
-            .WithColor(new Color(0xF5DA23));
-            return eBuilder.Build();
-        }
-
         public static Embed ShowColors(IGuildChannel channel, List<string> colorRoleNames, ulong guildId)
         {
             var eBuilder = new EmbedBuilder()
-            .WithDescription($"You can assign yourself the following color roles using ``{Setup.CommandPrefix(guildId)}give color roleName``, or add your own using ``{Setup.CommandPrefix(guildId)}create color #hexValue roleName``: \n{String.Join(Environment.NewLine, colorRoleNames.ToArray())}")
+            .WithDescription($"You can assign yourself the following color roles using " +
+            $"``{UserSettings.BotOptions.CommandPrefix(guildId)}give color roleName``, " +
+            $"or add your own using ``{UserSettings.BotOptions.CommandPrefix(guildId)}create color #hexValue roleName``: " +
+            $"\n{String.Join(Environment.NewLine, colorRoleNames.ToArray())}")
             .WithColor(new Color(0xF5DA23));
             return eBuilder.Build();
         }
 
-        static public Embed LevelUp(IUser user, int level, int maxLevel, int posts, int posts2)
+        public static Embed Pin(IGuildChannel channel, IMessage msg)
         {
-            var builder = new EmbedBuilder()
-            .WithDescription($":up: **{user.Username} has reached Level {level}!**")
-            .WithColor(new Color(0x37FF68))
-            .AddField("Next Level", $"**Posts required**: {posts}/{posts2}");
-            return builder.Build();
+            var eBuilder = new EmbedBuilder()
+            .WithDescription(msg.Content)
+            .WithTimestamp(msg.Timestamp)
+            .WithAuthor(msg.Author)
+            .WithColor(new Color(0xF5DA23));
+
+            if (msg.Attachments.Count > 0)
+                eBuilder.WithImageUrl(msg.Attachments.FirstOrDefault().Url);
+            else
+            {
+                var links = msg.Content.Split("\t\n ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Where(s => (s.StartsWith("http://") || s.StartsWith("www.") || s.StartsWith("https://") || s.StartsWith("@")) && (s.EndsWith(".png") || s.EndsWith(".jpg") || s.EndsWith(".jpeg") || s.EndsWith(".gif")));
+                if (links.Count() > 0)
+                {
+                    eBuilder.WithImageUrl(links.FirstOrDefault());
+                }
+            }
+
+            return eBuilder.Build();
         }
     }
 }

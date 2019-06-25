@@ -16,7 +16,6 @@ namespace JackFrostBot
 {
     public partial class FrostForm : Form
     {
-
         public static List<SocketGuild> guilds;
         public static DiscordSocketClient client;
         public static int selectedServer;
@@ -64,9 +63,9 @@ namespace JackFrostBot
             comboBox_ActivityType.SelectedIndex = (int)client.Activity.Type;
 
             //Get warns
-            string warnsTxtPath = $"{guild.Id.ToString()}\\warns.txt";
-            listBox_Warns.DataSource = new List<string>();
-            listBox_Warns.DataSource = File.ReadLines(warnsTxtPath).ToList();
+            listBox_Warns.DataSource = null;
+            listBox_Warns.Items.Clear();
+            listBox_Warns.DataSource = UserSettings.Warns.List(guild.Id);
 
             //Try to restore selected positions
             comboBox_Server.SelectedIndex = selectedServer;
@@ -103,9 +102,7 @@ namespace JackFrostBot
             }
 
             //Get warns
-            string warnsTxtPath = $"{guild.Id.ToString()}\\warns.txt";
-            listBox_Warns.DataSource = new List<string>();
-            listBox_Warns.DataSource = File.ReadLines(warnsTxtPath).ToList();
+            listBox_Warns.DataSource = UserSettings.Warns.List(guild.Id);
         }
 
         private void RichTextBox1_Enter(object sender, EventArgs e)
@@ -277,25 +274,19 @@ namespace JackFrostBot
             {
 
             }
-            BeginInvoke(new MethodInvoker(RefreshForm));
+            RefreshForm();
         }
 
         private void Btn_ClearSelectedWarns_Click(object sender, EventArgs e)
         {
             var guild = guilds[selectedServer];
             var channel = (ITextChannel)guild.TextChannels.ToList()[selectedChannel];
-            string warnsTxtPath = $"{guild.Id.ToString()}\\warns.txt";
 
             foreach (var item in listBox_Warns.SelectedItems)
             {
-                foreach (var match in File.ReadLines(warnsTxtPath)
-                          .Select((text, index) => new { text, lineNumber = index + 1 })
-                          .Where(x => x.text.Contains(item.ToString())))
-                {
-                    Moderation.ClearWarn(guild.CurrentUser, channel, match.lineNumber, null);
-                }
+                Moderation.ClearWarn(guild.CurrentUser, channel, listBox_Warns.Items.IndexOf(item), null);
             }
-            BeginInvoke(new MethodInvoker(RefreshForm));
+            listBox_Warns.Update();
         }
 
         private void Btn_ClearMembersWarns_Click(object sender, EventArgs e)
@@ -334,6 +325,11 @@ namespace JackFrostBot
         private void ChooseFile()
         {
 
+        }
+
+        private void ComboBox_ActivityType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            client.SetActivityAsync(new Game (client.Activity.Name, (ActivityType)comboBox_ActivityType.SelectedIndex));
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Bot;
 using JackFrostBot;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace JackFrostBot
 {
@@ -17,189 +18,97 @@ namespace JackFrostBot
     {
         public static bool IsModerator(IGuildUser user)
         {
-            bool moderator = false;
-            List<ulong> modRoleIds = Setup.ModeratorRoleIds(user.Guild.Id);
-            foreach (ulong roleID in user.RoleIds)
-            {
-                foreach (ulong modRoleId in modRoleIds)
-                {
-                    if (roleID == modRoleId)
-                        moderator = true;
-                }
-            }
-            return moderator;
+            if (UserSettings.Roles.ModeratorPermissions("", user))
+                return true;
+            return false;
         }
 
-        public static bool IsModder(IGuildUser user)
+        public static bool IsPublicChannel(SocketGuildChannel channel)
         {
-            bool modder = false;
-            List<ulong> modRoleIds = Setup.ModderRoleIds(user.Guild.Id);
-            foreach (ulong roleID in user.RoleIds)
-            {
-                foreach (ulong modRoleId in modRoleIds)
-                {
-                    if (roleID == modRoleId)
-                        modder = true;
-                }
-            }
-            return modder;
-        }
+            if (Setup.PrivateChannelIds(channel.Guild).Any(c => c.Equals(channel.Id)))
+                    return false;
 
-        public static bool IsPublicChannel(IGuildChannel channel)
-        {
-            bool isPublic = true;
-            List<ulong> privateChannelIds = Setup.PrivateChannelIds(channel.Guild.Id);
-            foreach (ulong channelId in privateChannelIds)
-            {
-                if (channelId == channel.Id)
-                    isPublic = false;
-            }
-            return isPublic;
+            return true;
         }
 
         public static int WarnLevel(SocketGuildUser user)
         {
             //Measure # of warns the user now has
             int WarnLevel = 0;
-            foreach (string line in File.ReadLines($"{user.Guild.Id.ToString()}\\warns.txt"))
-            {
-                if (Convert.ToUInt64(line.Split(' ')[0]) == user.Id)
-                {
+            foreach(Tuple<string, string> tuple in UserSettings.Warns.Get(user.Guild.Id))
+                if (tuple.Item1 == user.Id.ToString())
                     WarnLevel++;
-                }
-            }
-
             return WarnLevel;
         }
 
         public static async void Warn(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
         {
+            reason = $"({user.Username}#{user.Discriminator}) {reason}";
             //Warn User
             var embed = Embeds.Warn(user, reason);
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
             //Log the warn in bot-logs
             embed = Embeds.LogWarn(moderator, channel, user, reason);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(user.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(user.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
-            //Write the userid and reason for warn in warns.txt
-            using (StreamWriter stream = File.AppendText($"{channel.Guild.Id.ToString()}\\warns.txt"))
-            {
-                stream.WriteLine($"{user.Id} ({user.Username}) {reason}");
-            }
+            //Write the userid and reason in warns.xml
+            UserSettings.Warns.Add(user.Guild.Id, user.Id, reason);
+
             //Measure # of warns the user now has
-            int warns = 0;
-            foreach (string line in File.ReadLines($"{channel.Guild.Id.ToString()}\\warns.txt"))
-            {
-                if (Convert.ToUInt64(line.Split(' ')[0]) == user.Id)
-                {
-                    warns++;
-                }
-            }
+            int warns = WarnLevel(user);
 
             //Mute, kick or ban a user if they've accumulated too many warns
-            int muteLevel = Setup.MuteLevel(user.Guild.Id);
-            int kickLevel = Setup.KickLevel(user.Guild.Id);
-            int banLevel = Setup.BanLevel(user.Guild.Id);
+            int muteLevel = UserSettings.BotOptions.MuteLevel(user.Guild.Id);
+            int kickLevel = UserSettings.BotOptions.KickLevel(user.Guild.Id);
+            int banLevel = UserSettings.BotOptions.BanLevel(user.Guild.Id);
 
             if (warns > 0)
             {
                 await channel.SendMessageAsync($"{user.Username} has been warned {warns} times.");
                 if (warns >= banLevel ) 
-                    Ban(Setup.BotName(user.Guild.Id), channel, user,
+                    Ban(user.Guild.CurrentUser.Username, channel, user,
                                 "User was automatically banned for accumulating too many warnings.");
                 else if (warns >= kickLevel)
-                    Kick(Setup.BotName(user.Guild.Id), channel, user,
+                    Kick(user.Guild.CurrentUser.Username, channel, user,
                                 "User was automatically kicked for accumulating too many warnings.");
                 else if (warns >= muteLevel)
-                    Mute(Setup.BotName(user.Guild.Id), channel, user);
+                    Mute(user.Guild.CurrentUser.Username, channel, user);
             }
         }
 
         public static async void ClearWarns(SocketGuildUser moderator, ITextChannel channel, SocketGuildUser user)
         {
-            string warnsTxtPath = $"{channel.Guild.Id.ToString()}\\warns.txt";
             //Announce clearing of warns in both channel and bot-logs
             var embed = Embeds.ClearWarns(moderator, channel, user);
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(user.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(user.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
-            //List all lines that don't match the user ID and overwrite warns.txt
-            List<string> warnsToKeep = new List<string>();
-            foreach (string line in File.ReadLines(warnsTxtPath))
-            {
-                if (Convert.ToUInt64(line.Split(' ')[0]) != user.Id)
-                {
-                    warnsToKeep.Add(line);
-                }
-            }
-            File.Delete(warnsTxtPath);
-            File.WriteAllLines(warnsTxtPath, warnsToKeep);
+            //Clear warns from this user
+            UserSettings.Warns.Clear(channel.Guild.Id, user.Id);
         }
 
         public static async void ClearWarn(SocketGuildUser moderator, ITextChannel channel, int index, SocketGuildUser user)
         {
-            string warnsTxtPath = $"{channel.Guild.Id.ToString()}\\warns.txt";
+            //Get warn userId and description
+            Tuple<string, string> tuple = UserSettings.Warns.Get(channel.Guild.Id, index);
+            string removedWarn = tuple.Item1 + " " + tuple.Item2;
 
-            //List all lines that don't match the warm index and overwrite warns.txt
-            List<string> warnsToKeep = new List<string>();
-            string removedWarn = null;
-
-            if (user == null)
-            {
-                foreach (string line in File.ReadLines(warnsTxtPath))
-                {
-                    warnsToKeep.Add(line);
-                }
-
-                for (int i = 0; i < warnsToKeep.Count; i++)
-                {
-                    if (index - 1 == i)
-                    {
-                        removedWarn = warnsToKeep[i];
-                        warnsToKeep.RemoveAt(i);
-                    }
-                }
-            }
-            else
-            {
-                int matches = 0;
-                foreach (string line in File.ReadLines(warnsTxtPath))
-                {
-                    if (Convert.ToUInt64(line.Split(' ')[0]) != user.Id)
-                    {
-                        warnsToKeep.Add(line);
-                    }
-                    else
-                    {
-                        matches++;
-                        if (matches == index)
-                        {
-                            removedWarn = line;
-                        }
-                        else
-                        {
-                            warnsToKeep.Add(line);
-                        }
-                    }
-                }
-            }
             //Announce clearing of warns in both channel and bot-logs
-            if (removedWarn != null)
-            {
-                var embed = Embeds.ClearWarn(moderator, removedWarn);
-                await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(moderator.Guild.Id));
+            var embed = Embeds.ClearWarn(moderator, removedWarn);
+            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(moderator.Guild.Id));
+
+            if (botlog != null)
                 await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                File.Delete(warnsTxtPath);
-                File.WriteAllLines(warnsTxtPath, warnsToKeep);
-            }
-            else
-            {
-                await channel.SendMessageAsync("Failed to remove warn. Couldn't find it. Sorry, hee-ho!");
-            }
+
+            //Write new warns list to file
+            UserSettings.Warns.Remove(channel.Guild.Id, index);
+            
         }
 
         public static async void Mute(string moderator, ITextChannel channel, SocketGuildUser user)
@@ -231,8 +140,9 @@ namespace JackFrostBot
 
             //Log the mute in the bot-logs channel
             embed = Embeds.LogMute(moderator, channel, user);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(user.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(user.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         public static async void Unmute(string moderator, ITextChannel channel, SocketGuildUser user)
@@ -259,8 +169,9 @@ namespace JackFrostBot
 
             //Log the unmute in the bot-logs channel
             embed = Embeds.LogUnmute(moderator, channel, user);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(user.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(user.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         public static async void Lock(SocketGuildUser moderator, ITextChannel channel)
@@ -268,7 +179,7 @@ namespace JackFrostBot
             //Lock the channel
             var guild = channel.Guild;
             //Don't mess with channel permissions if nonmembers can't speak there anyway
-            if (IsPublicChannel(channel))
+            if (IsPublicChannel((SocketGuildChannel)channel))
             {
                 try
                 {
@@ -286,9 +197,10 @@ namespace JackFrostBot
 
             //Log the lock in the bot-logs channel
             embed = Embeds.LogLock(moderator, channel);
-            var channelId = Setup.BogLotChannelId(channel.Guild.Id);
+            var channelId = UserSettings.Channels.BotLogsId(channel.Guild.Id);
             var botlog = await channel.Guild.GetTextChannelAsync(channelId);
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         public static async void Unlock(SocketGuildUser moderator, ITextChannel channel)
@@ -296,7 +208,7 @@ namespace JackFrostBot
             //Unlock the channel
             var guild = channel.Guild;
             //Don't mess with channel permissions if nonmembers can't speak there anyway
-            if (IsPublicChannel(channel))
+            if (IsPublicChannel((SocketGuildChannel)channel))
             {
                 try
                 {
@@ -314,8 +226,9 @@ namespace JackFrostBot
 
             //Log the lock in the bot-logs channel
             embed = Embeds.LogUnlock(moderator, channel);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(channel.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(channel.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         public static async void Kick(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
@@ -330,12 +243,13 @@ namespace JackFrostBot
 
                 //Log kick in bot-logs
                 embed = Embeds.KickLog(moderator, channel, user, reason);
-                var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(user.Guild.Id));
-                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(user.Guild.Id));
+                if (botlog != null)
+                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
             catch
             {
-                await channel.SendMessageAsync(Setup.NoPermissionMessage(channel.Guild.Id));
+                await channel.SendMessageAsync(UserSettings.BotOptions.GetString("NoPermissionMessage", channel.Guild.Id));
             }
         }
 
@@ -351,12 +265,13 @@ namespace JackFrostBot
 
                 //Log ban in bot-logs
                 embed = Embeds.LogBan(moderator, channel, user, reason);
-                var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(user.Guild.Id));
-                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(user.Guild.Id));
+                if (botlog != null)
+                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
             catch
             {
-                await channel.SendMessageAsync(Setup.NoPermissionMessage(channel.Guild.Id));
+                await channel.SendMessageAsync(UserSettings.BotOptions.GetString("NoPermissionMessage", channel.Guild.Id));
             }
         }
 
@@ -372,7 +287,7 @@ namespace JackFrostBot
             int usersPruned = 0;
             foreach (IGuildUser user in users)
             {
-                if (user.RoleIds.Any(x => x == (Setup.LurkerRoleId(channel.Guild.Id))))
+                if (user.RoleIds.Any(x => x == UserSettings.Roles.LurkerRoleID(channel.Guild.Id)))
                 {
                     Console.WriteLine($"Lurker found: {user.Username}");
                     await user.KickAsync("Inactivity");
@@ -385,8 +300,9 @@ namespace JackFrostBot
 
             //Log the unmute in the bot-logs channel
             embed = Embeds.LogPruneLurkers(moderator, usersPruned);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(channel.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(channel.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         public static async void PruneNonmembers(SocketGuildUser moderator, ITextChannel channel, IReadOnlyCollection<IGuildUser> users)
@@ -394,9 +310,9 @@ namespace JackFrostBot
             int usersPruned = 0;
             foreach (IGuildUser user in users)
             {
-                if (!user.RoleIds.Any(x => x == (Setup.MemberRoleId(moderator.Guild.Id))))
+                if (user.RoleIds.Count <= 1)
                 {
-                    Console.WriteLine($"Nonmember found: {user.Username}");
+                    Processing.LogConsoleText($"Nonmember found: {user.Username}", channel.Guild.Id);
                     await user.KickAsync("Inactivity");
                     usersPruned++;
                 }
@@ -405,10 +321,11 @@ namespace JackFrostBot
             var embed = Embeds.PruneNonmembers(usersPruned);
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
-            //Log the unmute in the bot-logs channel
+            //Log the prune in the bot-logs channel
             embed = Embeds.LogPruneNonmembers(moderator, usersPruned);
-            var botlog = await channel.Guild.GetTextChannelAsync(Setup.BogLotChannelId(channel.Guild.Id));
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var botlog = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(channel.Guild.Id));
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         public static bool IsFiltered(IMessage message)
@@ -417,26 +334,7 @@ namespace JackFrostBot
             foreach (string term in File.ReadLines($"{guildchannel.Guild.Id.ToString()}\\filter.txt"))
             {
                 if (Regex.IsMatch(message.Content.ToLower(), string.Format(@"\b{0}\b", Regex.Escape(term))))
-                {
-                    Console.WriteLine("Regex match");
                     message.DeleteAsync();
-                    bool bypass = Moderation.IsBypassTerm(message.Author, term, message.Channel);
-                    return bypass;
-                }
-            }
-            return false;
-        }
-
-        public static bool IsBypassTerm(IUser author, string term, IMessageChannel channel)
-        {
-            var guildchannel = (IGuildChannel)channel;
-            foreach (string bypassTerm in File.ReadLines($"{guildchannel.Guild.Id.ToString()}\\filterbypasscheck.txt"))
-            {
-                if (term == bypassTerm)
-                {
-                    Moderation.Warn(Setup.BotName(guildchannel.Guild.Id), (ITextChannel)channel, (SocketGuildUser)author, "Stop trying to bypass the word filter.");
-                    return true;
-                }
             }
             return false;
         }

@@ -345,15 +345,16 @@
             this.comboBox_ActivityType.Size = new System.Drawing.Size(94, 21);
             this.comboBox_ActivityType.TabIndex = 30;
             this.comboBox_ActivityType.Text = "Activity Type";
+            this.comboBox_ActivityType.SelectedIndexChanged += new System.EventHandler(this.ComboBox_ActivityType_SelectedIndexChanged);
             // 
             // lbl_Purge
             // 
             this.lbl_Purge.AutoSize = true;
             this.lbl_Purge.Location = new System.Drawing.Point(158, 94);
             this.lbl_Purge.Name = "lbl_Purge";
-            this.lbl_Purge.Size = new System.Drawing.Size(132, 13);
+            this.lbl_Purge.Size = new System.Drawing.Size(129, 13);
             this.lbl_Purge.TabIndex = 31;
-            this.lbl_Purge.Text = "Delete last                 msgs";
+            this.lbl_Purge.Text = "Delete last                msgs";
             // 
             // btn_PurgeMsgs
             // 
@@ -367,7 +368,7 @@
             // 
             // numericUpDown_Purge
             // 
-            this.numericUpDown_Purge.Location = new System.Drawing.Point(212, 92);
+            this.numericUpDown_Purge.Location = new System.Drawing.Point(214, 92);
             this.numericUpDown_Purge.Name = "numericUpDown_Purge";
             this.numericUpDown_Purge.Size = new System.Drawing.Size(47, 20);
             this.numericUpDown_Purge.TabIndex = 34;

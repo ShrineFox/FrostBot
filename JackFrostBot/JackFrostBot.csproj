@@ -225,30 +225,27 @@
       <DependentUpon>FrostForm.cs</DependentUpon>
     </Compile>
     <Compile Include="InfoModule.cs" />
-    <Compile Include="Ini.cs" />
     <Compile Include="Moderation.cs" />
     <Compile Include="Processing.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserSettings\Commands.cs" />
     <Compile Include="Setup.cs" />
-    <Compile Include="Webscraper.cs" />
-    <Compile Include="Xml.cs" />
+    <Compile Include="UserSettings\Warns.cs" />
+    <Compile Include="UserSettings\Info.cs" />
+    <Compile Include="UserSettings\Filters.cs" />
+    <Compile Include="UserSettings\BotOptions.cs" />
+    <Compile Include="UserSettings\Channels.cs" />
+    <Compile Include="UserSettings\Verification.cs" />
+    <Compile Include="UserSettings\Roles.cs" />
+    <Compile Include="UserSettings\Xml.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="filter.txt" />
     <Content Include="frost.ico" />
-    <Content Include="Links.xml">
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="Lists.xml">
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="Log.txt" />
-    <Content Include="warns.txt" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
