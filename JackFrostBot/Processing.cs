@@ -136,7 +136,7 @@ namespace JackFrostBot
                     await LogDeletedMessage(message, $"Message was too short (minimum is {minimum})");
                 int minletters = UserSettings.BotOptions.MinimumLetters(channel.Guild.Id);
                 //Delete messages that don't have enough alphanumeric characters
-                if (message.Content.Count(char.IsLetterOrDigit) < minletters && message.Tags.Count <= 0 && !Regex.IsMatch(message.Content, @"\p{Cs}"))
+                if (message.Content.Count(char.IsLetterOrDigit) < minletters && message.Tags.Count <= 0 && !Regex.IsMatch(message.Content, @"\p{Cs}") && message.Attachments.Count <= 0)
                     await LogDeletedMessage(message, $"Message didn't have enough letters (minimum is {minletters})");
             }
         }
@@ -193,11 +193,9 @@ namespace JackFrostBot
                     await socketChannel.SendMessageAsync(markov);
                 else if (channel.Id == UserSettings.Channels.BotChannelId(channel.Guild.Id))
                     await socketChannel.SendMessageAsync(markov);
-                else
-                    await socketChannel.SendMessageAsync("");
             }
-            else
-                await socketChannel.SendMessageAsync("");
+
+            return;
         }
 
     }
