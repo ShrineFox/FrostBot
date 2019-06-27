@@ -13,7 +13,7 @@ A flexible server moderation tool using [Discord.Net](https://github.com/RogueEx
  ![Verified](https://i.imgur.com/bmOZDJg.gif)
 ## Locking and Muting
  • Quickly deny typing privileges to a channel to end strife, or temporarily silence individual misbehaving users.   
-![LockUnlock](https://i.imgur.com/VXmtZlC.gif)
+![LockUnlock](https://i.imgur.com/OBAMfLc.gif)
 ## Warn Management
  • Let your moderation team hand out warns, which users can accumulate.  
  • You get to configure a custom threshold for how many warns lead to automatic mutes, kicks, or bans.  
