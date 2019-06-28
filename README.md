@@ -39,6 +39,7 @@ A flexible server moderation tool using [Discord.Net](https://github.com/RogueEx
  ![Lists](https://i.imgur.com/1VtBD4Z.gif)
 ## Save Messages
  • The "pin" command can send an embed of any message to another channel as an alternative to Discord's default pinning system, which has a per-channel limit.  
+ • Users that are allowed to use the "pin" command can also react to a message with 📌 to pin it.
  ![Pin](https://i.imgur.com/D9QSsy7.gif)
 ## Easy Usage
  • All settings are in plaintext XML files that can be edited. They are auto-generated per server when you run the bot.  
