@@ -54,13 +54,29 @@ namespace JackFrostBot
             comboBox_MemberSelect.DataSource = guild.Users.ToList();
 
             //Get activity name
-            txtBox_Playing.Text = client.Activity.Name;
+            try
+            {
+                txtBox_Playing.Text = client.Activity.Name;
+            }
+            catch
+            {
+                txtBox_Playing.Text = "";
+            }
+            
 
             //Get current status
             comboBox_Status.SelectedIndex = (int)client.Status;
 
             //Get current activity type
-            comboBox_ActivityType.SelectedIndex = (int)client.Activity.Type;
+            try
+            {
+                comboBox_ActivityType.SelectedIndex = (int)client.Activity.Type;
+            }
+            catch
+            {
+
+            }
+            
 
             //Get warns
             listBox_Warns.DataSource = null;

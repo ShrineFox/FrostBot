@@ -32,6 +32,7 @@ namespace Bot
             client.Log += Log;
             client.Ready += Ready;
             client.JoinedGuild += BotJoined;
+            client.ReactionAdded += ReactionAdded;
 
             string token = Setup.Token();
 
@@ -40,16 +41,35 @@ namespace Bot
             await InstallCommands();
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
-            //Add the string of the game currently being played if game.txt exists
-            if (File.Exists("game.txt"))
-                await client.SetGameAsync(File.ReadLines("game.txt").First());
-            else
-                File.CreateText("game.txt").Close();
 
             client.UserJoined += UserJoin;
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
+        }
+
+        private async Task ReactionAdded(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
+        {
+            var msgId = arg3.MessageId;
+            var channel = (ITextChannel)arg2;
+            var msg = await channel.GetMessageAsync(Convert.ToUInt64(msgId));
+
+            var context = new CommandContext(client, (IUserMessage)msg);
+            //TODO: Don't duplicate previously pinned messages, use reaction count
+            if (arg3.Emote.Name == "📌" && Xml.CommandAllowed("pin", context))
+            {
+                Console.WriteLine($"Pin reaction found");
+                try
+                {
+                    var pinChannel = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.PinsChannelId(channel.Guild.Id));
+
+                    var embed = Embeds.Pin(channel, msg);
+                    await pinChannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                }
+                catch
+                {
+                }
+            }
         }
 
         public async Task InstallCommands()
@@ -93,7 +113,7 @@ namespace Bot
             await Processing.VerificationCheck(message);
             await Processing.MediaOnlyCheck(message);
             //await Processing.FilterCheck(message, channel);
-            
+
             //Remove lurker role if member has one
             if (JackFrostBot.UserSettings.Roles.LurkerRoleAutoRemove(channel.Guild.Id))
             {
@@ -142,7 +162,7 @@ namespace Bot
                 var lurkRole = (IRole)user.Guild.GetRole(JackFrostBot.UserSettings.Roles.LurkerRoleID(user.Guild.Id));
                 var newUser = (IGuildUser)user;
                 if (lurkRole != null)
-                await newUser.AddRoleAsync(lurkRole);
+                    await newUser.AddRoleAsync(lurkRole);
             }
 
             int warnLevel = Moderation.WarnLevel(user);
