@@ -355,7 +355,12 @@ namespace JackFrostBot
                 try
                 {
                     SocketGuildUser user = (SocketGuildUser)Context.User;
-                    await user.AddRoleAsync(Context.Guild.Roles.FirstOrDefault(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase)));
+                    var clrRole = Context.Guild.Roles.FirstOrDefault(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase));
+                    //Try to move color role to highest spot possible
+                    var lowestModeratorRole = UserSettings.Roles.ModeratorRoleIDs(Context.Guild.Id).Min(r => Context.Guild.GetRole(r).Position);
+                    await clrRole.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
+                    //Give role
+                    await user.AddRoleAsync(clrRole);
                     await Context.Channel.SendMessageAsync("Role successfully added!");
                     foreach (var role in user.Roles)
                     {
@@ -543,6 +548,28 @@ namespace JackFrostBot
 
                 }
 
+            }
+        }
+
+        [Command("invite"), Summary("Generate a one-use instant invite.")]
+        public async Task Invite()
+        {
+            //var inviteList = await Context.Guild.GetInvitesAsync();
+            //UserSettings.Invites.Update(Context.Guild.Id, inviteList);
+            var user = (SocketGuildUser)Context.Message.Author;
+
+            if (Xml.CommandAllowed("invite", Context) && user.Roles.Count > 1 && !user.Roles.Any(x => x.Id.Equals(UserSettings.Roles.LurkerRoleID(Context.Guild.Id))))
+            {
+                //Create and link Invite
+                var guildChan = (SocketTextChannel)Context.Channel;
+                IInvite invite = await guildChan.CreateInviteAsync(86400, 1, true, true);
+                IUserMessage msg = await Context.Channel.SendMessageAsync($"Your new invite link is ``{invite.Url}`` and it will expire in 24 hours. This message will be deleted in 7 seconds.");
+                //Log which user created invite
+                var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));
+                var embed = Embeds.LogCreateInvite((SocketGuildUser)Context.Message.Author, invite.Id);
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                //Delete message after 15 seconds
+                await Task.Delay(TimeSpan.FromSeconds(7)).ContinueWith(__ => msg.DeleteAsync());
             }
         }
     }

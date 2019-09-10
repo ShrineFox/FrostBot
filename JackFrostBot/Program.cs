@@ -53,6 +53,7 @@ namespace Bot
             var msgId = arg3.MessageId;
             var channel = (ITextChannel)arg2;
             var msg = await channel.GetMessageAsync(Convert.ToUInt64(msgId));
+            var msg2 = (SocketUserMessage)msg;
 
             var context = new CommandContext(client, (IUserMessage)msg);
             //TODO: Don't duplicate previously pinned messages, use reaction count
@@ -62,6 +63,11 @@ namespace Bot
                 try
                 {
                     var pinChannel = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.PinsChannelId(channel.Guild.Id));
+                    var lastpinnedmsg = await pinChannel.GetMessagesAsync(1).Single();
+                    var lastpinnedmsg2 = (SocketUserMessage)lastpinnedmsg.Single();
+
+                    if (lastpinnedmsg2.Embeds.Single().Timestamp == msg2.Timestamp)
+                        return;
 
                     var embed = Embeds.Pin(channel, msg);
                     await pinChannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
@@ -112,7 +118,7 @@ namespace Bot
             await Processing.MsgLengthCheck(message, channel);
             await Processing.VerificationCheck(message);
             await Processing.MediaOnlyCheck(message);
-            //await Processing.FilterCheck(message, channel);
+            await Processing.FilterCheck(message, channel);
 
             //Remove lurker role if member has one
             if (JackFrostBot.UserSettings.Roles.LurkerRoleAutoRemove(channel.Guild.Id))
@@ -133,7 +139,7 @@ namespace Bot
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
             if (!(message.HasCharPrefix(JackFrostBot.UserSettings.BotOptions.CommandPrefix(channel.Guild.Id), ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos)))
             {
-                if (JackFrostBot.UserSettings.BotOptions.AutoMarkov(channel.Guild.Id) && !message.Author.IsBot)
+                if (JackFrostBot.UserSettings.BotOptions.AutoMarkov(channel.Guild.Id) && !message.Author.IsBot && JackFrostBot.UserSettings.Channels.BotChannelId(channel.Guild.Id) == channel.Id)
                     await Processing.Markov(message.Content, channel, JackFrostBot.UserSettings.BotOptions.AutoMarkovFrequency(channel.Guild.Id));
                 else
                     return;

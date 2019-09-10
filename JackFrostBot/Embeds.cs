@@ -300,5 +300,22 @@ namespace JackFrostBot
 
             return eBuilder.Build();
         }
+
+        static public Embed LogUseInvite(SocketGuildUser user, string inviteId)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":calling: **{user.Username}** joined using an **invite link** with ID ``{inviteId}``.")
+            .WithColor(new Color(0xD0021B));
+            return builder.Build();
+        }
+
+        static public Embed LogCreateInvite(SocketGuildUser user, string inviteId)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":calling: **{user.Username}** created an **invite link** with ID ``{inviteId}``.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
+
     }
 }
