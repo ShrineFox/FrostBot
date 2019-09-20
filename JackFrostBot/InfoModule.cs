@@ -343,7 +343,7 @@ namespace JackFrostBot
                     await Context.Channel.SendMessageAsync("Role couldn't be created. Make sure you entered a valid hexadecimal value!");
                 }
             }
-            
+
         }
 
         //Assign yourself a role with a specific color
@@ -554,8 +554,6 @@ namespace JackFrostBot
         [Command("invite"), Summary("Generate a one-use instant invite.")]
         public async Task Invite()
         {
-            //var inviteList = await Context.Guild.GetInvitesAsync();
-            //UserSettings.Invites.Update(Context.Guild.Id, inviteList);
             var user = (SocketGuildUser)Context.Message.Author;
 
             if (Xml.CommandAllowed("invite", Context) && user.Roles.Count > 1 && !user.Roles.Any(x => x.Id.Equals(UserSettings.Roles.LurkerRoleID(Context.Guild.Id))))
@@ -572,6 +570,109 @@ namespace JackFrostBot
                 await Task.Delay(TimeSpan.FromSeconds(7)).ContinueWith(__ => msg.DeleteAsync());
             }
         }
+
+        //Give a user money.
+        [Command("award"), Summary("Give a user money.")]
+        public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award."), Remainder] int amount = 1)
+        {
+            var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));
+            if (Xml.CommandAllowed("award", Context))
+            {
+                await Context.Message.DeleteAsync();
+                if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
+                {
+                    UserSettings.Currency.Add(Context.Guild.Id, mention.Id, amount);
+                    var embed = Embeds.LogAward((SocketGuildUser)Context.Message.Author, mention.Username, amount);
+                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                    embed = Embeds.Award((SocketGuildUser)Context.Message.Author, mention.Username, amount);
+                    await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                }
+                else
+                    await Context.Channel.SendMessageAsync(UserSettings.BotOptions.GetString("NoPermissionMessage", Context.Guild.Id));
+            }
+        }
+
+        //Take a user's money.
+        [Command("redeem"), Summary("Take a user's money.")]
+        public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take."), Remainder] int amount = 1)
+        {
+            var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));
+            if (Xml.CommandAllowed("redeem", Context))
+            {
+                await Context.Message.DeleteAsync();
+                if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
+                {
+                    UserSettings.Currency.Remove(Context.Guild.Id, mention.Id, amount);
+                    var embed = Embeds.LogRedeem((SocketGuildUser)Context.Message.Author, mention.Username, amount);
+                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                    embed = Embeds.Redeem((SocketGuildUser)Context.Message.Author, mention.Username, amount);
+                    await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                }
+                else
+                    await Context.Channel.SendMessageAsync(UserSettings.BotOptions.GetString("NoPermissionMessage", Context.Guild.Id));
+            }
+        }
+
+        //Check your currency balance
+        [Command("balance"), Summary("Check your balance.")]
+        public async Task Balance([Summary("The user to check the balance of.")] SocketGuildUser mention = null)
+        {
+            if (Xml.CommandAllowed("balance", Context))
+            {
+                int amount = 0;
+                SocketGuildUser user = (SocketGuildUser)Context.Message.Author;
+                if (mention != null)
+                    user = mention;
+                
+                foreach (var pair in UserSettings.Currency.Get(Context.Guild.Id))
+                {
+                    if (pair.Item1 == user.Id.ToString())
+                    {
+                        amount = pair.Item2;
+                    }
+                }
+                await Context.Channel.SendMessageAsync($"{user.Username} has {amount} {UserSettings.BotOptions.GetString("CurrencyName", Context.Guild.Id)}.");
+            }
+        }
+
+        //Send currency to another user
+        [Command("send"), Summary("Send currency to another user.")]
+        public async Task Send([Summary("The user to send currency to.")] SocketGuildUser mention = null, [Summary("The amount to send."), Remainder] int amount = 1)
+        {
+            if (Xml.CommandAllowed("send", Context))
+            {
+                //Check that the post author has money
+                bool hasMoney = false;
+                int originalAmount = 0;
+                foreach (var pair in UserSettings.Currency.Get(Context.Guild.Id))
+                {
+                    if (pair.Item1 == Context.Message.Author.Id.ToString())
+                    {
+                        originalAmount = pair.Item2;
+                    }
+                }
+
+                if (originalAmount >= amount)
+                    hasMoney = true;
+
+
+                if (hasMoney)
+                {
+                    UserSettings.Currency.Remove(Context.Guild.Id, Context.Message.Author.Id, amount);
+                    UserSettings.Currency.Add(Context.Guild.Id, mention.Id, amount);
+
+                    var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));
+                    var embed = Embeds.Send((SocketGuildUser)Context.Message.Author, mention.Username, amount);
+                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                    await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                }
+                else
+                {
+                    await Context.Channel.SendMessageAsync($"You don't have enough {UserSettings.BotOptions.GetString("CurrencyName", Context.Guild.Id)}!");
+                }
+            }
+        }
+
     }
 
 }

@@ -88,7 +88,7 @@ namespace JackFrostBot
         private static void SetupServerConfig(SocketGuild guild)
         {
             //Create all xml doc objects
-            List<XElement> xElementList = new List<XElement> { Channels(guild), Commands(guild), Roles(guild), Verification(guild), Filters(guild), BotOptions(guild), Info(guild), Warns(guild) };
+            List<XElement> xElementList = new List<XElement> { Channels(guild), Commands(guild), Roles(guild), Verification(guild), Filters(guild), BotOptions(guild), Info(guild), Warns(guild), Currency(guild) };
 
             //Serialize each xml doc object to xml file in appropriate folder
             foreach (XElement xElement in xElementList)
@@ -229,7 +229,8 @@ namespace JackFrostBot
                 new XElement("UnmuteMessage", "You are able to type again."),
                 new XElement("NoPermissionMessage", "You don't have permission to use this command."),
                 new XElement("BotIconURL", "https://images-ext-2.discordapp.net/external/FnvGxO_YkmQbgUsGsSDUE1QlW9VNEBNBZoPy7294rHc/https/i.imgur.com/5I5Vos8.png"),
-                new XElement("WelcomeMessage", "Be sure to read the rules and  enjoy your stay!")
+                new XElement("WelcomeMessage", "Be sure to read the rules and  enjoy your stay!"),
+                new XElement("CurrencyName", "Coins")
                 ));
             
             botOptions.Add(new XElement("Markov",
@@ -253,6 +254,13 @@ namespace JackFrostBot
         {
             XElement info = new XElement("Warns");
             info.Add(new XElement("Warn", new XAttribute("UserID", exampleId), new XElement("Reason", "example reason for warn")));
+            return info;
+        }
+
+        private static XElement Currency(SocketGuild guild)
+        {
+            XElement info = new XElement("Currency");
+            info.Add(new XElement("User", new XAttribute("UserID", exampleId), new XElement("Amount", "0")));
             return info;
         }
 

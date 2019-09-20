@@ -317,5 +317,44 @@ namespace JackFrostBot
             return builder.Build();
         }
 
+        static public Embed Award(SocketGuildUser author, string username, int amount)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":money_with_wings: **{username} was awarded** {amount} {UserSettings.BotOptions.GetString("CurrencyName", author.Guild.Id)}.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
+
+        static public Embed LogAward(SocketGuildUser author, string username, int amount)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":money_with_wings: **{author.Username} awarded** {username} {amount} {UserSettings.BotOptions.GetString("CurrencyName", author.Guild.Id)}.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
+
+        static public Embed Redeem(SocketGuildUser author, string username, int amount)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":money_with_wings: **{username} redeemed** {amount} {UserSettings.BotOptions.GetString("CurrencyName", author.Guild.Id)}.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
+
+        static public Embed LogRedeem(SocketGuildUser author, string username, int amount)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":money_with_wings: **{author.Username} took {amount} {UserSettings.BotOptions.GetString("CurrencyName", author.Guild.Id)}** from {username}.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
+
+        static public Embed Send(SocketGuildUser author, string username, int amount)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":money_with_wings: **{author.Username} sent** {username} {amount} {UserSettings.BotOptions.GetString("CurrencyName", author.Guild.Id)}.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
     }
 }
