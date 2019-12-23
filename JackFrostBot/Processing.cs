@@ -115,7 +115,8 @@ namespace JackFrostBot
                         if (matches >= UserSettings.BotOptions.MaximumDuplicates(channel.Guild.Id))
                         {
                             await LogDeletedMessage(message, "Duplicate message");
-                            Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
+                            if (UserSettings.BotOptions.AutoWarnDuplicates(channel.Guild.Id))
+                                Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
                         }
                     }
                     runs++;

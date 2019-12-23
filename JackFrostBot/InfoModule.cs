@@ -21,6 +21,25 @@ using AtlusRandomizer;
 
 namespace JackFrostBot
 {
+    //CHANGES BEFORE 3.0
+    //Track invites using xml and compare/update on join (maybe not)
+    //Log DMs?
+    //Fix bug where servers.xml doesn't create new server entry
+    // check for EnableBotLogs = false
+    // ignore system messages (like pin) and require prefix to process commands
+    // add link to original post to "pinned" embeds
+    // check if filters are working
+    // list opt-in roles automatically
+
+    //Add categories/icons to commands for use with ?help
+    //Add google images lookup command ?image <terms>
+    //Try to add image carving again ?magik
+
+    //Levelup system (award currency for x posts, log/update post count) Levelup.xml
+    //Add functionality for commands to have a macca cost
+
+
+
     public class InfoModule : ModuleBase
     {
         // ~about cvm
@@ -566,20 +585,27 @@ namespace JackFrostBot
                 var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));
                 var embed = Embeds.LogCreateInvite((SocketGuildUser)Context.Message.Author, invite.Id);
                 await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                //Save Invite and Author UserID to XML doc to track
+                var invites = Context.Guild.GetInvitesAsync().Result;
+                JackFrostBot.UserSettings.Invites.Update(Context.Guild.Id, invites);
                 //Delete message after 15 seconds
                 await Task.Delay(TimeSpan.FromSeconds(7)).ContinueWith(__ => msg.DeleteAsync());
             }
         }
 
         //Give a user money.
-        [Command("award"), Summary("Give a user money.")]
+        [Command("award"), Summary("Give a user currency.")]
         public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award."), Remainder] int amount = 1)
         {
             var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));
             if (Xml.CommandAllowed("award", Context))
             {
                 await Context.Message.DeleteAsync();
-                if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
+                if (amount > 10)
+                {
+                    await Context.Channel.SendMessageAsync("That's too much to award! Try a smaller amount.");
+                }
+                else if (Moderation.IsModerator((IGuildUser)Context.Message.Author))
                 {
                     UserSettings.Currency.Add(Context.Guild.Id, mention.Id, amount);
                     var embed = Embeds.LogAward((SocketGuildUser)Context.Message.Author, mention.Username, amount);
@@ -593,7 +619,7 @@ namespace JackFrostBot
         }
 
         //Take a user's money.
-        [Command("redeem"), Summary("Take a user's money.")]
+        [Command("redeem"), Summary("Take a user's currency.")]
         public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take."), Remainder] int amount = 1)
         {
             var botlog = await Context.Guild.GetTextChannelAsync(UserSettings.Channels.BotLogsId(Context.Guild.Id));

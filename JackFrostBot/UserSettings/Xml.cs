@@ -88,7 +88,7 @@ namespace JackFrostBot
         private static void SetupServerConfig(SocketGuild guild)
         {
             //Create all xml doc objects
-            List<XElement> xElementList = new List<XElement> { Channels(guild), Commands(guild), Roles(guild), Verification(guild), Filters(guild), BotOptions(guild), Info(guild), Warns(guild), Currency(guild) };
+            List<XElement> xElementList = new List<XElement> { Channels(guild), Commands(guild), Roles(guild), Verification(guild), Filters(guild), BotOptions(guild), Info(guild), Warns(guild), Currency(guild), Invites(guild) };
 
             //Serialize each xml doc object to xml file in appropriate folder
             foreach (XElement xElement in xElementList)
@@ -238,7 +238,8 @@ namespace JackFrostBot
                 new XElement("AutoMarkov", "false"),
                 new XElement("BotChannelOnly", "false"),
                 new XElement("AutoMarkovFrequency", 100),
-                new XElement("MinimumLength", 0)));
+                new XElement("MinimumLength", 0),
+                new XElement("AutoWarnDuplicates", "true")));
 
             return botOptions;
         }
@@ -262,6 +263,13 @@ namespace JackFrostBot
             XElement info = new XElement("Currency");
             info.Add(new XElement("User", new XAttribute("UserID", exampleId), new XElement("Amount", "0")));
             return info;
+        }
+
+        private static XElement Invites(SocketGuild guild)
+        {
+            XElement invites = new XElement("Invites");
+            invites.Add(new XElement("Invite", new XAttribute("User", ""), new XElement("Code", exampleId)));
+            return invites;
         }
 
     }

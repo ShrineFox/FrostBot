@@ -301,11 +301,32 @@ namespace JackFrostBot
             return eBuilder.Build();
         }
 
-        static public Embed LogUseInvite(SocketGuildUser user, string inviteId)
+        static public Embed LogJoin(SocketGuild guild, SocketGuildUser user)
         {
+            //Try to narrow down the name of the user who created the invite
+            var invites = guild.GetInvitesAsync().Result.ToArray();
+            string inviterMsg = ".";
+            try
+            {
+                foreach (var inviteData in invites)
+                {
+                    List<string> codes = JackFrostBot.UserSettings.Invites.GetCodes(guild.Id);
+                    foreach (string code in codes)
+                    {
+                        if (!invites.Any(x => x.Code.ToString().Equals(code)) && invites.Count().Equals(codes.Count - 1))
+                        {
+                            ulong inviterID = JackFrostBot.UserSettings.Invites.GetUser(guild.Id, code);
+                            var inviter = guild.GetUser(inviterID);
+                            inviterMsg = $"by **{inviter.Username}** ({inviter.Id}) using invite ``{code}``";
+                        }
+                    }
+                }
+            }
+            catch { }
+
             var builder = new EmbedBuilder()
-            .WithDescription($":calling: **{user.Username}** joined using an **invite link** with ID ``{inviteId}``.")
-            .WithColor(new Color(0xD0021B));
+            .WithDescription($":calling: **{user.Username}** was invited to the server{inviterMsg}")
+            .WithColor(new Color(0x0094FF));
             return builder.Build();
         }
 
@@ -353,6 +374,14 @@ namespace JackFrostBot
         {
             var builder = new EmbedBuilder()
             .WithDescription($":money_with_wings: **{author.Username} sent** {username} {amount} {UserSettings.BotOptions.GetString("CurrencyName", author.Guild.Id)}.")
+            .WithColor(new Color(0x0094FF));
+            return builder.Build();
+        }
+
+        static public Embed Earn(string author, int amount, ulong guildId)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription($":money_with_wings: **{author} earned** {amount} {UserSettings.BotOptions.GetString("CurrencyName", guildId)}.")
             .WithColor(new Color(0x0094FF));
             return builder.Build();
         }

@@ -97,6 +97,15 @@ namespace JackFrostBot.UserSettings
             return botChannelOnly;
         }
 
+        public static bool AutoWarnDuplicates(ulong guildId)
+        {
+            string xmlPath = $"Servers//{guildId}//BotOptions.xml";
+            XDocument xmldoc = XDocument.Load(xmlPath);
+            var botChannelOnly = Convert.ToBoolean(xmldoc.Element("BotOptions").Element("MessageLimits").Element("AutoWarnDuplicates").Value);
+
+            return botChannelOnly;
+        }
+
         public static int AutoMarkovFrequency(ulong guildId)
         {
             string xmlPath = $"Servers//{guildId}//BotOptions.xml";

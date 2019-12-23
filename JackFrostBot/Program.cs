@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using JackFrostBot;
 using System.Timers;
 using System.Windows.Forms;
+using Discord.Rest;
 
 namespace Bot
 {
@@ -50,31 +51,24 @@ namespace Bot
 
         private async Task ReactionAdded(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
         {
+            var amount = 1;
             var msgId = arg3.MessageId;
             var channel = (ITextChannel)arg2;
-            var msg = await channel.GetMessageAsync(Convert.ToUInt64(msgId));
-            var msg2 = (SocketUserMessage)msg;
 
-            var context = new CommandContext(client, (IUserMessage)msg);
             //TODO: Don't duplicate previously pinned messages, use reaction count
-            if (arg3.Emote.Name == "📌" && Xml.CommandAllowed("pin", context))
+            if (arg1.Id == 640802444233670676)
             {
-                Console.WriteLine($"Pin reaction found");
-                try
-                {
-                    var pinChannel = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.PinsChannelId(channel.Guild.Id));
-                    var lastpinnedmsg = await pinChannel.GetMessagesAsync(1).Single();
-                    var lastpinnedmsg2 = (SocketUserMessage)lastpinnedmsg.Single();
+                int originalAmount = 0;
+                foreach (var pair in JackFrostBot.UserSettings.Currency.Get(channel.Guild.Id))
+                    if (pair.Item1 == arg3.UserId.ToString())
+                        originalAmount = pair.Item2;
+                JackFrostBot.UserSettings.Currency.Add(channel.Guild.Id, arg3.UserId, amount);
 
-                    if (lastpinnedmsg2.Embeds.Single().Timestamp == msg2.Timestamp)
-                        return;
-
-                    var embed = Embeds.Pin(channel, msg);
-                    await pinChannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                }
-                catch
-                {
-                }
+                var botlog = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.BotLogsId(channel.Guild.Id));
+                var botchannel = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.BotChannelId(channel.Guild.Id));
+                Embed embed = Embeds.Earn(arg3.User.ToString(), amount, channel.Guild.Id);
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                await botchannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
         }
 
@@ -92,6 +86,13 @@ namespace Bot
 
             //Set up bot if first time running
             Xml.Setup(client.Guilds.ToList(), commands);
+
+            //Track invites
+            foreach (var guild in guilds)
+            {
+                var invites = guild.GetInvitesAsync().Result;
+                JackFrostBot.UserSettings.Invites.Update(guild.Id, invites);
+            }
 
             //Open Form
             JackFrostBot.FrostForm form = new JackFrostBot.FrostForm(client);
@@ -183,6 +184,13 @@ namespace Bot
             {
                 await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {JackFrostBot.UserSettings.BotOptions.GetString("WelcomeMessage", user.Guild.Id)}");
             }
+
+            //Log join/invite in botlogs
+            var botlog = (SocketTextChannel)user.Guild.GetChannel(JackFrostBot.UserSettings.Channels.BotLogsId(user.Guild.Id));
+            Embed embed = Embeds.LogJoin(user.Guild, user);
+            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            var invites = user.Guild.GetInvitesAsync().Result;
+            JackFrostBot.UserSettings.Invites.Update(user.Guild.Id, invites);
         }
 
         private Task Log(LogMessage msg)

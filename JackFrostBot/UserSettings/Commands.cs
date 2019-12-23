@@ -53,7 +53,7 @@ namespace JackFrostBot.UserSettings
             List<string> commandList = new List<string>();
             foreach (var element in commands)
             {
-                if (isModerator || !Convert.ToBoolean(element.Element("ModeratorsOnly").Value))
+                if (Convert.ToBoolean(element.Element("Enabled").Value) && (isModerator || !Convert.ToBoolean(element.Element("ModeratorsOnly").Value)))
                 {
                     string commandName = element.Attribute("Name").Value;
                     char commandPrefix = UserSettings.BotOptions.CommandPrefix(guildId);

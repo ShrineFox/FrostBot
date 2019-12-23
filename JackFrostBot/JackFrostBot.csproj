@@ -56,6 +56,9 @@
     <Reference Include="ClutteredMarkovGenerator, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ClutteredMarkovGenerator.2.0.0.0\lib\net452\ClutteredMarkovGenerator.dll</HintPath>
     </Reference>
+    <Reference Include="CoreTweet, Version=1.0.0.483, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\CoreTweet.1.0.0.483\lib\net45\CoreTweet.dll</HintPath>
+    </Reference>
     <Reference Include="Discord.Addons.Interactive, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Discord.Addons.Interactive.1.0.1\lib\netstandard1.1\Discord.Addons.Interactive.dll</HintPath>
     </Reference>
@@ -234,6 +237,7 @@
     <Compile Include="UserSettings\Commands.cs" />
     <Compile Include="Setup.cs" />
     <Compile Include="UserSettings\Currency.cs" />
+    <Compile Include="UserSettings\Invites.cs" />
     <Compile Include="UserSettings\Warns.cs" />
     <Compile Include="UserSettings\Info.cs" />
     <Compile Include="UserSettings\Filters.cs" />
