@@ -58,6 +58,11 @@ namespace JackFrostBot
             LogConsoleText(reason, guild.Id);
             await message.DeleteAsync();
             File.WriteAllText(logPath, $"**Author**: {user.Username} ({user.Id})\n**Time**: {message.Timestamp}\n**Reason**: {reason}");
+
+            //Announce message deletion
+            var botlog = (SocketTextChannel)user.Guild.GetChannelAsync(JackFrostBot.UserSettings.Channels.BotLogsId(user.Guild.Id)).Result;
+            var embed = Embeds.ShowMsgInfo(guild.Id);
+            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         //Grant a user a role if they type the password in the verification channel
