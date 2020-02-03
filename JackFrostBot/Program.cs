@@ -27,6 +27,11 @@ namespace Bot
 
         public async Task MainAsync()
         {
+            // Set the console to use UTF-8, which allows usernames and messages that aren't in the default console codepage
+            // to be displayed in the console log instead of question marks.
+            // Unfortunately it's not perfect, many characters still don't display properly.
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             client = new DiscordSocketClient();
             commands = new CommandService();
 
