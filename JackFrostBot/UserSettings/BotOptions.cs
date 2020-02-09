@@ -61,6 +61,15 @@ namespace JackFrostBot.UserSettings
             return minLetters;
         }
 
+        public static bool AutoWarnDuplicates(ulong guildId)
+        {
+            string xmlPath = $"Servers//{guildId}//BotOptions.xml";
+            XDocument xmldoc = XDocument.Load(xmlPath);
+            var botChannelOnly = Convert.ToBoolean(xmldoc.Element("BotOptions").Element("MessageLimits").Element("AutoWarnDuplicates").Value);
+
+            return botChannelOnly;
+        }
+
         public static int MinimumLength(ulong guildId)
         {
             string xmlPath = $"Servers//{guildId}//BotOptions.xml";
@@ -68,6 +77,15 @@ namespace JackFrostBot.UserSettings
             var minLength = Convert.ToInt32(xmldoc.Element("BotOptions").Element("MessageLimits").Element("MinimumLength").Value);
 
             return minLength;
+        }
+
+        public static int DuplicateFrequencyThreshold(ulong guildId)
+        {
+            string xmlPath = $"Servers//{guildId}//BotOptions.xml";
+            XDocument xmldoc = XDocument.Load(xmlPath);
+            var dupeFrequency = Convert.ToInt32(xmldoc.Element("BotOptions").Element("MessageLimits").Element("DuplicateFrequencyThreshold").Value);
+
+            return dupeFrequency;
         }
 
         public static string GetString(string elementName, ulong guildId)
@@ -93,15 +111,6 @@ namespace JackFrostBot.UserSettings
             string xmlPath = $"Servers//{guildId}//BotOptions.xml";
             XDocument xmldoc = XDocument.Load(xmlPath);
             var botChannelOnly = Convert.ToBoolean(xmldoc.Element("BotOptions").Element("Markov").Element("BotChannelOnly").Value);
-
-            return botChannelOnly;
-        }
-
-        public static bool AutoWarnDuplicates(ulong guildId)
-        {
-            string xmlPath = $"Servers//{guildId}//BotOptions.xml";
-            XDocument xmldoc = XDocument.Load(xmlPath);
-            var botChannelOnly = Convert.ToBoolean(xmldoc.Element("BotOptions").Element("MessageLimits").Element("AutoWarnDuplicates").Value);
 
             return botChannelOnly;
         }

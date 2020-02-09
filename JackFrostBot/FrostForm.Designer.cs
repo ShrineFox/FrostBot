@@ -408,10 +408,12 @@
             this.Controls.Add(this.comboBox_Server);
             this.Controls.Add(this.comboBox_Channel);
             this.Controls.Add(this.btn_Send);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximumSize = new System.Drawing.Size(675, 340);
             this.MinimumSize = new System.Drawing.Size(675, 340);
             this.Name = "FrostForm";
+            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "JackFrostBot";
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_Purge)).EndInit();
             this.ResumeLayout(false);

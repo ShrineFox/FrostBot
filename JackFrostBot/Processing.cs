@@ -110,21 +110,27 @@ namespace JackFrostBot
             var guild = user.Guild;
             if ((channel.Id != UserSettings.Channels.BotChannelId(guild.Id)) && (Moderation.IsModerator((IGuildUser)message.Author) == false) && (message.Author.IsBot == false))
             {
-                int runs = 0;
                 int matches = 0;
+
                 foreach (IMessage msg in (await message.Channel.GetMessagesAsync(10).FlattenAsync()))
                 {
-                    if (((runs > 0) && (msg.Content.ToString() == message.Content.ToString()) && (msg.Author == message.Author) && (message.Attachments.Count == 0)))
+                    if ((msg.Content.ToString() == message.Content.ToString()) && (msg.Author == message.Author) && (message.Attachments.Count == 0))
                     {
-                        matches++;
-                        if (matches >= UserSettings.BotOptions.MaximumDuplicates(channel.Guild.Id))
+                        // Be sure to verify that the tested message's timestamp is NOT greater or equal to the current one we're iterating over,
+                        // because async methods can cause the current message to be pushed backwards into the "previous message" list before we can process it,
+                        // resulting in us checking the current message against itself or future messages, which will result in a false-positive duplicate.
+                        // Additionally, verify that the previously found message was sent within the "spam" threshold.
+                        if (((message.Timestamp - msg.Timestamp).TotalSeconds < UserSettings.BotOptions.DuplicateFrequencyThreshold(channel.Guild.Id)) && (msg.Timestamp < message.Timestamp))
                         {
-                            await LogDeletedMessage(message, "Duplicate message");
-                            if (UserSettings.BotOptions.AutoWarnDuplicates(channel.Guild.Id))
-                                Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
+                            matches++;
+                            if (matches >= UserSettings.BotOptions.MaximumDuplicates(channel.Guild.Id))
+                            {
+                                await LogDeletedMessage(message, "Duplicate message");
+                                if (UserSettings.BotOptions.AutoWarnDuplicates(channel.Guild.Id))
+                                    Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
+                            }
                         }
                     }
-                    runs++;
                 }
             }
         }
