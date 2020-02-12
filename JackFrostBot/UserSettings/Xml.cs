@@ -220,7 +220,10 @@ namespace JackFrostBot
                 new XComment("Messages will be automatically deleted if they fail to meet the following requirements."),
                 new XElement("MaximumDuplicates", "3"),
                 new XElement("MinimumLength", "0"),
-                new XElement("MinimumAlphanumericCharacters", "0")));
+                new XElement("MinimumAlphanumericCharacters", "0"),
+                new XElement("DuplicateFrequencyThreshold", "1"),
+                new XElement("AutoWarnDuplicates", "true")
+                ));
             botOptions.Add(new XElement("Strings",
                 new XComment("Automated messages that will be used to give the bot some personal flair."),
                 new XElement("LockMessage", "Please do not bring this discussion to other channels."),
@@ -238,8 +241,7 @@ namespace JackFrostBot
                 new XElement("AutoMarkov", "false"),
                 new XElement("BotChannelOnly", "false"),
                 new XElement("AutoMarkovFrequency", 100),
-                new XElement("MinimumLength", 0),
-                new XElement("AutoWarnDuplicates", "true")));
+                new XElement("MinimumLength", 0)));
 
             return botOptions;
         }
