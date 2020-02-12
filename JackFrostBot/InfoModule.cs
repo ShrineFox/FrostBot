@@ -18,6 +18,8 @@ using SoundInTheory.DynamicImage;
 using System.Windows.Media.Imaging;
 using ImageResizer;
 using AtlusRandomizer;
+using System.Drawing.Imaging;
+using System.Windows.Media;
 
 namespace JackFrostBot
 {
@@ -403,18 +405,25 @@ namespace JackFrostBot
         {
             if (Xml.CommandAllowed("show colors", Context))
             {
-                List<string> colorRoleNames = new List<string>();
+                List<IRole> colorRoles = new List<IRole>();
+                foreach (var role in Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")))
+                    colorRoles.Add(role);
 
-                foreach (var role in Context.Guild.Roles)
+                Bitmap bitmap = new Bitmap(320, 15 * colorRoles.Count, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                using (Graphics graphics = Graphics.FromImage(bitmap))
                 {
-                    if (role.Name.Contains("Color: "))
-                    {
-                        colorRoleNames.Add(role.Name);
-                    }
+                    graphics.Clear(System.Drawing.Color.FromArgb(255, 54, 57, 63));
+                    using (System.Drawing.Font fnt = new System.Drawing.Font("Whitney Medium", 10))
+                        for (int i = 0; i < colorRoles.Count; i++)
+                        {
+                            System.Drawing.Color roleColor = System.Drawing.Color.FromArgb(Convert.ToInt32(colorRoles[i].Color.R), Convert.ToInt32(colorRoles[i].Color.G), Convert.ToInt32(colorRoles[i].Color.B));
+                            System.Drawing.Brush brush = new System.Drawing.SolidBrush(roleColor);
+                            graphics.DrawString(colorRoles[i].Name, fnt, brush, 5, 15 * i);
+                        }
                 }
-
-                var embed = Embeds.ShowColors((IGuildChannel)Context.Channel, colorRoleNames, Context.Guild.Id);
-                await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                    
+                bitmap.Save("colors.png", System.Drawing.Imaging.ImageFormat.Png);
+                await Context.Channel.SendFileAsync("colors.png");
             }
         }
 
@@ -426,19 +435,11 @@ namespace JackFrostBot
             {
                 var users = await Context.Guild.GetUsersAsync();
                 var colorRole = Context.Guild.Roles.FirstOrDefault(r => r.Name.ToUpper().Contains($"COLOR: {roleName.ToUpper()}"));
-                bool inUse = false;
 
-                foreach (var user in users)
+                if (users.Any(x => x.RoleIds.Contains(colorRole.Id) && x.Id != Context.User.Id))
+                    await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' is already in use by a different Member, so you can't update it. Try creating a new color role with ``?create color``");
+                else
                 {
-                    if (user.RoleIds.Contains(colorRole.Id) && user.Id != Context.User.Id)
-                    {
-                        inUse = true;
-                    }
-                }
-
-                if (!inUse)
-                {
-
                     colorValue = colorValue.Replace("#", "");
                     Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
 
@@ -452,49 +453,61 @@ namespace JackFrostBot
                         await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact role name!");
                     }
                 }
-                else
+            }
+
+        }
+
+        //Remove unused color roles
+        [Command("prune colors"), Summary("Remove unused Color Roles.")]
+        public async Task PruneColors()
+        {
+            if (Xml.CommandAllowed("prune colors", Context))
+            {
+                var users = await Context.Guild.GetUsersAsync();
+                var roles = Context.Guild.Roles.Where(r => r.Name.ToUpper().Contains($"COLOR: "));
+                int pruneCount = 0;
+
+                foreach (var role in roles)
                 {
-                    await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' is already in use by a different Member, so you can't update it. Try creating a new color role with ``?create color``");
+                    if (users.Any(x => x.RoleIds.Contains(role.Id)))
+                        Console.WriteLine($"Role {role.Name} is in use.");
+                    else
+                    {
+                        Console.WriteLine($"Role {role.Name} is unused, deleting...");
+                        await role.DeleteAsync();
+                        pruneCount++;
+                    }
                 }
+                await Context.Channel.SendMessageAsync($"Deleted {pruneCount} unused Color Roles.");
             }
 
         }
 
         //Change an existing color role's name
         [Command("rename color"), Summary("Change an existing color role's name.")]
-        public async Task RenameColor([Remainder, Summary("The new name of the Color Role.")] string roleName)
+        public async Task RenameColor([Summary("The name of the Color Role to update.")] string oldRoleName, [Remainder, Summary("The new name of the Color Role.")] string newRoleName)
         {
             if (Xml.CommandAllowed("rename color", Context))
             {
                 var users = await Context.Guild.GetUsersAsync();
                 var user = (SocketGuildUser)Context.User;
-                var colorRole = user.Roles.FirstOrDefault(r => r.Name.ToUpper().Contains($"COLOR: "));
-                bool inUse = false;
+                var colorRole = user.Guild.Roles.FirstOrDefault(r => r.Name.ToUpper().Equals($"COLOR: {oldRoleName.ToUpper()}"));
 
-                foreach (var guildUser in users)
+                if (users.Any(x => x.RoleIds.Contains(colorRole.Id) && x.Id != Context.User.Id))
                 {
-                    if (guildUser.RoleIds.Contains(colorRole.Id) && guildUser.Id != Context.User.Id)
-                    {
-                        inUse = true;
-                    }
-
+                    await Context.Channel.SendMessageAsync($"Role '{colorRole.Name}' is already in use by a different Member, so you can't update it. Try creating a new color role with ``?create color``");
                 }
-
-                if (!inUse)
+                else
                 {
                     try
                     {
-                        await colorRole.ModifyAsync(r => r.Name = $"Color: {roleName}");
+                        await colorRole.ModifyAsync(r => r.Name = $"Color: {newRoleName}");
                         await Context.Channel.SendMessageAsync("Color name successfully updated!");
                     }
                     catch
                     {
                         await Context.Channel.SendMessageAsync($"Role could not be found. Make sure you have a color role first!");
                     }
-                }
-                else
-                {
-                    await Context.Channel.SendMessageAsync($"Role 'Color: {colorRole.Name}' is already in use by a different Member, so you can't update it. Try creating a new color role with ``?create color``");
                 }
             }
 
