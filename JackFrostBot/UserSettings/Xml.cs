@@ -120,6 +120,9 @@ namespace JackFrostBot
                 new XElement("Channel", new XAttribute("Id", exampleId), new XAttribute("Name", "example-media-channel"))));
             channels.Add(new XElement("Pins", new XComment("Channel where users can save messages using the pin command."),
                 new XElement("Channel", new XAttribute("Id", exampleId), new XAttribute("Name", "example-pins-channel"))));
+            channels.Add(new XElement("ModShowcase", new XComment("Channel where new mods from the forum are announced."),
+                new XElement("Channel", new XAttribute("Id", exampleId), new XAttribute("Name", "example-mod-showcase-channel"))));
+
 
             return channels;
         }
@@ -233,7 +236,8 @@ namespace JackFrostBot
                 new XElement("NoPermissionMessage", "You don't have permission to use this command."),
                 new XElement("BotIconURL", "https://images-ext-2.discordapp.net/external/FnvGxO_YkmQbgUsGsSDUE1QlW9VNEBNBZoPy7294rHc/https/i.imgur.com/5I5Vos8.png"),
                 new XElement("WelcomeMessage", "Be sure to read the rules and  enjoy your stay!"),
-                new XElement("CurrencyName", "Coins")
+                new XElement("CurrencyName", "Coins"),
+                new XElement("AmicitiaGithubIoPath", @"C:\Users\ryans\Documents\GitHub\Amicitia.github.io")
                 ));
             
             botOptions.Add(new XElement("Markov",

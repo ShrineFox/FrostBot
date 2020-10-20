@@ -246,6 +246,7 @@
     <Compile Include="UserSettings\Verification.cs" />
     <Compile Include="UserSettings\Roles.cs" />
     <Compile Include="UserSettings\Xml.cs" />
+    <Compile Include="Webscraper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

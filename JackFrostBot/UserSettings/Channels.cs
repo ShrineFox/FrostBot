@@ -76,5 +76,14 @@ namespace JackFrostBot.UserSettings
 
             return channelId;
         }
+
+        public static ulong ModShowcaseChannelId(ulong guildId)
+        {
+            string xmlPath = $"Servers//{guildId}//Channels.xml";
+            XDocument xmldoc = XDocument.Load(xmlPath);
+            var channelId = Convert.ToUInt64(xmldoc.Element("Channels").Element("ModShowcase").Elements().FirstOrDefault().FirstAttribute.Value);
+
+            return channelId;
+        }
     }
 }

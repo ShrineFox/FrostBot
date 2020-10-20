@@ -712,6 +712,17 @@ namespace JackFrostBot
             }
         }
 
+        //Manually check forum for new posts
+        [Command("update"), Summary("Update amicitia.github.io based on shrinefox.com/forum submissions.")]
+        public async Task ForumCheck()
+        {
+            if (Xml.CommandAllowed("update", Context))
+            {
+                await Webscraper.NewForumPostCheck((IGuildChannel)Context.Channel);
+            }
+            try { await Context.Channel.SendMessageAsync(""); } catch { }
+        }
+
     }
 
 }
