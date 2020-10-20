@@ -279,13 +279,16 @@ namespace JackFrostBot
             return eBuilder.Build();
         }
 
-        public static Embed Pin(IGuildChannel channel, IMessage msg)
+        public static Embed Pin(IGuildChannel channel, IMessage msg, IUser user)
         {
             var eBuilder = new EmbedBuilder()
+            .WithTitle("Jump to message")
             .WithDescription(msg.Content)
+            .WithUrl(msg.GetJumpUrl())
             .WithTimestamp(msg.Timestamp)
             .WithAuthor(msg.Author)
-            .WithColor(new Color(0xF5DA23));
+            .WithFooter($"Pinned by {user.Username} in #{channel.Name}", $"{user.GetAvatarUrl()}")
+            .WithColor(new Color(0x0094FF));
 
             if (msg.Attachments.Count > 0)
                 eBuilder.WithImageUrl(msg.Attachments.FirstOrDefault().Url);

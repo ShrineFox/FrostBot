@@ -560,24 +560,25 @@ namespace JackFrostBot
 
         //Saves message to a "pinned" message channel
         [Command("pin"), Summary("Saves message to a pinned message channel.")]
-        public async Task PinMessage([Remainder, Summary("The ID of the message to pin.")] string messageId)
+        public async Task PinMessage([Summary("The ID of the message to pin.")] string messageId, [Remainder, Summary("The ID of the channel the message is in.")] IMessageChannel channel)
         {
-            if (Xml.CommandAllowed("pin", Context))
+            List<ulong> allowedChannels = new List<ulong>() { 681270126657798295, 681273506964701222, 143149937247387649, 448202199852646431 };
+            if (Xml.CommandAllowed("pin", Context) && allowedChannels.Contains(channel.Id))
             {
-                var channel = (ITextChannel)Context.Channel;
+                if (channel == null)
+                    channel = (ITextChannel)Context.Channel;
                 var msg = await channel.GetMessageAsync(Convert.ToUInt64(messageId));
 
                 try
                 {
                     var pinChannel = await Context.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.PinsChannelId(Context.Guild.Id));
 
-                    var embed = Embeds.Pin((IGuildChannel)Context.Channel, msg);
+                    var embed = Embeds.Pin((IGuildChannel)Context.Channel, msg, Context.Message.Author);
                     await pinChannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
                 }
                 catch
                 {
-                    await Context.Channel.SendMessageAsync("Could not find referenced message in this channel.");
-
+                    await Context.Channel.SendMessageAsync("Could not find referenced message in the specified channel.");
                 }
 
             }
