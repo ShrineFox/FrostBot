@@ -26,38 +26,52 @@ namespace JackFrostBot
             int[] forumIDs = new int[] { 11, 12, 13, 15, 16, 18, 19, 20, 27, 29, 30 };
             for (int i = 0; i < forumIDs.Count(); i++)
             {
+                Processing.LogConsoleText($"Checking threads in Forum ID {forumIDs[i]}...", channel.GuildId);
                 using (var client = new WebClient())
                 {
-                    //Download webpage
-                    //client.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-                    //client.Proxy = null;
                     string page = client.DownloadString($"https://shrinefox.com/forum/viewforum.php?f={forumIDs[i]}");
-
-                    //Load thread table
                     HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
                     doc.LoadHtml(page);
 
-                    //Check for spoiler
+                    //Get thread list
+                    //working: //ul[@class='topiclist topics']//dt//div//a[@class='topictitle]']
                     HtmlNodeCollection nodeCollection = doc
                                          .DocumentNode
-                                         .SelectNodes("//ul[@class='topiclist topics']//dt//div//a[@class='topictitle']");
+                                         .SelectNodes("//div[@class='forumbg']//ul[@class='topiclist topics']//li");
 
                     //Return thread info
-                    foreach (HtmlNode node in nodeCollection)
+                    foreach (var node in nodeCollection)
                     {
-                        string threadUrl = WebUtility.HtmlDecode(node.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
-                        string threadTitle = WebUtility.HtmlDecode(node.InnerText);
+                        //Subnodes
+                        var titleNode = node.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//a[@class='topictitle']");
+                        var dateNode = node.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//div[@class='topic-poster responsive-hide left-box']");
+
+                        //Title Node
+                        string threadUrl = WebUtility.HtmlDecode(titleNode.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
+                        threadUrl = threadUrl.Replace(threadUrl.Split('&')[2], "").TrimEnd('&');
+                        string threadTitle = WebUtility.HtmlDecode(titleNode.InnerText);
                         string tsvLine = "";
-                        if (!File.ReadAllText("threads.txt").Contains(threadUrl))
+
+                        //Date Node
+                        var authorNode = dateNode.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//a[@class='username']");
+                        string authorUrl = WebUtility.HtmlDecode(authorNode.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
+                        string authorName = WebUtility.HtmlDecode(authorNode.InnerText);
+                        string date = WebUtility.HtmlDecode(dateNode.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//div[@class='topic-poster responsive-hide left-box']").InnerText).Replace("\t","").Split('\n')[1].Replace($"by {authorName} » ","");
+
+                        if (!File.ReadAllText("threads.txt").Contains(threadUrl) && !File.ReadAllText("threads.txt").Contains(threadTitle))
                         {
+                            //Download thread and check for spoiler if link/title isn't already found in threads.txt
                             tsvLine = GetTSVLine(threadUrl, channel);
-                            Processing.LogConsoleText($"Downloading {threadUrl}...", channel.GuildId);
+                            Processing.LogConsoleText($"Downloading Thread: {threadTitle}", channel.GuildId);
                         }
 
                         List<string> threadInfo = new List<string>();
-                        threadInfo.Add(threadUrl.Replace(threadUrl.Split('&')[2], "").TrimEnd('&')); //0
+                        threadInfo.Add(threadUrl); //0
                         threadInfo.Add(threadTitle); //1
                         threadInfo.Add(tsvLine); //2
+                        threadInfo.Add(authorUrl); //3
+                        threadInfo.Add(authorName); //4
+                        threadInfo.Add(date); //5
                         threads.Add(threadInfo);
                     }
                 }
@@ -74,7 +88,6 @@ namespace JackFrostBot
             {
                 //Download webpage
                 string page = client.DownloadString(threadUrl);
-                Processing.LogConsoleText($"Downloading {threadUrl}...", channel.GuildId);
 
                 //Load thread
                 HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
@@ -85,7 +98,7 @@ namespace JackFrostBot
                     .DocumentNode
                     .SelectNodes("//div[@class='codebox']//pre");
                 if (spoiler != null)
-                    if (spoiler[0].FirstChild.InnerText.Contains("mPt1FCy1Kzs1"))
+                    if (spoiler[0].FirstChild.InnerText.Contains("\t"))
                         tsvLine = spoiler[0].FirstChild.InnerText.Replace("mPt1FCy1Kzs1", threadUrl);
 
                 //Return empty string or TSV row text
@@ -95,18 +108,23 @@ namespace JackFrostBot
 
         public static async Task NewForumPostCheck(IGuildChannel channel)
         {
+            if (!File.Exists("threads.txt")) { File.CreateText("threads.txt").Close(); } //Create threads.txt
+
             var defaultChannel = (ITextChannel)channel; //Bot logs channel or wherever command is used
             var modShowcaseChannel = await channel.Guild.GetTextChannelAsync(UserSettings.Channels.ModShowcaseChannelId(channel.GuildId));
             int newSubmissions = 0; //Increments when new threads are detected
 
             await defaultChannel.SendMessageAsync("Beginning forum check, please wait...");
+            
+            //Create stringbuilder and add existing lines from threads.txt
             StringBuilder sb = new StringBuilder();
+            foreach (var line in File.ReadLines("threads.txt"))
+                sb.AppendLine(line);
 
             List<List<string>> threadList = Webscraper.DownloadForumPosts(channel); //Get threads in format: url|title|tsv|
             foreach (List<string> thread in threadList)
             {
                 bool containsThread = false; //If threads.txt already contains entry
-                if (!File.Exists("threads.txt")) { File.CreateText("threads.txt").Close(); } //Create threads.txt
                 foreach (var line in File.ReadLines("threads.txt"))
                 {
                     if (line.StartsWith(thread[2].Split('\t')[0]))
@@ -152,10 +170,19 @@ namespace JackFrostBot
 
         public static async Task NotifyAsync(ITextChannel channel, string[] threadInfo)
         {
+            string[] splitTSV = threadInfo[2].Split('\t');
+            DateTime dateTime = new DateTime();
+            DateTime.TryParse(threadInfo[5], out dateTime);
+
             var builder = new EmbedBuilder()
-                .WithDescription($"**New mod submission!**")
+                .WithTitle(threadInfo[1])
+                .WithUrl(threadInfo[0])
+                .WithDescription(splitTSV[7])
                 .WithColor(new Color(0x4A90E2))
-                .AddField("Thread Title", $"[{threadInfo[1]}]({threadInfo[0]})");
+                .AddField("Game", splitTSV[2])
+                .AddField("Date", dateTime.ToString("MM/dd/yyyy"))
+                .AddField("Author", $"[{threadInfo[4]}]({threadInfo[3]})")
+                .AddField("Download", $"[{splitTSV[10]}]({splitTSV[10]})");
             var embed = builder.Build();
 
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
@@ -172,8 +199,12 @@ namespace JackFrostBot
             {
                 if (!File.ReadAllText(tsvPath).Contains(modID + "\t"))
                 {
-                    Processing.LogConsoleText($"Adding {modID} to mods.tsv", channel.GuildId);
+                    Processing.LogConsoleText($"TSV DATA FOUND! Adding {modID} to mods.tsv", channel.GuildId);
                     File.AppendAllText(tsvPath, line + Environment.NewLine);
+                }
+                else
+                {
+                    Processing.LogConsoleText($"No TSV data found.", channel.GuildId);
                 }
             }
             else
@@ -184,9 +215,8 @@ namespace JackFrostBot
         {
             Process cmd = new Process();
             cmd.StartInfo.WorkingDirectory = UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", guildID);
-            cmd.StartInfo.FileName = "cmd.exe";
+            cmd.StartInfo.FileName = Path.Combine(UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", guildID), "bin\\Debug\\Amicitia.github.io.exe");
             //cmd.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            cmd.StartInfo.Arguments = $"/C \"{Path.Combine(UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", guildID), "bin\\Debug\\Amicitia.github.io.exe")}\"";
             cmd.Start();
             cmd.WaitForExit();
         }
