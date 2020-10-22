@@ -131,37 +131,42 @@ namespace JackFrostBot
             foreach (var line in File.ReadLines("threads.txt"))
                 sb.AppendLine(line);
 
+            //Update threads.txt stringbuilder
             List<List<string>> threadList = Webscraper.DownloadForumPosts(channel); //Get threads in format: url|title|tsv|
             foreach (List<string> thread in threadList)
             {
                 bool containsThread = false; //If threads.txt already contains entry
                 foreach (var line in File.ReadLines("threads.txt"))
                 {
-                    if (line.StartsWith(thread[2].Split('\t')[0]))
+                    if (line.StartsWith(thread[0]))
                         containsThread = true;
                 }
                 if (!containsThread)
                 {
                     newSubmissions++; //tsv line starting with matching ID found
-                    //Announce finding in mod showcase channel
-                    await NotifyAsync(modShowcaseChannel, thread.ToArray());
-                    UpdateTSV(channel, thread[2]);
-                    //Update threads.txt stringbuilder
-                    foreach (string splitLine in thread)
-                        sb.Append($"{splitLine}|");
-                    sb.AppendLine();
+                    //Update TSV & announce mod showcase if line exists
+                    if (thread[2] != "")
+                        await NotifyAsync(modShowcaseChannel, thread.ToArray());
+                    //Get ready to add line to threads.txt
+                    sb.Append($"{thread[0]}|{thread[1]}|{thread[2]}" + Environment.NewLine);
                 }    
             }
 
+            //Once it's done comparing, overwrite original local txt doc with new one
+            using (StreamWriter writer = new StreamWriter("threads2.txt", false))
+                writer.Write(sb.ToString());
+            File.Delete("threads.txt");
+            File.Move("threads2.txt", "threads.txt");
+
+            //Update TSV even if there's no new submissions
+            await defaultChannel.SendMessageAsync("Forum check complete! Updating TSV...");
+            UpdateTSV(channel);
+            Thread.Sleep(4000); //Wait for TSV to be updated
+
+            //If there are new submissions...
             if (newSubmissions > 0)
             {
-                //Once it's done comparing, overwrite original local txt doc with new one
-                using (StreamWriter writer = new StreamWriter("threads2.txt", false))
-                    writer.Write(sb.ToString());
-                File.Delete("threads.txt");
-                File.Move("threads2.txt", "threads.txt");
-
-                await defaultChannel.SendMessageAsync("Forum check complete! Building HTML...");
+                await defaultChannel.SendMessageAsync("TSV update complete! Building HTML...");
                 BuildHtml(channel.GuildId);
                 Thread.Sleep(8000); //Wait for html to be built
                 await defaultChannel.SendMessageAsync("HTML finished buildiing! Committing changes...");
@@ -183,6 +188,11 @@ namespace JackFrostBot
             string[] splitTSV = threadInfo[2].Split('\t');
             DateTime dateTime = new DateTime();
             DateTime.TryParse(threadInfo[5], out dateTime);
+            string downloads = "";
+            if (splitTSV[10] != "")
+                downloads += $"[{splitTSV[11]}]({splitTSV[10]})";
+            if (splitTSV[15] != "")
+                downloads += Environment.NewLine + $"[{splitTSV[16]}]({splitTSV[15]})";
 
             var builder = new EmbedBuilder()
                 .WithTitle(threadInfo[1])
@@ -191,29 +201,33 @@ namespace JackFrostBot
                 .WithColor(new Color(0x4A90E2))
                 .AddField("Game", splitTSV[2], true)
                 .AddField("Author", $"[{threadInfo[4]}]({threadInfo[3]})", true)
-                .AddField("Download", $"[{splitTSV[10]}]({splitTSV[10]})");
+                .AddField("Downloads", downloads);
             var embed = builder.Build();
 
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
 
-        public static void UpdateTSV(IGuildChannel channel, string line)
+        public static void UpdateTSV(IGuildChannel channel)
         {
             string githubPath = UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", channel.GuildId);
-            string tsvPath = Path.Combine(githubPath, "db//mods.tsv");
-            string modID = line.Split('\t')[0];
+            string tsvPath = Path.Combine(githubPath, "db\\mods.tsv");
 
             if (File.Exists(tsvPath))
             {
-                if (!File.ReadAllText(tsvPath).Contains(modID + "\t"))
+                foreach (var line in File.ReadAllLines("threads.txt"))
                 {
-                    Processing.LogConsoleText($"TSV DATA FOUND! Adding {modID} to mods.tsv", channel.GuildId);
-                    File.AppendAllText(tsvPath, line + Environment.NewLine);
-                }
-                else
-                {
-                    Processing.LogConsoleText($"No TSV data found.", channel.GuildId);
+                    string tsvLine = line.Split('|')[2];
+                    if (tsvLine != "")
+                    {
+                        string modID = tsvLine.Split('\t')[0];
+                        if (!File.ReadAllText(tsvPath).Contains(modID + "\t"))
+                        {
+                            Processing.LogConsoleText($"Adding {modID} to mods.tsv", channel.GuildId);
+                            File.AppendAllText(tsvPath, line + Environment.NewLine);
+                        }
+                    }
+                    
                 }
             }
             else
@@ -223,8 +237,8 @@ namespace JackFrostBot
         public static void BuildHtml(ulong guildID)
         {
             Process cmd = new Process();
-            cmd.StartInfo.WorkingDirectory = UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", guildID);
-            cmd.StartInfo.FileName = Path.Combine(UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", guildID), "bin\\Debug\\Amicitia.github.io.exe");
+            cmd.StartInfo.FileName = "cmd.exe";
+            cmd.StartInfo.Arguments = $"/K \"{Path.Combine(UserSettings.BotOptions.GetString("AmicitiaGithubIoPath", guildID), "bin\\Debug\\Amicitia.github.io.exe")}\"";
             //cmd.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             cmd.Start();
             cmd.WaitForExit();

@@ -356,7 +356,7 @@ namespace JackFrostBot
                     colorValue = colorValue.Replace("#", "");
                     Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
 
-                    await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor);
+                    await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor, false, null);
                     await Context.Channel.SendMessageAsync("Role successfully created!");
                 }
                 catch
