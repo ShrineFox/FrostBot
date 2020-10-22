@@ -34,45 +34,55 @@ namespace JackFrostBot
                     doc.LoadHtml(page);
 
                     //Get thread list
-                    //working: //ul[@class='topiclist topics']//dt//div//a[@class='topictitle]']
                     HtmlNodeCollection nodeCollection = doc
                                          .DocumentNode
-                                         .SelectNodes("//div[@class='forumbg']//ul[@class='topiclist topics']//li");
+                                         .SelectNodes("//ul[@class='topiclist topics']//dt//div//a[@class='topictitle']");
 
                     //Return thread info
                     foreach (var node in nodeCollection)
                     {
                         //Subnodes
-                        var titleNode = node.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//a[@class='topictitle']");
-                        var dateNode = node.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//div[@class='topic-poster responsive-hide left-box']");
+                        var dateNode = node.ParentNode.Descendants("div").First(x => x.Attributes["class"].Value.Contains("responsive")); 
 
                         //Title Node
-                        string threadUrl = WebUtility.HtmlDecode(titleNode.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
+                        string threadUrl = WebUtility.HtmlDecode(node.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
                         threadUrl = threadUrl.Replace(threadUrl.Split('&')[2], "").TrimEnd('&');
-                        string threadTitle = WebUtility.HtmlDecode(titleNode.InnerText);
+                        string threadTitle = WebUtility.HtmlDecode(node.InnerText);
                         string tsvLine = "";
 
-                        //Date Node
-                        var authorNode = dateNode.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//a[@class='username']");
-                        string authorUrl = WebUtility.HtmlDecode(authorNode.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
-                        string authorName = WebUtility.HtmlDecode(authorNode.InnerText);
-                        string date = WebUtility.HtmlDecode(dateNode.SelectSingleNode("//div[@class='forumbg']//ul[@class='topiclist topics']//li//div[@class='topic-poster responsive-hide left-box']").InnerText).Replace("\t","").Split('\n')[1].Replace($"by {authorName} » ","");
-
-                        if (!File.ReadAllText("threads.txt").Contains(threadUrl) && !File.ReadAllText("threads.txt").Contains(threadTitle))
+                        //Ignore sample thread
+                        if (threadTitle != "New Mod Submission System")
                         {
-                            //Download thread and check for spoiler if link/title isn't already found in threads.txt
-                            tsvLine = GetTSVLine(threadUrl, channel);
-                            Processing.LogConsoleText($"Downloading Thread: {threadTitle}", channel.GuildId);
-                        }
+                            //Date Node
+                            var authorNode = dateNode.Descendants("a").First(x => x.Attributes["class"].Value.Contains("username"));
+                            string authorUrl = WebUtility.HtmlDecode(authorNode.Attributes["href"].Value.ToString()).Replace("./", "https://shrinefox.com/forum/");
+                            string authorName = WebUtility.HtmlDecode(authorNode.InnerText);
+                            string date = WebUtility.HtmlDecode(dateNode.InnerText).Replace("\t", "").Split('\n')[1].Replace($"by {authorName} » ", "");
 
-                        List<string> threadInfo = new List<string>();
-                        threadInfo.Add(threadUrl); //0
-                        threadInfo.Add(threadTitle); //1
-                        threadInfo.Add(tsvLine); //2
-                        threadInfo.Add(authorUrl); //3
-                        threadInfo.Add(authorName); //4
-                        threadInfo.Add(date); //5
-                        threads.Add(threadInfo);
+                            //Ignore thread if URL is already added or thread is older than last update
+                            DateTime threadTime = new DateTime();
+                            DateTime.TryParse(date, out threadTime);
+                            DateTime fileTime = File.GetLastWriteTime("threads.txt");
+                            if (!File.ReadAllText("threads.txt").Contains(threadUrl) && !File.ReadAllText("threads.txt").Contains(threadTitle) && threadTime > fileTime)
+                            {
+                                //Download thread and check for spoiler if link/title isn't already found in threads.txt
+                                tsvLine = GetTSVLine(threadUrl, channel);
+                                Processing.LogConsoleText($"Downloading Thread: {threadTitle}", channel.GuildId);
+                            }
+                            else
+                            {
+                                Processing.LogConsoleText($"Already found or outdated, skipping: {threadTitle}", channel.GuildId);
+                            }
+
+                            List<string> threadInfo = new List<string>();
+                            threadInfo.Add(threadUrl); //0
+                            threadInfo.Add(threadTitle); //1
+                            threadInfo.Add(tsvLine); //2
+                            threadInfo.Add(authorUrl); //3
+                            threadInfo.Add(authorName); //4
+                            threadInfo.Add(date); //5
+                            threads.Add(threadInfo);
+                        }
                     }
                 }
             }
@@ -99,7 +109,7 @@ namespace JackFrostBot
                     .SelectNodes("//div[@class='codebox']//pre");
                 if (spoiler != null)
                     if (spoiler[0].FirstChild.InnerText.Contains("\t"))
-                        tsvLine = spoiler[0].FirstChild.InnerText.Replace("mPt1FCy1Kzs1", threadUrl);
+                        tsvLine = spoiler[0].FirstChild.InnerText.Replace("mPt1FCy1Kzs1", threadUrl).Replace("THREAD_URL", threadUrl);
 
                 //Return empty string or TSV row text
                 return tsvLine;
@@ -130,7 +140,7 @@ namespace JackFrostBot
                     if (line.StartsWith(thread[2].Split('\t')[0]))
                         containsThread = true;
                 }
-                if (!containsThread && thread[2] != "")
+                if (!containsThread)
                 {
                     newSubmissions++; //tsv line starting with matching ID found
                     //Announce finding in mod showcase channel
@@ -179,9 +189,8 @@ namespace JackFrostBot
                 .WithUrl(threadInfo[0])
                 .WithDescription(splitTSV[7])
                 .WithColor(new Color(0x4A90E2))
-                .AddField("Game", splitTSV[2])
-                .AddField("Date", dateTime.ToString("MM/dd/yyyy"))
-                .AddField("Author", $"[{threadInfo[4]}]({threadInfo[3]})")
+                .AddField("Game", splitTSV[2], true)
+                .AddField("Author", $"[{threadInfo[4]}]({threadInfo[3]})", true)
                 .AddField("Download", $"[{splitTSV[10]}]({splitTSV[10]})");
             var embed = builder.Build();
 
