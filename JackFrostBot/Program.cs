@@ -13,6 +13,7 @@ using JackFrostBot;
 using System.Timers;
 using System.Windows.Forms;
 using Discord.Rest;
+using System.Diagnostics;
 
 namespace Bot
 {
@@ -99,9 +100,12 @@ namespace Bot
                 JackFrostBot.UserSettings.Invites.Update(guild.Id, invites);
             }
 
-            //Open Form
-            JackFrostBot.FrostForm form = new JackFrostBot.FrostForm(client);
-            await Task.Run(() => { form.ShowDialog(); });
+            //Open Form if not already open
+            if (!Application.OpenForms.OfType<FrostForm>().Any())
+            {
+                JackFrostBot.FrostForm form = new JackFrostBot.FrostForm(client);
+                await Task.Run(() => { form.ShowDialog(); });
+            }
         }
 
         public async Task BotJoined(SocketGuild guild)
