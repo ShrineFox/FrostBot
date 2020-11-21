@@ -353,18 +353,26 @@ namespace JackFrostBot
             {
                 try
                 {
+                    //Create color role at highest possible position
+                    var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
                     colorValue = colorValue.Replace("#", "");
                     Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
 
-                    await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor, false, null);
+                    var colorRole = await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor, false, null);
+                    await colorRole.ModifyAsync(r => r.Position = lowestModeratorRole - 1);
+
                     await Context.Channel.SendMessageAsync("Role successfully created!");
+
+                    //Sort color roles by hue as high as possible on list
+                    var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
+                    foreach (var role in orderedRoles)
+                        await role.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
                 }
                 catch
                 {
                     await Context.Channel.SendMessageAsync("Role couldn't be created. Make sure you entered a valid hexadecimal value!");
                 }
             }
-
         }
 
         //Assign yourself a role with a specific color
@@ -377,19 +385,13 @@ namespace JackFrostBot
                 {
                     SocketGuildUser user = (SocketGuildUser)Context.User;
                     var clrRole = Context.Guild.Roles.FirstOrDefault(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase));
-                    //Try to move color role to highest spot possible
-                    var lowestModeratorRole = UserSettings.Roles.ModeratorRoleIDs(Context.Guild.Id).Min(r => Context.Guild.GetRole(r).Position);
-                    await clrRole.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
                     //Give role
                     await user.AddRoleAsync(clrRole);
                     await Context.Channel.SendMessageAsync("Role successfully added!");
+                    //Remove other color role user already has
                     foreach (var role in user.Roles)
-                    {
                         if (role.Name.ToUpper().Contains("COLOR: ") && !role.Name.ToUpper().Contains(roleName.ToUpper()))
-                        {
                             await user.RemoveRoleAsync(role);
-                        }
-                    }
                 }
                 catch
                 {
@@ -405,9 +407,7 @@ namespace JackFrostBot
         {
             if (Xml.CommandAllowed("show colors", Context))
             {
-                List<IRole> colorRoles = new List<IRole>();
-                foreach (var role in Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")))
-                    colorRoles.Add(role);
+                List<IRole> colorRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue()).ToList();
 
                 Bitmap bitmap = new Bitmap(320, 15 * colorRoles.Count, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 using (Graphics graphics = Graphics.FromImage(bitmap))
@@ -445,8 +445,16 @@ namespace JackFrostBot
 
                     try
                     {
+                        //Sort color roles by hue
+                        var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
                         await colorRole.ModifyAsync(r => r.Color = roleColor);
+                        await colorRole.ModifyAsync(r => r.Position = lowestModeratorRole - 1);
                         await Context.Channel.SendMessageAsync("Role successfully updated!");
+
+                        var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
+                        //Try to move color role to highest spot possible
+                        foreach (var role in orderedRoles)
+                            await role.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
                     }
                     catch
                     {
