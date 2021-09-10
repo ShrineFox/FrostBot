@@ -8,8 +8,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ClutteredMarkov;
+using System.Web;
+using FrostBot;
+using static FrostBot.Config;
 
-namespace JackFrostBot
+namespace FrostBot
 {
     public class Processing
     {
@@ -20,7 +23,9 @@ namespace JackFrostBot
             var guild = user.Guild;
 
             //Create txt if it doesn't exist
-            string logPath = $"Servers//{guild.Id}//Log.txt";
+            string logPath = Program.ymlPath.Replace("settings.yml", $"Servers//{guild.Id}//Log.txt");
+            if (!Directory.Exists(Path.GetDirectoryName(logPath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(logPath));
             if (!File.Exists(logPath))
                 File.Create(logPath);
 
@@ -35,7 +40,9 @@ namespace JackFrostBot
         public static void LogConsoleText(string text, ulong guildId)
         {
             //Create txt if it doesn't exist
-            string logPath = $"Servers//{guildId}//Log.txt";
+            string logPath = Program.ymlPath.Replace("settings.yml", $"Log.txt");
+            if (!Directory.Exists(Path.GetDirectoryName(logPath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(logPath));
             if (!File.Exists(logPath))
                 File.Create(logPath);
 
@@ -49,58 +56,28 @@ namespace JackFrostBot
         {
             var user = (IGuildUser)message.Author;
             var guild = user.Guild;
+            Server selectedServer = Botsettings.SelectedServer(guild.Id);
 
-            //Create txt if it doesn't exist
-            string logPath = $"Servers//{guild.Id}//LastDeletedMsg.txt";
-            if (!File.Exists(logPath))
-                File.Create(logPath);
-
-            LogConsoleText(reason, guild.Id);
+            // Log deletion and delete message
             await message.DeleteAsync();
-            File.WriteAllText(logPath, $"**Author**: {user.Username} ({user.Id})\n**Time**: {message.Timestamp}\n**Reason**: {reason}");
-
-            //Announce message deletion
-            var botlog = (SocketTextChannel)user.Guild.GetChannelAsync(JackFrostBot.UserSettings.Channels.BotLogsId(user.Guild.Id)).Result;
-            var embed = Embeds.ShowMsgInfo(guild.Id);
+            var botlog = (SocketTextChannel)user.Guild.GetChannelAsync(selectedServer.Channels.BotLogs).Result;
+            var embed = Embeds.DeletedMessage(message, reason);
             await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+
+            // Warn user depending on settings
+            if (selectedServer.WarnOnAutoDelete)
+                Moderation.Warn(Program.client.CurrentUser.Username, (ITextChannel)message.Channel, (SocketGuildUser)message.Author, reason);
         }
 
-        //Grant a user a role if they type the password in the verification channel
-        public static async Task VerificationCheck(SocketMessage message)
+        public static async Task LogEmbed(Embed embed, ITextChannel channel, bool sendInPublicChannel = false)
         {
-            var user = (IGuildUser)message.Author;
-            var guild = user.Guild;
-            if (Setup.IsVerificationChannel((IGuildChannel)message.Channel)) 
-            {
-                if (message.Content.ToLower() == UserSettings.Verification.VerificationMessage(guild.Id).ToLower())
-                {
-                    await message.DeleteAsync();
-                    ulong memberRoleId = UserSettings.Verification.MemberRoleID(guild.Id);
-                    if (memberRoleId != 0)
-                    {
-                        var memberRole = user.Guild.GetRole(memberRoleId);
-                        await user.AddRoleAsync(memberRole);
-                        var embed = Embeds.LogMemberAdd(user);
-                        var user2 = (SocketGuildUser)user;
-                        var botlog = (ITextChannel)user2.Guild.GetChannel(UserSettings.Channels.BotLogsId(user.Guild.Id));
-                        await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                    }
-                    else
-                        await message.Channel.SendMessageAsync("Attempted to give the new member a role, but it has to be configured first!");
-                }
-                else
-                    await message.DeleteAsync();
-            }
-        }
+            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
 
-        //Delete text posts in media only channel
-        public static async Task MediaOnlyCheck(SocketMessage message)
-        {
-            if (Setup.IsMediaOnlyChannel((IGuildChannel)message.Channel) && 
-                (message.Attachments.Count == 0 && !message.Content.Contains("http") && !message.Content.Contains("www")))
-            {
-                await LogDeletedMessage(message, "User tried to talk in a media-only channel.");
-            }
+            var botlog = await channel.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            if (sendInPublicChannel)
+                await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
         }
 
         // Check if a message is a duplicate and if so, delete it
@@ -108,7 +85,10 @@ namespace JackFrostBot
         {
             var user = (IGuildUser)message.Author;
             var guild = user.Guild;
-            if ((channel.Id != UserSettings.Channels.BotChannelId(guild.Id)) && (Moderation.IsModerator((IGuildUser)message.Author) == false) && (message.Author.IsBot == false))
+            Server selectedServer = Botsettings.SelectedServer(guild.Id);
+
+            if (channel.Id != selectedServer.Channels.BotSandbox 
+                && !Moderation.IsModerator((IGuildUser)message.Author, guild.Id) && !message.Author.IsBot)
             {
                 int matches = 0;
 
@@ -116,18 +96,12 @@ namespace JackFrostBot
                 {
                     if ((msg.Content.ToString() == message.Content.ToString()) && (msg.Author == message.Author) && (message.Attachments.Count == 0))
                     {
-                        // Be sure to verify that the tested message's timestamp is NOT greater or equal to the current one we're iterating over,
-                        // because async methods can cause the current message to be pushed backwards into the "previous message" list before we can process it,
-                        // resulting in us checking the current message against itself or future messages, which will result in a false-positive duplicate.
-                        // Additionally, verify that the previously found message was sent within the "spam" threshold.
-                        if (((message.Timestamp - msg.Timestamp).TotalSeconds < UserSettings.BotOptions.DuplicateFrequencyThreshold(channel.Guild.Id)) && (msg.Timestamp < message.Timestamp))
+                        if (((message.Timestamp - msg.Timestamp).TotalSeconds < selectedServer.DuplicateFreq) && (msg.Timestamp < message.Timestamp))
                         {
                             matches++;
-                            if (matches >= UserSettings.BotOptions.MaximumDuplicates(channel.Guild.Id))
+                            if (matches >= selectedServer.MaxDuplicates)
                             {
                                 await LogDeletedMessage(message, "Duplicate message");
-                                if (UserSettings.BotOptions.AutoWarnDuplicates(channel.Guild.Id))
-                                    Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, "Stop posting the same thing over and over.");
                             }
                         }
                     }
@@ -135,36 +109,24 @@ namespace JackFrostBot
             }
         }
 
-        public static async Task MsgLengthCheck(SocketMessage message, SocketGuildChannel channel)
-        {
-            var user = (IGuildUser)message.Author;
-            var guild = user.Guild;
-            if ((Moderation.IsModerator((IGuildUser)message.Author) == false) && (message.Author.IsBot == false))
-            {
-                //Delete Messages that are too short
-                int minimum = UserSettings.BotOptions.MinimumLength(channel.Guild.Id);
-                int msgLength = message.Content.ToString().Trim(new char[] { ' ', '.' }).Length;
-                if (message.Content.Length < minimum && message.Attachments.Count == 0)
-                    await LogDeletedMessage(message, $"Message was too short (minimum is {minimum})");
-                int minletters = UserSettings.BotOptions.MinimumLetters(channel.Guild.Id);
-                //Delete messages that don't have enough alphanumeric characters
-                if (message.Content.Count(char.IsLetterOrDigit) < minletters && message.Tags.Count <= 0 && !Regex.IsMatch(message.Content, @"\p{Cs}") && message.Attachments.Count <= 0)
-                    await LogDeletedMessage(message, $"Message didn't have enough letters (minimum is {minletters})");
-            }
-        }
-
         //Check if a message is filtered 
         public static async Task FilterCheck(SocketMessage message, SocketGuildChannel channel)
         {
-            if (Convert.ToBoolean(UserSettings.Filters.Enabled(channel.Guild.Id)))
-                foreach (string term in UserSettings.Filters.List(channel.Guild.Id))
+            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+
+            if (Convert.ToBoolean(selectedServer.EnableWordFilter))
+                foreach (string term in selectedServer.WordFilter)
                 {
                     if (Regex.IsMatch(message.Content, string.Format(@"\b{0}\b|\b{0}d\b|\b{0}s\b|\b{0}ing\b|\b{0}ed\b|\b{0}er\b|\b{0}ers\b", Regex.Escape(term))))
                     {
-                        string deleteReason = $"Message included a filtered term: {term}";
+                        // Censor word in warn/delete reason
+                        string asterisks = "";
+                        for (int i = 0; i < term.Length - 2; i++)
+                            asterisks += "*";
+                        string deleteReason = $"Message included a filtered term: {term.ToCharArray().First()}{asterisks}{term.ToCharArray().Last()}";
 
-                        //Check if a message is clearly bypassing the filter, if so then warn
-                        if (UserSettings.Filters.TermCausesWarn(term, channel.Guild.Id))
+                        // Warn on filter match depending on settings, then delete
+                        if (selectedServer.WarnOnFilter)
                             Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, deleteReason);
                         await LogDeletedMessage(message, deleteReason);
                     }
@@ -172,38 +134,47 @@ namespace JackFrostBot
         }
 
         //Log replies and respond with a random reply
-        public static async Task Markov(string message, SocketGuildChannel channel, int frequency)
+        public static async Task Markov(SocketUserMessage message, SocketGuildChannel channel, Server selectedServer, bool ignoreFreq = false)
         {
-            string binFilePath = $"Servers\\{channel.Guild.Id.ToString()}\\{channel.Guild.Id.ToString()}";
+            string binFilePath = Program.ymlPath.Replace("config.yml", $"Servers\\{channel.Guild.Id}\\{channel.Guild.Id}");
+
+            // Create markov object, attempt to load from path
             Markov mkv = new Markov();
             try { mkv.LoadChainState(binFilePath); }
             catch { }
-            //Sanitize message content
-            string newMessage = message;
-            var links = newMessage.Split("\t\n ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("http://") || s.StartsWith("www.") || s.StartsWith("https://") || s.StartsWith("@"));
-            foreach (var link in links)
-                newMessage = newMessage.Replace(link, "");
 
-            if (newMessage != "" && Moderation.IsPublicChannel(channel))
-                mkv.Feed(newMessage);
+            // Add incoming message to markov data 
+            // if it doesn't include mentions or links, and channel is considered public
+            if (message.Content != "" && Moderation.IsPublicChannel(channel)
+                && message.MentionedUsers.Count <= 0 && message.MentionedRoles.Count <= 0 && !message.MentionedEveryone
+                && !message.Content.Contains("http"))
+                mkv.Feed(message.Content);
 
+            // Save markov data to path
+            Directory.CreateDirectory(Path.GetDirectoryName(binFilePath));
             mkv.SaveChainState(binFilePath);
 
-            var socketChannel = (ISocketMessageChannel)channel;
-            Random rnd = new Random();
+            // Create new markov string from data so far
             string markov = MarkovGenerator.Create(mkv);
+            // Try to make string more than 100 characters (up to 20 tries)
             int runs = 0;
-            while (markov.Length < UserSettings.BotOptions.MarkovMinimumLength(channel.Guild.Id) && runs < 20)
+            while (markov.Length < 100 && runs < 20)
             {
                 markov = MarkovGenerator.Create(mkv);
                 runs++;
             }
 
+            // Send new markov message to channel (percentage of chance based on frequency setting)
+            var socketChannel = (ISocketMessageChannel)channel;
+            Random rnd = new Random();
+            int frequency = 100;
+            if (!ignoreFreq)
+                frequency = selectedServer.MarkovFreq;
             if (rnd.Next(1, 100) <= frequency)
             {
-                if (!UserSettings.BotOptions.MarkovBotChannelOnly(channel.Guild.Id))
+                if (!selectedServer.BotChannelMarkovOnly)
                     await socketChannel.SendMessageAsync(markov);
-                else if (channel.Id == UserSettings.Channels.BotChannelId(channel.Guild.Id))
+                else if (channel.Id == selectedServer.Channels.BotSandbox)
                     await socketChannel.SendMessageAsync(markov);
             }
 
