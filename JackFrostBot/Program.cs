@@ -36,6 +36,7 @@ namespace FrostBot
 
         public async Task MainAsync()
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
             // Set path to config file
             settings = new Botsettings();
             
@@ -64,29 +65,122 @@ namespace FrostBot
                     await client.StartAsync();
                 }
                 else
-                    Console.WriteLine("Failed to connect. Please set bot token in settings.yml.");
+                    Processing.LogConsoleText("Failed to connect. Please set bot token in settings.yml.");
             }
             catch
             {
-                Console.WriteLine("Failed to connect. Invalid token?");
+                Processing.LogConsoleText("Failed to connect. Invalid token?");
             }
 
             // Tasks
-            //client.Log += Log;
+            client.Log += Log;
             client.Ready += Ready;
-            //client.Disconnected += Disconnected;
+            client.UserJoined += UserJoin;
+            client.ReactionAdded += ReactionAdded;
+            client.InteractionCreated += InteractionCreated;
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
         }
 
+        private async Task InteractionCreated(SocketInteraction interaction)
+        {
+            switch (interaction)
+            {
+                // Slash commands
+                case SocketSlashCommand commandInteraction:
+                    await HandleSlashCmd(commandInteraction);
+                    break;
+
+                // Button clicks/selection dropdowns
+                case SocketMessageComponent componentInteraction:
+                    await HandleComponentInteraction(componentInteraction);
+                    break;
+
+                // Unused or Unknown/Unsupported
+                default:
+                    break;
+            }
+        }
+
+        private async Task HandleComponentInteraction(SocketMessageComponent interaction)
+        {
+            if (interaction.Data.CustomId.StartsWith("setup-"))
+                Setup.HandleSetupInteraction(interaction);
+        }
+
+        private async Task HandleSlashCmd(SocketSlashCommand interaction)
+{
+            // Checking command name
+            if (interaction.Data.Name == "ping")
+            {
+                // Respond to interaction with message.
+                // You can also use "ephemeral" so that only the original user of the interaction sees the message
+                await interaction.RespondAsync($"Pong!", ephemeral: true);
+
+                // Also you can followup with a additional messages, which also can be "ephemeral"
+                await interaction.FollowupAsync($"PongPong!", ephemeral: true);
+            }
+        }
+
+        public async Task UserJoin(SocketGuildUser user)
+        {
+            var selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            // Give the new user the Lurker role if enabled
+            if (selectedServer.Roles.Any(x => x.IsLurkerRole))
+            {
+                var lurkRole = (IRole)user.Guild.GetRole(selectedServer.Roles.First(x => x.IsLurkerRole).Id);
+                var newUser = (IGuildUser)user;
+                if (lurkRole != null)
+                    await newUser.AddRoleAsync(lurkRole);
+            }
+
+            // Send custom welcome message
+            // OR mute user automatically if their warn level is equal to or higher than the mute level
+            int warnLevel = Moderation.WarnLevel(user);
+            var defaultChannel = (SocketTextChannel)user.Guild.GetChannel(selectedServer.Channels.General);
+
+            if (warnLevel >= selectedServer.MuteLevel)
+            {
+                await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
+                Moderation.Mute(client.CurrentUser.Username, defaultChannel, user);
+            }
+            else
+                await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {selectedServer.Strings.WelcomeMessage}");
+        }
+
+        private async Task ReactionAdded(Cacheable<IUserMessage, ulong> usrMsg, Cacheable<IMessageChannel, ulong> msgChannel, SocketReaction reaction)
+        {
+            var amount = 1;
+            var msgId = reaction.MessageId;
+            //var channel = (ITextChannel)msgChannel;
+
+            // Pin message using "pin" emoji
+            /* 
+            if (arg1.Id == 640802444233670676)
+            {
+                int originalAmount = 0;
+                foreach (var pair in JackFrostBot.UserSettings.Currency.Get(channel.Guild.Id))
+                    if (pair.Item1 == arg3.UserId.ToString())
+                        originalAmount = pair.Item2;
+                JackFrostBot.UserSettings.Currency.Add(channel.Guild.Id, arg3.UserId, amount);
+
+                var botlog = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.BotLogsId(channel.Guild.Id));
+                var botchannel = await channel.Guild.GetTextChannelAsync(JackFrostBot.UserSettings.Channels.BotChannelId(channel.Guild.Id));
+                Embed embed = Embeds.Earn(arg3.User.ToString(), amount, channel.Guild.Id);
+                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+                await botchannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            }*/
+
+            return;
+        }
+
         public async Task Ready()
         {
-            Console.WriteLine("Connected");
             active = true;
 
             // Get updated list of servers
-            Console.WriteLine("Getting servers...");
+            Processing.LogDebugMessage("Getting servers...");
             foreach (var guild in client.Guilds)
                 if (settings.Servers == null || !settings.Servers.Any(x => x.Id.Equals(guild.Id)))
                     AddServer(guild);
@@ -98,7 +192,7 @@ namespace FrostBot
             /*if (settings.Activity != "")
                 SetStatus(new Game(settings.Activity, (ActivityType)settings.ActivityType), (UserStatus)settings.Status);*/
 
-            Console.WriteLine("Ready");
+            Processing.LogDebugMessage("Ready");
         }
 
         private void AddServer(SocketGuild guild)
@@ -107,7 +201,12 @@ namespace FrostBot
             List<Command> cmds = new List<Command>();
             foreach (var cmdModule in commands.Modules.Where(m => m.Parent == null))
                 foreach (var cmd in cmdModule.Commands)
-                    cmds.Add(new Command { Name = cmd.Name });
+                {
+                    if (cmd.Name == "setup")
+                        cmds.Add(new Command { Name = cmd.Name, BotChannelOnly = false });
+                    else
+                        cmds.Add(new Command { Name = cmd.Name });
+                }   
 
             // Add list of moderator roles (derived from administrator permissions)
             List<Role> roles = new List<Role>();
@@ -119,7 +218,7 @@ namespace FrostBot
 
         public static void SetStatus(Game activity, UserStatus status)
         {
-            Console.WriteLine("Setting activity and status...");
+            Processing.LogDebugMessage("Setting activity and status...");
             client.SetActivityAsync(activity);
             client.SetStatusAsync(status);
         }
@@ -134,19 +233,22 @@ namespace FrostBot
 
         public async Task HandleCommand(SocketMessage messageParam)
         {
-            Console.WriteLine("Message Received");
             // Get message content and channel
             var message = messageParam as SocketUserMessage;
             var channel = (SocketGuildChannel)message.Channel;
+            var user = (IGuildUser)message.Author;
+            // Ensure we have latest settings
+            settings = Botsettings.Load();
+            // Get settings for the server the message is in
+            var selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
 
             // Stop processing if it's a system message or author is a bot
             if (message == null || message.Author.IsBot) return;
 
-            // Ensure we have latest settings
-            settings = Botsettings.Load();
-
-            // Get settings for the server the message is in
-            var selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            // Remove lurker role if member has one
+            foreach (var roleId in user.RoleIds)
+                if (selectedServer.Roles.Any(x => x.Equals(roleId) && x.IsLurkerRole))
+                    await user.RemoveRoleAsync(roleId);
 
             // Set status to offline and stop executing if deactivate button has been clicked
             if (!active)
@@ -182,6 +284,13 @@ namespace FrostBot
             // Send error message unless command is unknown
             if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)
                 await context.Channel.SendMessageAsync(result.ErrorReason);
+        }
+
+        private Task Log(LogMessage msg)
+        {
+            if (!msg.ToString().Contains("handler is blocking the gateway task"))
+                Processing.LogConsoleText(msg.Message);
+            return Task.CompletedTask;
         }
 
         public static void Close()

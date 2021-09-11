@@ -151,7 +151,7 @@ namespace FrostBot
                     }
                     catch
                     {
-                        Processing.LogConsoleText($"Failed to mute in {guild.Name}#{chan.Name}", guild.Id);
+                        Processing.LogConsoleText($"Failed to mute in {guild.Name}#{chan.Name}");
                     }
                 }
             }
@@ -176,7 +176,7 @@ namespace FrostBot
                 }
                 catch
                 {
-                    Processing.LogConsoleText($"Failed to unmute in {guild.Name}#{chan.Name}", guild.Id);
+                    Processing.LogConsoleText($"Failed to unmute in {guild.Name}#{chan.Name}");
                 }
             }
 
@@ -202,7 +202,7 @@ namespace FrostBot
                 }
                 catch
                 {
-                    Processing.LogConsoleText($"Failed to lock {guild.Name}#{channel.Name.ToString()}", guild.Id);
+                    Processing.LogConsoleText($"Failed to lock {guild.Name}#{channel.Name}");
                 }
             }
             
@@ -227,7 +227,7 @@ namespace FrostBot
                 }
                 catch
                 {
-                    Processing.LogConsoleText($"Failed to unlock {guild.Name}#{channel.Name}", guild.Id);
+                    Processing.LogConsoleText($"Failed to unlock {guild.Name}#{channel.Name}");
                 }
             }
 
@@ -327,7 +327,7 @@ namespace FrostBot
             {
                 if (!user.RoleIds.Any(x => selectedServer.Roles.Any(y => y.IsVerifiedRole && y.Id.Equals(x))))
                 {
-                    Processing.LogConsoleText($"Unverified member found: {user.Username}", channel.Guild.Id);
+                    Processing.LogConsoleText($"Unverified member found: {user.Username}");
                     await user.KickAsync("Inactivity");
                     usersPruned++;
                 }

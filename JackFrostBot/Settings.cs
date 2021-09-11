@@ -155,6 +155,7 @@ namespace FrostBot
             public string LockMsg { get; set; } = "Please bring this discussion elsewhere until things cool down.";
             public string UnlockMsg { get; set; } = "Be sure to follow the rules and have fun.";
             public string NoPermissionMsg { get; set; } = "You do not have permission to use this command.";
+            public string WelcomeMessage { get; set; } = "Read the rules and make yourself at home!";
 
         }
     }

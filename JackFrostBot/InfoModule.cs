@@ -26,6 +26,17 @@ namespace FrostBot
     public class InfoModule : ModuleBase
     {
         // Make the bot repeat a message
+        [Command("setup"), Summary("Configure the bot.")]
+        public async Task Setup()
+        {
+            if (Moderation.CommandAllowed("setup", Context))
+            {
+                await Context.Message.DeleteAsync();
+                FrostBot.Setup.Begin(Context.Channel);
+            }
+        }
+
+        // Make the bot repeat a message
         [Command("say"), Summary("Make the bot repeat a message.")]
         public async Task Say([Remainder, Summary("The format to get info about.")] string message)
         {

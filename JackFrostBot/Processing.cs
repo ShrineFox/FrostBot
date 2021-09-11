@@ -36,10 +36,10 @@ namespace FrostBot
             File.AppendAllText(logPath, logLine + "\n");
         }
 
-        //Write info to both the console and the log txt file
-        public static void LogConsoleText(string text, ulong guildId)
+        // Write info to both the console and the log txt file
+        public static void LogConsoleText(string text)
         {
-            //Create txt if it doesn't exist
+            // Create txt if it doesn't exist
             string logPath = Program.ymlPath.Replace("settings.yml", $"Log.txt");
             if (!Directory.Exists(Path.GetDirectoryName(logPath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(logPath));
@@ -51,7 +51,7 @@ namespace FrostBot
             File.AppendAllText(logPath, logLine + "\n");
         }
 
-        //Write info on the last deleted message to a txt file
+        // Write info on the last deleted message to bot log channel
         public static async Task LogDeletedMessage(SocketMessage message, string reason)
         {
             var user = (IGuildUser)message.Author;
@@ -67,6 +67,13 @@ namespace FrostBot
             // Warn user depending on settings
             if (selectedServer.WarnOnAutoDelete)
                 Moderation.Warn(Program.client.CurrentUser.Username, (ITextChannel)message.Channel, (SocketGuildUser)message.Author, reason);
+        }
+
+        public static void LogDebugMessage(string message)
+        {
+            #if DEBUG
+            Console.WriteLine($"<{DateTime.Now.ToString("hh:mm")}>: {message}");
+            #endif
         }
 
         public static async Task LogEmbed(Embed embed, ITextChannel channel, bool sendInPublicChannel = false)
