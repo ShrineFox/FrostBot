@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Web;
 using FrostBot;
 using static FrostBot.Config;
+using static FrostBot.Components;
 
 namespace FrostBot
 {
@@ -50,7 +51,13 @@ namespace FrostBot
             settings = Botsettings.Load();
 
             // Start up Bot
-            client = new DiscordSocketClient();
+            client = new DiscordSocketClient(new DiscordSocketConfig
+            {
+                DefaultRetryMode = RetryMode.AlwaysRetry,
+                AlwaysAcknowledgeInteractions = false,
+                GatewayIntents = GatewayIntents.All,
+                AlwaysDownloadUsers = true
+            });
             commands = new CommandService();
             services = new ServiceCollection()
                 .BuildServiceProvider();
@@ -65,11 +72,18 @@ namespace FrostBot
                     await client.StartAsync();
                 }
                 else
+                {
                     Processing.LogConsoleText("Failed to connect. Please set bot token in settings.yml.");
+                    Console.ReadKey();
+                    Close();
+                }
+                    
             }
             catch
             {
                 Processing.LogConsoleText("Failed to connect. Invalid token?");
+                Console.ReadKey();
+                Close();
             }
 
             // Tasks
@@ -105,9 +119,13 @@ namespace FrostBot
 
         private async Task HandleComponentInteraction(SocketMessageComponent interaction)
         {
-            if (interaction.Data.CustomId.StartsWith("setup-"))
-                Setup.HandleSetupInteraction(interaction);
+            await interaction.UpdateAsync(x =>
+                {
+                    x.Embed = Components.GetEmbed(interaction);
+                    x.Components = Components.GetComponents(interaction);
+                });
         }
+
 
         private async Task HandleSlashCmd(SocketSlashCommand interaction)
 {

@@ -10,7 +10,7 @@ using static FrostBot.Config;
 
 namespace FrostBot
 {
-    class Setup
+    public class Setup
     {
         public static async void Begin(IMessageChannel channel)
         {
@@ -45,31 +45,35 @@ namespace FrostBot
             await channel.SendMessageAsync(embed: embed, component: builder.Build());
         }
 
-        public static async void ModeratorRoles(IMessageChannel channel)
+        public static Embed ModeratorRoles(SocketMessageComponent interaction)
         {
-            var guildChannel = (IGuildChannel)channel;
+            MessageProperties props = new MessageProperties();
+            var guildChannel = (IGuildChannel)interaction.Channel;
+            var embed = Embeds.ColorMsg("", 0x0);
+            var builder = new ComponentBuilder();
 
-            var embed = Embeds.ColorMsg("", 
-                    0x4A90E2, guildChannel.Guild.Id);
-            var builder = new ComponentBuilder()
-                .WithButton("label", "custom-id");
-
-            await channel.SendMessageAsync("Here is a button!", component: builder.Build());
-        }
-
-        public static async void HandleSetupInteraction(SocketMessageComponent interaction)
-        {
             switch (interaction.Data.CustomId)
             {
                 case "setup-new":
-                    await interaction.UpdateAsync(x =>
-                    {
-                        x.Content = $"**Please choose all Roles you would consider \"Moderator Roles\".**\n" +
-                    "All users with these roles will be able to use exclusive server/bot management commands.";
-                        x.Components = new ComponentBuilder().WithButton("label", "custom-id").Build();
-                    });
+                    embed = Embeds.ColorMsg("**Please choose all Roles you would consider \"Moderator Roles\".**\n" +
+                            "All users with these roles will be able to use exclusive server/bot management commands.",
+                            0x4A90E2, guildChannel.GuildId);
+                    builder = new ComponentBuilder().WithButton("label", "custom-id");
                     break;
+
             }
+            props.Components = builder.Build();
+            props.Embed = embed;
+            return embed;
+            //return props;
+        }
+
+        public async void HandleSetupInteraction(SocketMessageComponent interaction)
+        {
+            await interaction.DeferAsync(true);
+            var guildChannel = (IGuildChannel)interaction.Channel;
+
+            
         }
     }
 }
