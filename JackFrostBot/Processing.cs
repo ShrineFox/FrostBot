@@ -94,7 +94,7 @@ namespace FrostBot
             var guild = user.Guild;
             Server selectedServer = Botsettings.SelectedServer(guild.Id);
 
-            if (channel.Id != selectedServer.Channels.BotSandbox 
+            if (selectedServer.AutoDeleteDupes && channel.Id != selectedServer.Channels.BotSandbox 
                 && !Moderation.IsModerator((IGuildUser)message.Author, guild.Id) && !message.Author.IsBot)
             {
                 int matches = 0;

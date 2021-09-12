@@ -115,20 +115,20 @@ namespace FrostBot
         // Shows that a user has been warned (along with who issued it)
         static public Embed LogWarn(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
         {
-            return ColorMsg($":warning: **{moderator} warned {user.Username}** in #{channel}: {reason}", 0x37FF68);
+            return ColorMsg($":warning: **{moderator} warned {user.Username}** in #{channel}: {reason}", 0xD0021B);
         }
 
         // Shows that a user has been muted
         static public Embed Mute(SocketGuildUser user)
         {
             Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
-            return ColorMsg($":mute: **Muted {user.Username}**. {selectedServer.Strings.MuteMsg}", 0x37FF68);
+            return ColorMsg($":mute: **Muted {user.Username}**. {selectedServer.Strings.MuteMsg}", 0xD0021B);
         }
 
         // Shows that a user has been muted (along with who issued it)
         static public Embed LogMute(string moderator, ITextChannel channel, SocketGuildUser user)
         {
-            return ColorMsg($":mute: **{moderator} muted {user.Username}** in #{channel}.", 0x37FF68);
+            return ColorMsg($":mute: **{moderator} muted {user.Username}** in #{channel}.", 0xD0021B);
         }
 
         // Shows that a user has been unmuted
@@ -148,12 +148,12 @@ namespace FrostBot
         static public Embed Lock(ITextChannel channel)
         {
             Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
-            return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", 0x37FF68);
+            return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", 0xD0021B);
         }
 
         static public Embed LogLock(SocketGuildUser moderator, ITextChannel channel)
         {
-            return ColorMsg($":lock: **{moderator.Username} locked** #{channel}.", 0x37FF68);
+            return ColorMsg($":lock: **{moderator.Username} locked** #{channel}.", 0xD0021B);
         }
 
         static public Embed Unlock(ITextChannel channel)
@@ -195,16 +195,6 @@ namespace FrostBot
         static public Embed LogPruneLurkers(SocketGuildUser moderator, int usersPruned)
         {
             return ColorMsg($":scissors: **{moderator.Username} Pruned** {usersPruned} Lurkers.", 0xD0021B);
-        }
-
-        static public Embed PruneNonmembers(int usersPruned)
-        {
-            return ColorMsg($":scissors: **Pruned** {usersPruned} Non-members.", 0xD0021B);
-        }
-
-        static public Embed LogPruneNonmembers(SocketGuildUser moderator, int usersPruned)
-        {
-            return ColorMsg($":scissors: **{moderator.Username} Pruned** {usersPruned} Non-members.", 0xD0021B);
         }
 
         static public Embed LogMemberAdd(IGuildUser user)

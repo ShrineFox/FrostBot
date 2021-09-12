@@ -74,11 +74,13 @@ namespace FrostBot
             public List<Command> Commands { get; set; } = new List<Command>();
             public List<Role> Roles { get; set; } = new List<Role>();
             public List<Currency> Currency { get; set; } = new List<Currency>();
+            public List<ulong> ThreadsToUnarchive { get; set; } = new List<ulong>();
             public List<string> WordFilter { get; set; } = new List<string>();
+            public bool Configured { get; set; } = false;
 
             // Chat
-            public bool PublishAnnouncements { get; set; } = false;
-            public bool SendTypingMsg { get; set; } = false;
+            public bool PublishAnnouncements { get; set; } = true;
+            public bool SendTypingMsg { get; set; } = true;
             public bool AutoMarkov { get; set; } = false;
             public bool BotChannelMarkovOnly { get; set; } = false;
             public int MarkovFreq { get; set; } = 0;
@@ -89,7 +91,6 @@ namespace FrostBot
             public bool AutoDeleteDupes { get; set; } = false;
             public int DuplicateFreq { get; set; } = 2;
             public int MaxDuplicates { get; set; } = 2;
-            public bool AutoDelete1CharMsgs { get; set; } = false;
             public bool WarnOnAutoDelete { get; set; } = false;
             public bool EnableWordFilter { get; set; } = true;
             public bool WarnOnFilter { get; set; } = true;
