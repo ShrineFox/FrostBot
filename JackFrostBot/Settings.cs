@@ -113,7 +113,6 @@ namespace FrostBot
             public ulong BotSandbox { get; set; } = 0;
             public ulong BotLogs { get; set; } = 0;
             public ulong Pins { get; set; } = 0;
-            public ulong Verification { get; set; } = 0;
         }
 
         public class Command
@@ -134,7 +133,6 @@ namespace FrostBot
             public bool CanCreateColors { get; set; } = false;
             public bool CanCreateRoles { get; set; } = false;
             public bool Joinable { get; set; } = false;
-            public bool IsVerifiedRole { get; set; } = false;
             public bool IsLurkerRole { get; set; } = false;
         }
 

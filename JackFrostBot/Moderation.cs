@@ -316,29 +316,5 @@ namespace FrostBot
             // Log the unmute in the bot-logs channel along with who initiated it
             await Processing.LogEmbed(Embeds.LogPruneLurkers(moderator, usersPruned), channel);
         }
-
-        // Kicks all users that lack a "verified" role, indicating server activity
-        public static async void PruneNonmembers(SocketGuildUser moderator, ITextChannel channel, IReadOnlyCollection<IGuildUser> users)
-        {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
-
-            int usersPruned = 0;
-            foreach (IGuildUser user in users)
-            {
-                if (!user.RoleIds.Any(x => selectedServer.Roles.Any(y => y.IsVerifiedRole && y.Id.Equals(x))))
-                {
-                    Processing.LogConsoleText($"Unverified member found: {user.Username}");
-                    await user.KickAsync("Inactivity");
-                    usersPruned++;
-                }
-            }
-            
-            // Announce prune in channel where prune was initiated
-            var embed = Embeds.PruneNonmembers(usersPruned);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-            //Log the prune in the bot-logs channel along with who initiated it
-            await Processing.LogEmbed(Embeds.LogPruneNonmembers(moderator, usersPruned), channel);
-        }
     }
 }

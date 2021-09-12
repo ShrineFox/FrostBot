@@ -259,18 +259,6 @@ namespace FrostBot
             }
         }
 
-        // Remove all users without the Members role
-        [Command("prune nonmembers"), Summary("Removes all users without the Members role.")]
-        public async Task PruneNonmembers()
-        {
-            if (Moderation.CommandAllowed("prune nonmembers", Context))
-            {
-                await Context.Message.DeleteAsync();
-                var users = await Context.Guild.GetUsersAsync();
-                Moderation.PruneNonmembers((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, users);
-            }
-        }
-
         // Get the ID of a role without pinging it
         [Command("get id"), Summary("Get the ID of a role without pinging it.")]
         public async Task GetID([Remainder, Summary("The name of the role to get the ID of.")] string roleName = null)

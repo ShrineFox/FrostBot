@@ -27,7 +27,7 @@ namespace FrostBot
     public class Program
     {
         public static bool active;
-        private CommandService commands;
+        public static CommandService commands;
         public static DiscordSocketClient client;
         private IServiceProvider services;
         public static string ymlPath = "";
@@ -57,7 +57,8 @@ namespace FrostBot
                 DefaultRetryMode = RetryMode.AlwaysRetry,
                 AlwaysAcknowledgeInteractions = false,
                 GatewayIntents = GatewayIntents.All,
-                AlwaysDownloadUsers = true
+                AlwaysDownloadUsers = true,
+                LogLevel = LogSeverity.Debug
             });
             commands = new CommandService();
             services = new ServiceCollection()
@@ -93,28 +94,42 @@ namespace FrostBot
             client.UserJoined += UserJoin;
             client.ReactionAdded += ReactionAdded;
             client.InteractionCreated += InteractionCreated;
+            commands.Log += LogCommands;
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
         }
 
+        private Task LogCommands(LogMessage arg)
+        {
+            Processing.LogDebugMessage($"Message source: {arg.Source} ||| Severity: {arg.Severity} ||| Source message: {arg.Message} ||| Exception(if applicable): {arg.Exception}");
+            return Task.CompletedTask;
+        }
+
         private async Task InteractionCreated(SocketInteraction interaction)
         {
-            switch (interaction)
+            try
             {
-                // Slash commands
-                case SocketSlashCommand commandInteraction:
-                    await HandleSlashCmd(commandInteraction);
-                    break;
+                switch (interaction)
+                {
+                    // Slash commands
+                    case SocketSlashCommand commandInteraction:
+                        await HandleSlashCmd(commandInteraction);
+                        break;
 
-                // Button clicks/selection dropdowns
-                case SocketMessageComponent componentInteraction:
-                    await HandleComponentInteraction(componentInteraction);
-                    break;
+                    // Button clicks/selection dropdowns
+                    case SocketMessageComponent componentInteraction:
+                        await HandleComponentInteraction(componentInteraction);
+                        break;
 
-                // Unused or Unknown/Unsupported
-                default:
-                    break;
+                    // Unused or Unknown/Unsupported
+                    default:
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Processing.LogDebugMessage(ex.Message + "\n" + ex.StackTrace);
             }
         }
 
@@ -236,7 +251,7 @@ namespace FrostBot
             // Add list of moderator roles (derived from administrator permissions)
             List<Role> roles = new List<Role>();
             foreach (var role in guild.Roles.Where(x => x.Permissions.Administrator))
-                roles.Add(new Role { Name = role.Name, Id = role.Id, Moderator = true, CanCreateColors = true, CanCreateRoles = true, CanPin = true, IsVerifiedRole = true });
+                roles.Add(new Role { Name = role.Name, Id = role.Id, Moderator = true, CanCreateColors = true, CanCreateRoles = true, CanPin = true });
 
             settings.Servers.Add(new Server { Id = guild.Id, Name = guild.Name, Commands = cmds, Roles = roles });
         }
@@ -283,7 +298,6 @@ namespace FrostBot
             await Processing.LogSentMessage(message);
             await Processing.DuplicateMsgCheck(message, channel);
             //await Processing.MsgLengthCheck(message, channel);
-            //await Processing.VerificationCheck(message);
             //await Processing.MediaOnlyCheck(message);
             await Processing.FilterCheck(message, channel);
 
