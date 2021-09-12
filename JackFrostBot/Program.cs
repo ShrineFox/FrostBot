@@ -20,6 +20,7 @@ using System.Web;
 using FrostBot;
 using static FrostBot.Config;
 using static FrostBot.Components;
+using static FrostBot.SlashCommands;
 
 namespace FrostBot
 {
@@ -119,10 +120,16 @@ namespace FrostBot
 
         private async Task HandleComponentInteraction(SocketMessageComponent interaction)
         {
+            MessageProperties msgProps = Components.GetProperties(interaction);
+
+            // Ignore if response is empty
+            if (msgProps == new MessageProperties())
+                return;
+
             await interaction.UpdateAsync(x =>
                 {
-                    x.Embed = Components.GetEmbed(interaction);
-                    x.Components = Components.GetComponents(interaction);
+                    x.Embed = msgProps.Embed;
+                    x.Components = msgProps.Components;
                 });
         }
 

@@ -248,6 +248,8 @@
     <Compile Include="BadTranslator.cs" />
     <Compile Include="Embeds.cs" />
     <Compile Include="InfoModule.cs" />
+    <Compile Include="Interactions\Components.cs" />
+    <Compile Include="Interactions\SlashCommands.cs" />
     <Compile Include="Moderation.cs" />
     <Compile Include="Processing.cs" />
     <Compile Include="Program.cs" />
@@ -258,7 +260,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
-    <Compile Include="Setup.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

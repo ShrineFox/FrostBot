@@ -32,7 +32,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("setup", Context))
             {
                 await Context.Message.DeleteAsync();
-                FrostBot.Setup.Begin(Context.Channel);
+                FrostBot.Components.BeginSetup(Context.Channel);
             }
         }
 

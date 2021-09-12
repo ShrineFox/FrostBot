@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace JackFrostBot.Interactions
+namespace FrostBot
 {
-    class SlashCommands
+    public class SlashCommands
     {
     }
 }
