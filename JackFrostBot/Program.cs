@@ -297,9 +297,8 @@ namespace FrostBot
             //Process message...
             await Processing.LogSentMessage(message);
             await Processing.DuplicateMsgCheck(message, channel);
-            //await Processing.MsgLengthCheck(message, channel);
-            //await Processing.MediaOnlyCheck(message);
             await Processing.FilterCheck(message, channel);
+            await Processing.UnarchivePublish(channel.Guild);
 
             // Track where the prefix ends and the command begins
             int argPos = 0;

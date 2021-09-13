@@ -188,5 +188,16 @@ namespace FrostBot
             return;
         }
 
+        public static async Task UnarchivePublish(SocketGuild guild)
+        {
+            var selectedServer = Botsettings.SelectedServer(guild.Id);
+            // Unarchive threads
+            foreach (var threadChannel in guild.ThreadChannels)
+            {
+                if (threadChannel.Archived && selectedServer.ThreadsToUnarchive.Any(x => x.Equals(threadChannel.Id)))
+                    await threadChannel.ModifyAsync(x => x.Archived = false);
+            }
+            // TODO: crosspost announcement channel messages
+        }
     }
 }

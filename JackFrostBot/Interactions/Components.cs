@@ -24,7 +24,7 @@ namespace FrostBot
             string customID = interaction.Data.CustomId;
 
             // Add selected channel ID to settings
-            if (customID.StartsWith("select-") && customID.EndsWith("-channel"))
+                if (customID.StartsWith("select-") && customID.EndsWith("-channel"))
             {
                 string channelName = customID.Replace("select-","").Replace("-channel","");
                 switch (channelName)
@@ -54,51 +54,67 @@ namespace FrostBot
                 {
                     case "select-mutelevel":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).MuteLevel = Convert.ToInt32(interactionValue);
+                        customID = "setup-mutelevel";
                         break;
                     case "select-kicklevel":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).KickLevel = Convert.ToInt32(interactionValue);
+                        customID = "setup-kicklevel";
                         break;
                     case "select-banlevel":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).BanLevel = Convert.ToInt32(interactionValue);
+                        customID = "setup-banlevel";
                         break;
                     case "btn-deletedupes-disable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).AutoDeleteDupes = false;
+                        customID = "setup-deletedupes";
                         break;
                     case "btn-deletedupes-enable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).AutoDeleteDupes = true;
+                        customID = "setup-deletedupes";
                         break;
                     case "select-duplicatefreq":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).DuplicateFreq = Convert.ToInt32(interactionValue);
+                        customID = "setup-dupefreq";
                         break;
                     case "select-maxdupes":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).MaxDuplicates = Convert.ToInt32(interactionValue);
+                        customID = "setup-maxdupes";
                         break;
                     case "btn-warnondelete-disable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).WarnOnAutoDelete = false;
+                        customID = "setup-warnondelete";
                         break;
                     case "btn-warnondelete-enable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).WarnOnAutoDelete = true;
+                        customID = "setup-warnondelete";
                         break;
                     case "btn-wordfilter-disable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).WarnOnFilter = false;
+                        customID = "setup-wordfilter";
                         break;
                     case "btn-wordfilter-enable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).WarnOnFilter = true;
+                        customID = "setup-wordfilter";
                         break;
                     case "btn-markov-disable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).AutoMarkov = false;
+                        customID = "setup-markov";
                         break;
                     case "btn-markov-enable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).AutoMarkov = true;
+                        customID = "setup-markov";
                         break;
                     case "btn-markovbotchannel-disable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).BotChannelMarkovOnly = false;
+                        customID = "setup-markovbotchannel";
                         break;
                     case "btn-markovbotchannel-enable":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).BotChannelMarkovOnly = true;
+                        customID = "setup-markovbotchannel";
                         break;
                     case "select-markovfreq":
                         Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).MarkovFreq = Convert.ToInt32(interactionValue);
+                        customID = "setup-markovfreq";
                         break;
                 }
 
@@ -110,7 +126,6 @@ namespace FrostBot
             if (customID.StartsWith("cmd-"))
             {
                 var splitCustomID = customID.Split('-');
-                bool toggle = true;
                 switch(splitCustomID[2])
                 {
                     case "enabled":
@@ -129,7 +144,6 @@ namespace FrostBot
 
                 // Save changes to config
                 Botsettings.Save(Program.settings);
-
                 // Return to command config
                 customID = "select-command";
                 if (splitCustomID.Length == 5)
@@ -137,7 +151,11 @@ namespace FrostBot
                 interactionValue = splitCustomID[1];
             }
 
+            // Save changes to config and reload it
+            Botsettings.Save(Program.settings);
             var selectedServer = Program.settings.Servers.First(x => x.Id.Equals(guild.Id));
+
+            // Build components/embeds
             switch (customID)
             {
                 // New Setup => Moderator Roles
@@ -159,12 +177,13 @@ namespace FrostBot
                     // Show menu if there's at least 1 role to select
                     if (menu.Options.Count() > 0)
                         msgProps.Components = new ComponentBuilder().WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                            .WithButton("Create New Role", "create-moderatorrole", ButtonStyle.Success).WithSelectMenu(menu).WithButton("Skip", "setup-channels").Build();
+                            .WithSelectMenu(menu).WithButton("Skip", "setup-channels").Build();
                     else
                         msgProps.Components = new ComponentBuilder().WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                            .WithButton("Create New Role", "create-moderatorrole", ButtonStyle.Success).WithButton("Next Step", "setup-channels").Build();
+                            .WithButton("Next Step", "setup-channels").Build();
                     break;
                 // Moderator Roles => Choose Role
+                case "create-moderatorrole":
                 case "select-moderators":
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
@@ -176,7 +195,7 @@ namespace FrostBot
                     Program.settings.Servers.First(x => x.Id.Equals(guild.Id)).Roles.Add(modRole);
                     // Show selected role in embed
                     msgProps.Embed = Embeds.ColorMsg($"__**Moderator Roles**__ (2/2)\n" + 
-                        "**Successfully added \"{modRole.Name}\" as a Moderator Role**.\n\n" +
+                        $"**Successfully added \"{modRole.Name}\"** as a **Moderator Role**.\n\n" +
                         "Choose another role to add as a moderator, or press **Next Step** to continue.",
                             0x37FF68, guildChannel.GuildId);
                     // Show list of non-mod roles in component as dropdown menu
@@ -186,10 +205,10 @@ namespace FrostBot
                     // Show menu if there's at least 1 role to select
                     if (menu.Options.Count() > 0)
                         msgProps.Components = new ComponentBuilder().WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                            .WithButton("Create New Role", "create-moderatorrole", ButtonStyle.Success).WithSelectMenu(menu).WithButton("Next Step", "setup-channels").Build();
+                            .WithSelectMenu(menu).WithButton("Next Step", "setup-channels").Build();
                     else
                         msgProps.Components = new ComponentBuilder().WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                            .WithButton("Create New Role", "create-moderatorrole", ButtonStyle.Success).WithButton("Next Step", "setup-channels").Build();
+                            .WithButton("Next Step", "setup-channels").Build();
                     break;
                 // Setup Channels => General
                 case "setup-general-channel":
@@ -199,7 +218,7 @@ namespace FrostBot
                         return msgProps;
                     msgProps.Embed = Embeds.ColorMsg("__**Channels**__ (1/4)\n" +
                             "Please choose a **\"General\" channel.**\n\n" +
-                            "This should be a public channel where custom messages appear\n" +
+                            "This should be a public channel where custom messages appear " +
                             "when a new user joins the server.\n\n" +
                             $"**Currently Selected**: {selectedServer.Channels.General}",
                             0x4A90E2, guildChannel.GuildId);
@@ -248,8 +267,8 @@ namespace FrostBot
                     msgProps.Embed = Embeds.ColorMsg("__**Channels**__ (3/4)\n" +
                             "**Please choose a \"Bot Logs\" channel.**\n\n" +
                             "This is a **staff-only** channel that serves as an audit log for moderation commands.\n" +
-                            "i.e. Who banned what user in what channel, at what time and for what reason.\n\n" +
-                            "**This channel must have View Messages disabled for @everyone**." +
+                            "i.e. Who banned what user in what channel, at what time and for what reason.\n" +
+                            "**This channel must have View Messages disabled for @everyone**.\n\n" +
                             $"**Currently Selected**: {selectedServer.Channels.BotLogs}",
                             0x4A90E2, guildChannel.GuildId);
                     // Show list of unselected private channels in component as dropdown menu
@@ -306,11 +325,11 @@ namespace FrostBot
                         "**ModeratorsOnly**: Can be used only by moderators.\n" +
                         "**BotChannelOnly**: Can be used only in the bot sandbox channel.\n" +
                         "**IsSlashCmd**: Can be used as a slash command.\n\n" +
-                        "By default, these are all true.";
+                        "By default, these are true for all commands.";
                     if (customID.EndsWith("-2"))
                         embedMsg = "__**Commands**__ (2/2)\n" +
-                        "Choose more **commands** to configure.\n\n" +
-                        "These ones are different than the last set.\n" +
+                        "Choose more **commands** to configure.\n" +
+                        "These ones are different than the last set.\n\n" +
                         "Due to Discord limitations, only 25 can be shown at a time.";
                     msgProps.Embed = Embeds.ColorMsg(embedMsg, 0x4A90E2, guildChannel.GuildId);
                     // Show list of commands as dropdown menu
@@ -353,7 +372,7 @@ namespace FrostBot
                         "**ModeratorsOnly**: Can be used only by moderators.\n" +
                         "**BotChannelOnly**: Can be used only in the bot sandbox channel.\n" +
                         "**IsSlashCmd**: Can be used as a slash command.\n\n" +
-                        "By default, these are all true.\n" +
+                        "By default, these are true for all commands.\n\n" +
                         "When finished, choose another command or press **Next Step**.",
                             0x4A90E2, guildChannel.GuildId);
                     // Show 
@@ -404,9 +423,9 @@ namespace FrostBot
                         return msgProps;
                     msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Mute)**__ (1/8)\n" +
                             $"With the **{selectedServer.Prefix}warn command**, moderators can notify users of rule infractions.\n" +
-                            "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties\n" +
+                            "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many **warns** such as **muting, kicking or banning**.\n\n" +
-                            "How many warns should result in a 🔇 **mute**? (0 to never auto-mute)\n" +
+                            "**How many warns should result in a 🔇 mute**? (0 to never auto-mute)\n" +
                             $"**Current setting**: {selectedServer.MuteLevel}",
                             0x4A90E2, guildChannel.GuildId);
                     // Show menu between 0 and 10
@@ -422,9 +441,9 @@ namespace FrostBot
                         return msgProps;
                     msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Kick)**__ (2/8)\n" +
                             $"With the **{selectedServer.Prefix}warn command**, moderators can notify users of rule infractions.\n" +
-                            "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties\n" +
+                            "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many **warns** such as **muting, kicking or banning**.\n\n" +
-                            "How many warns should result in a 👢 **kick**? (0 to never auto-kick)\n" +
+                            "**How many warns should result in a 👢 kick**? (0 to never auto-kick)\n" +
                             $"**Current setting**: {selectedServer.KickLevel}",
                             0x4A90E2, guildChannel.GuildId);
                     // Show menu between 0 and 10
@@ -439,10 +458,10 @@ namespace FrostBot
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
                     msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Ban)**__ (3/8)\n" +
-                            "With the **{selectedServer.Prefix}warn command**, moderators can notify users of rule infractions.\n" +
-                            "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties\n" +
+                            $"With the **{selectedServer.Prefix}warn command**, moderators can notify users of rule infractions.\n" +
+                            "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many **warns** such as **muting, kicking or banning**.\n\n" +
-                            "How many warns should result in a 🔨 **ban**? (0 to never auto-ban)\n" +
+                            "**How many warns should result in a 🔨 ban**? (0 to never auto-ban)\n" +
                             $"**Current setting**: {selectedServer.BanLevel}",
                             0x4A90E2, guildChannel.GuildId);
                     // Show menu between 0 and 10
@@ -456,7 +475,7 @@ namespace FrostBot
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Duplicates)**__ (4/8)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Delete Duplicates)**__ (4/8)\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "Would you like to **enable this feature?**",
                             0x4A90E2, guildChannel.GuildId);
@@ -467,19 +486,19 @@ namespace FrostBot
                         cmdToggles = cmdToggles.WithButton("Enabled", $"btn-deletedupes-disable", ButtonStyle.Primary, chk);
                     else
                         cmdToggles = cmdToggles.WithButton("Disabled", $"btn-deletedupes-enable", ButtonStyle.Primary, unchk);
-                    nextOptionName = "setup-maxdupes";
+                    nextOptionName = "setup-dupefreq";
                     if (!selectedServer.AutoDeleteDupes)
                         nextOptionName = "setup-wordfilter";
                     msgProps.Components = cmdToggles.WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                        .WithButton("Next Step", "setup-dupefreq").Build();
+                        .WithButton("Next Step", nextOptionName).Build();
                     break;
                 case "setup-dupefreq":
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Duplicates)**__ (5/8)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Duplicate Freq)**__ (5/8)\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
-                            "**How close together (in seconds)** should identical messages\n" +
+                            "**How close together (in seconds)** should identical messages " +
                             "be in order to be considered duplicates? (0 for always)\n" +
                             $"**Current setting**: {selectedServer.DuplicateFreq}",
                             0x4A90E2, guildChannel.GuildId);
@@ -494,10 +513,10 @@ namespace FrostBot
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Duplicates)**__ (6/8)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Max Duplicates)**__ (6/8)\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
-                            "How many identical messages in succession should be\n" +
-                            "considered duplicates? (0 for any)\n" +
+                            "After **how many identical messages in succession** should messages " +
+                            "be considered duplicates? (0 for any)\n" +
                             $"**Current setting**: {selectedServer.MaxDuplicates}",
                             0x4A90E2, guildChannel.GuildId);
                     // Show menu between 0 and 10
@@ -511,9 +530,9 @@ namespace FrostBot
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Duplicates)**__ (7/8)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Warn Duplicates)**__ (7/8)\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
-                            "Should it also issue an **automatic warn** when this occurs?",
+                            "Should it also issue an **automatic warn when duplicates are posted**?",
                             0x4A90E2, guildChannel.GuildId);
                     cmdToggles = new ComponentBuilder();
                     unchk = new Emoji("🟦");
@@ -532,7 +551,7 @@ namespace FrostBot
                     msgProps.Embed = Embeds.ColorMsg("__**Automatic Moderation (Word Filter)**__ (8/8)\n" +
                             "The bot can automatically detect and delete messages containing **filtered terms**.\n\n" +
                             "You will need to add these terms to ``settings.yml`` yourself.\n" +
-                            "Would you like to issue an **automatic warn** when the filter is tripped?",
+                            "Would you like to issue an **automatic warn when the filter is tripped?**",
                             0x4A90E2, guildChannel.GuildId);
                     cmdToggles = new ComponentBuilder();
                     unchk = new Emoji("🟦");
@@ -548,20 +567,20 @@ namespace FrostBot
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Markov**__ (1/3)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Markov (Auto)**__ (1/3)\n" +
                             "The bot can use incoming messages to build a **markov** dictionary.\n" +
-                            "This allows it to respond with randomly generated sentences built from\n" +
-                            "words sent by your server's users.\n\n" +
-                            "These are pulled from public channels only and won't include @mentions,\n" +
-                            "hyperlinks or any filtered terms. Would you like to **enable this feature**?",
+                            "This allows it to sometimes respond with personalized, randomly generated " +
+                            "sentences built from your users' vocabulary.\n\n" +
+                            "These are pulled from public channels only and won't include @mentions, " +
+                            "hyperlinks or any filtered terms. Would you like to **enable the auto-markov feature**?",
                             0x4A90E2, guildChannel.GuildId);
                     cmdToggles = new ComponentBuilder();
                     unchk = new Emoji("🟦");
                     chk = new Emoji("☑️");
-                    if (selectedServer.WarnOnAutoDelete)
-                        cmdToggles = cmdToggles.WithButton("Enabled", $"btn-markov-disable", ButtonStyle.Primary, chk);
+                    if (selectedServer.AutoMarkov)
+                        cmdToggles = cmdToggles.WithButton("Enabled", "btn-markov-disable", ButtonStyle.Primary, chk);
                     else
-                        cmdToggles = cmdToggles.WithButton("Disabled", $"btn-markov-enable", ButtonStyle.Primary, unchk);
+                        cmdToggles = cmdToggles.WithButton("Disabled", "btn-markov-enable", ButtonStyle.Primary, unchk);
                     msgProps.Components = cmdToggles.WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
                         .WithButton("Next Step", "setup-markovbotchannel").Build();
                     break;
@@ -569,16 +588,16 @@ namespace FrostBot
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Markov**__ (2/3)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Markov (Bot Sandbox Only)**__ (2/3)\n" +
                             "By default, **markov messages** are posted in response to random messages\n" +
                             "in public channels. Would you like to **restrict this to only the bot sandbox channel**?\n\n" +
                             "Don't worry, if you don't want random messages posted at all, you can set the frequency\n" +
-                            $"to zero in the next step so that the **{selectedServer.Prefix}markov command** must be used instead.",
+                            $"to zero in the next step so that the ``{selectedServer.Prefix}markov`` command must be used instead.",
                             0x4A90E2, guildChannel.GuildId);
                     cmdToggles = new ComponentBuilder();
                     unchk = new Emoji("🟦");
                     chk = new Emoji("☑️");
-                    if (selectedServer.WarnOnAutoDelete)
+                    if (selectedServer.BotChannelMarkovOnly)
                         cmdToggles = cmdToggles.WithButton("Enabled", $"btn-markovbotchannel-disable", ButtonStyle.Primary, chk);
                     else
                         cmdToggles = cmdToggles.WithButton("Disabled", $"btn-markovbotchannel-enable", ButtonStyle.Primary, unchk);
@@ -589,7 +608,7 @@ namespace FrostBot
                     // Ignore if user is not a moderator
                     if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                         return msgProps;
-                    msgProps.Embed = Embeds.ColorMsg("__**Markov**__ (3/3)\n" +
+                    msgProps.Embed = Embeds.ColorMsg("__**Markov (Frequency)**__ (3/3)\n" +
                             "**How often** would you like the bot to respond to an incoming message\n" +
                             "with a **markov message**?\n" +
                             $"Note: The **{selectedServer.Prefix}markov command** will always" +
@@ -599,7 +618,7 @@ namespace FrostBot
                     menu = new SelectMenuBuilder() { CustomId = "select-markovfreq" };
                     for (int i = 0; i < 105; i = i + 5)
                         menu.AddOption(new SelectMenuOptionBuilder() { Label = i.ToString() + "%", Value = i.ToString() });
-                    msgProps.Components = new ComponentBuilder().WithButton("Complete Setup", "setup-complete", ButtonStyle.Primary).Build();
+                    msgProps.Components = new ComponentBuilder().WithSelectMenu(menu).WithButton("Complete Setup", "setup-complete", ButtonStyle.Primary).Build();
                     break;
                 case "setup-complete":
                     // Ignore if user is not a moderator
@@ -609,7 +628,8 @@ namespace FrostBot
                     msgProps.Embed = Embeds.ColorMsg("__**Setup Complete!**__\n" +
                             "Everything should be all set for you to start using the bot.\n" +
                             $" Use ``{selectedServer.Prefix}help`` in the bot sandbox channel\n" +
-                            "for a list of commands you can use.",
+                            "for a list of commands you can use. You can change these settings\n" +
+                            $"anytime by visiting ``{selectedServer.Prefix}setup``. Enjoy!",
                             0x37FF68, guildChannel.GuildId);
                     msgProps.Components = new ComponentBuilder().Build();
                     break;
@@ -631,16 +651,17 @@ namespace FrostBot
 
             if (!selectedServer.Configured)
             {
-                embed = Embeds.ColorMsg("**FrostBot Setup**\n\n" +
+                embed = Embeds.ColorMsg("__**FrostBot Setup**__\n\n" +
                         "Thank you for choosing [FrostBot](https://github.com/ShrineFox/JackFrost-Bot) by [ShrineFox](https://github.com/ShrineFox)!\n" +
-                        "You're ready to make moderating much more fun and easy for your server.\n" +
+                        "You're almost ready to make moderating easier and more enjoyable for your server.\n" +
                         "**Someone with administrator privileges must initiate setup.**", 0x4A90E2, guildChannel.Guild.Id);
                 builder = new ComponentBuilder().WithButton("Cancel", "setup-complete", ButtonStyle.Danger)
                     .WithButton("Begin Setup", "setup-moderators");
             }
             else
             {
-                embed = Embeds.ColorMsg("**Please have a Moderator complete this setup.**\n\n" +
+                embed = Embeds.ColorMsg("__**FrostBot Setup**__\n\n" + 
+                        "**Please have a Moderator complete this setup.**\n" +
                         "Thank you for choosing [FrostBot](https://github.com/ShrineFox/JackFrost-Bot) by [ShrineFox](https://github.com/ShrineFox)!\n\n" +
                         "Choose one of the options below to reconfigure.", 0x4A90E2, guildChannel.Guild.Id);
                 builder = new ComponentBuilder()

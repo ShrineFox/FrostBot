@@ -69,6 +69,31 @@ namespace FrostBot
             }
         }
 
+        // Direct users in a channel to another channel
+        [Command("unarchive"), Summary("Set thread to remain unarchived.")]
+        public async Task Unarchive()
+        {
+            if (Moderation.CommandAllowed("unarchive", Context))
+            {
+                if (Context.Channel.GetType().Equals(ChannelType.PublicThread) 
+                    || Context.Channel.GetType().Equals(ChannelType.PublicThread)
+                    || Context.Channel.GetType().Equals(ChannelType.NewsThread))
+                {
+                    var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+                    if (!selectedServer.ThreadsToUnarchive.Any(x => x.Equals(Context.Channel.Id)))
+                    {
+                        Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).ThreadsToUnarchive.Add(Context.Channel.Id);
+                        await Context.Channel.SendMessageAsync("Thread will be unarchived automatically from now on!");
+                    }
+                    else
+                    {
+                        Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).ThreadsToUnarchive.Remove(Context.Channel.Id);
+                        await Context.Channel.SendMessageAsync("Thread will **no longer** be automatically unarchived.");
+                    }
+                }
+            }
+        }
+
         // Change bot's currently Playing text
         [Command("set game"), Summary("Change the Currently Playing text.")]
         public async Task SetGame([Remainder, Summary("The text to set as the Game.")] string game)

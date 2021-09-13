@@ -73,13 +73,29 @@ namespace FrostBot
         // List of commands you're permitted to use
         static public Embed Help(ulong guildId, bool isModerator)
         {
+            // Get list of commands, usage and descriptions as single string
+            string help = "";
             Server selectedServer = Botsettings.SelectedServer(guildId);
-
-            string commands = String.Join("\n", selectedServer.Commands.Where(x => x.ModeratorsOnly.Equals(isModerator)));
-            if (commands.Length > 2048)
-                commands = commands.Remove(2048);
-
-            return ColorMsg(commands, 0x4A90E2, guildId);
+            var cmds = selectedServer.Commands.Where(x => x.ModeratorsOnly.Equals(isModerator));
+            foreach (var cmd in cmds)
+            {
+                help += $"**{selectedServer.Prefix}{cmd.Name}**";
+                var command = Program.commands.Modules
+                    .Where(m => m.Parent == null)
+                    .First(x => x.Commands
+                    .Any(z => z.Name.Equals("say"))).Commands
+                    .First(y => y.Name.Equals(cmd.Name));
+                // Get list of parameters per command
+                string paramList = "";
+                foreach (var param in command.Parameters)
+                    paramList += $" <{param.Name}>";
+                // Append summary and newline
+                help += paramList + $" {command.Summary}\n";
+            }
+            // Return first 2048 characters
+            if (help.Length > 2048)
+                help = help.Remove(2048);
+            return ColorMsg(help, 0x4A90E2, guildId);
         }
 
         // Returns info from a wiki page of a specified name
