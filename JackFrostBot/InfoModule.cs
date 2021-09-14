@@ -91,6 +91,10 @@ namespace FrostBot
                         await Context.Channel.SendMessageAsync("Thread will **no longer** be automatically unarchived.");
                     }
                 }
+                else
+                {
+                    await Context.Channel.SendMessageAsync("That command only works in threads!");
+                }
             }
         }
 
@@ -151,14 +155,14 @@ namespace FrostBot
 
         // Warn a user and log it
         [Command("warn"), Summary("Warn a user.")]
-        public async Task Warn([Summary("The user to warn.")] SocketGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
+        public async Task Warn([Summary("The user to warn.")] IGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
         {
             var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("warn", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Warn(Context.User.Username, (ITextChannel)Context.Channel, mention, reason);
+                Moderation.Warn((IGuildUser)Context.User, (ITextChannel)Context.Channel, mention, reason);
             }
         }
 
@@ -267,7 +271,7 @@ namespace FrostBot
         {
             if (Moderation.CommandAllowed("show warns", Context))
             {
-                var embed = Embeds.ShowWarns((IGuildChannel)Context.Channel, mention);
+                var embed = Embeds.ShowWarns((SocketTextChannel)Context.Channel, mention);
                 await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
         }
@@ -428,15 +432,15 @@ namespace FrostBot
                 foreach (var role in roles)
                 {
                     if (users.Any(x => x.RoleIds.Contains(role.Id)))
-                        Console.WriteLine($"Role {role.Name} is in use.");
+                        Processing.LogDebugMessage($"Role {role.Name} is in use.");
                     else
                     {
-                        Console.WriteLine($"Role {role.Name} is unused, deleting...");
+                        Processing.LogDebugMessage($"Role {role.Name} is unused, deleting...");
                         await role.DeleteAsync();
                         pruneCount++;
                     }
                 }
-                await Context.Channel.SendMessageAsync($"Deleted {pruneCount} unused Color Roles.");
+                await Context.Channel.SendMessageAsync(embed: Embeds.ColorMsg($"Deleted {pruneCount} unused Color Roles.", Context.Guild.Id));
             }
 
         }
@@ -532,7 +536,7 @@ namespace FrostBot
                 {
                     var pinChannel = await Context.Guild.GetTextChannelAsync(selectedServer.Channels.Pins);
 
-                    var embed = Embeds.Pin((IGuildChannel)Context.Channel, msg, Context.Message.Author);
+                    var embed = Embeds.Pin((SocketTextChannel)Context.Channel, msg, Context.Message.Author);
                     await pinChannel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
                 }
                 catch
@@ -637,6 +641,15 @@ namespace FrostBot
                     await Context.Channel.SendMessageAsync($"You don't have enough {selectedServer.Strings.CurrencyName}!");
                 }
             }
+        }
+
+        // Disable bot
+        [Command("logoff"), Summary("End bot process.")]
+        public async Task LogOff()
+        {
+            if (Moderation.CommandAllowed("logoff", Context))
+                Program.settings.Active = false;
+            await Context.Channel.SendMessageAsync($"Logging off...");
         }
     }
 }

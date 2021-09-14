@@ -52,11 +52,11 @@ namespace FrostBot
         }
 
         // Write info on the last deleted message to bot log channel
-        public static async Task LogDeletedMessage(SocketMessage message, string reason)
+        public static async Task LogDeletedMessage(IMessage message, string reason)
         {
             var user = (IGuildUser)message.Author;
-            var guild = user.Guild;
-            Server selectedServer = Botsettings.SelectedServer(guild.Id);
+            var botUser = await user.Guild.GetUserAsync(Program.client.CurrentUser.Id);
+            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
 
             // Log deletion and delete message
             await message.DeleteAsync();
@@ -66,26 +66,17 @@ namespace FrostBot
 
             // Warn user depending on settings
             if (selectedServer.WarnOnAutoDelete)
-                Moderation.Warn(Program.client.CurrentUser.Username, (ITextChannel)message.Channel, (SocketGuildUser)message.Author, reason);
+                Moderation.Warn(botUser, (ITextChannel)message.Channel, (SocketGuildUser)message.Author, reason);
         }
 
         public static void LogDebugMessage(string message)
         {
             #if DEBUG
-            Console.WriteLine($"<{DateTime.Now.ToString("hh:mm")}>: {message}");
+            LogConsoleText(message);
             #endif
         }
 
-        public static async Task LogEmbed(Embed embed, ITextChannel channel, bool sendInPublicChannel = false)
-        {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
-
-            var botlog = await channel.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
-            if (botlog != null)
-                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-            if (sendInPublicChannel)
-                await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-        }
+        
 
         // Check if a message is a duplicate and if so, delete it
         public static async Task DuplicateMsgCheck(SocketMessage message, SocketGuildChannel channel)
@@ -116,8 +107,8 @@ namespace FrostBot
             }
         }
 
-        //Check if a message is filtered 
-        public static async Task FilterCheck(SocketMessage message, SocketGuildChannel channel)
+        // Check if a message is filtered 
+        public static async Task FilterCheck(IMessage message, ITextChannel channel)
         {
             Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
 
@@ -132,15 +123,16 @@ namespace FrostBot
                             asterisks += "*";
                         string deleteReason = $"Message included a filtered term: {term.ToCharArray().First()}{asterisks}{term.ToCharArray().Last()}";
 
-                        // Warn on filter match depending on settings, then delete
+                        // Auto-warn on filter match depending on settings, then delete message
+                        var botUser = await channel.Guild.GetUserAsync(Program.client.CurrentUser.Id);
                         if (selectedServer.WarnOnFilter)
-                            Moderation.Warn(channel.Guild.CurrentUser.Username, (ITextChannel)channel, (SocketGuildUser)message.Author, deleteReason);
+                            Moderation.Warn(botUser, channel, (IGuildUser)message.Author, deleteReason);
                         await LogDeletedMessage(message, deleteReason);
                     }
                 }
         }
 
-        //Log replies and respond with a random reply
+        // Log replies and respond with a random reply
         public static async Task Markov(SocketUserMessage message, SocketGuildChannel channel, Server selectedServer, bool ignoreFreq = false)
         {
             string binFilePath = Program.ymlPath.Replace("config.yml", $"Servers\\{channel.Guild.Id}\\{channel.Guild.Id}");
@@ -188,16 +180,31 @@ namespace FrostBot
             return;
         }
 
-        public static async Task UnarchivePublish(SocketGuild guild)
+        public static async Task UnarchiveThreads(SocketGuild guild)
         {
             var selectedServer = Botsettings.SelectedServer(guild.Id);
-            // Unarchive threads
+            // Unarchive threads listed in bot config automatically
             foreach (var threadChannel in guild.ThreadChannels)
             {
                 if (threadChannel.Archived && selectedServer.ThreadsToUnarchive.Any(x => x.Equals(threadChannel.Id)))
                     await threadChannel.ModifyAsync(x => x.Archived = false);
             }
-            // TODO: crosspost announcement channel messages
+        }
+
+        public static async Task PublishNews(SocketGuild guild)
+        {
+            // Crosspost last 25 messages in each announcement channel
+            foreach (var newsChannel in guild.Channels.Where(x => x.GetType().Equals(ChannelType.News)))
+            {
+                LogDebugMessage($"Publishing news in {guild.Name} #{newsChannel.Name}...");
+                var newsChan = (INewsChannel)newsChannel;
+                var messages = await newsChan.GetMessagesAsync(25).FlattenAsync();
+                foreach (var message in messages)
+                {
+                    var usermsg = (IUserMessage)message;
+                    await usermsg.CrosspostAsync();
+                }
+            }
         }
     }
 }

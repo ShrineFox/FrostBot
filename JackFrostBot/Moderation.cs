@@ -8,6 +8,7 @@ using Discord.Commands;
 using FrostBot;
 using System.Text.RegularExpressions;
 using static FrostBot.Config;
+using System.Threading.Tasks;
 
 namespace FrostBot
 {
@@ -55,37 +56,43 @@ namespace FrostBot
             return isPublic;
         }
 
-        // Measure # of warns the user now has
-        public static int WarnLevel(SocketGuildUser user)
+        // Send moderation embed to bot logs channel
+        public static async Task SendToBotLogs(Embed embed, IGuild guild)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.SelectedServer(guild.Id);
 
-            return selectedServer.Warns.Where(x => x.UserID.Equals(user.Id)).Count();
+            var botlog = await guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
+            if (botlog != null)
+                await botlog.SendMessageAsync("", embed: embed);
+            return;
+        }
+
+        // Measure # of warns the user now has
+        public static int WarnLevel(IGuildUser user)
+        {
+            return Botsettings.SelectedServer(user.Guild.Id).Warns.Where(x => x.UserID.Equals(user.Id)).Count();
         }
 
         // Keep track of a rule infraction for automated moderation purposes
-        public static async void Warn(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
+        public static async void Warn(IGuildUser moderator, ITextChannel channel, IGuildUser user, string reason)
         {
             Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
 
             reason = $"({user.Username}#{user.Discriminator}) {reason}";
 
-            // Warn user in channel
-            var embed = Embeds.Warn(user, reason);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            // Warn user in channel where it was issued and log warn in bot-logs
+            await channel.SendMessageAsync(embed: Embeds.Warn(user, moderator, channel, reason));
+            await SendToBotLogs(Embeds.Warn(user, moderator, channel, reason, true), channel.Guild);
 
-            // Log the warn in bot-logs
-            await Processing.LogEmbed(Embeds.LogWarn(moderator, channel, user, reason), channel);
-
-            // Write the userid and reason in warns.xml
-            Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns.Add(new Warn() { UserName = user.Username, UserID = user.Id, Reason = reason, CreatedAt = DateTime.Now.ToString(), CreatedBy = moderator});
+            // Save warn info to settings
+            Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns.Add(new Warn() { UserName = user.Username, UserID = user.Id, Reason = reason, CreatedAt = DateTime.Now.ToString(), CreatedBy = moderator.Username});
 
             // Measure # of warns the user now has
             int warns = WarnLevel(user);
-
             // Mute, kick or ban a user if they've accumulated too many warns
             if (warns > 0)
             {
+                /*
                 await channel.SendMessageAsync($"{user.Username} has been warned {warns} times.");
                 if (warns >= selectedServer.BanLevel) 
                     Ban(user.Guild.CurrentUser.Username, channel, user,
@@ -94,7 +101,7 @@ namespace FrostBot
                     Kick(user.Guild.CurrentUser.Username, channel, user,
                                 "User was automatically kicked for accumulating too many warnings.");
                 else if (warns >= selectedServer.MuteLevel)
-                    Mute(user.Guild.CurrentUser.Username, channel, user);
+                    Mute(user.Guild.CurrentUser.Username, channel, user);*/
             }
         }
 
@@ -104,7 +111,7 @@ namespace FrostBot
             Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
 
             // Announce clearing of warns in both channel and bot-logs
-            await Processing.LogEmbed(Embeds.ClearWarns(moderator, channel, user), channel, true);
+            await Moderation.SendToBotLogs(Embeds.ClearWarns(moderator, user), channel.Guild);
 
             // Clear warns from this user
             Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns = selectedServer.Warns.Where(x => !x.UserID.Equals(user.Id)).ToList();
@@ -121,14 +128,14 @@ namespace FrostBot
                 var removedWarn = selectedServer.Warns.ElementAt(index - 1);
 
                 // Announce clearing of warns in both channel and bot-logs
-                await Processing.LogEmbed(Embeds.ClearWarn(moderator, removedWarn), channel, true);
+                await Moderation.SendToBotLogs(Embeds.ClearWarn(moderator, removedWarn), channel.Guild);
 
                 // Write new warns list to file
                 Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns.Remove(removedWarn);
             }
             catch
             {
-                await channel.SendMessageAsync("Couldn't clear warn!");
+                await channel.SendMessageAsync(embed: Embeds.ColorMsg("Couldn't clear warn!", user.Guild.Id));
             }
         }
 
@@ -161,7 +168,7 @@ namespace FrostBot
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
             // Log the mute in the bot-logs channel (with admin name)
-            await Processing.LogEmbed(Embeds.LogMute(moderator, channel, user), channel);
+            await Moderation.SendToBotLogs(Embeds.LogMute(moderator, channel, user), channel.Guild);
         }
 
         // Removes a user's permission override in all channels
@@ -185,7 +192,7 @@ namespace FrostBot
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
             // Log the unmute in the bot-logs channel
-            await Processing.LogEmbed(Embeds.LogUnmute(moderator, channel, user), channel);
+            await Moderation.SendToBotLogs(Embeds.LogUnmute(moderator, channel, user), channel.Guild);
         }
 
         // Stops @everyone (without a permission override) from typing in a public channel
@@ -211,7 +218,7 @@ namespace FrostBot
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
             // Log the lock in the bot-logs channel
-            await Processing.LogEmbed(Embeds.LogLock(moderator, channel), channel);
+            await SendToBotLogs(Embeds.LogLock(moderator, channel), channel.Guild);
         }
 
         // Removes @everyone's permission override in a public channel
@@ -236,7 +243,7 @@ namespace FrostBot
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
             // Log the lock in the bot-logs channel
-            await Processing.LogEmbed(Embeds.LogUnlock(moderator, channel), channel);
+            await Moderation.SendToBotLogs(Embeds.LogUnlock(moderator, channel), channel.Guild);
         }
 
         // Removes a user from the server with a given reason
@@ -254,7 +261,7 @@ namespace FrostBot
                 await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
                 // Log kick in bot-logs (with name of moderator that kicked)
-                await Processing.LogEmbed(Embeds.KickLog(moderator, channel, user, reason), channel);
+                await Moderation.SendToBotLogs(Embeds.KickLog(moderator, channel, user, reason), channel.Guild);
 
                 // TODO: DM User
             }
@@ -277,7 +284,7 @@ namespace FrostBot
                 await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
                 // Log ban in bot-logs (with who issued ban)
-                await Processing.LogEmbed(Embeds.LogBan(moderator, channel, user, reason), channel);
+                await Moderation.SendToBotLogs(Embeds.LogBan(moderator, channel, user, reason), channel.Guild);
 
                 // TODO: DM User
             }
@@ -303,18 +310,18 @@ namespace FrostBot
             {
                 if (user.RoleIds.Any(x => selectedServer.Roles.Any(y => y.IsLurkerRole && y.Id.Equals(x))))
                 {
-                    Console.WriteLine($"Lurker found: {user.Username}");
+                    Processing.LogDebugMessage($"Lurker found: {user.Username}");
                     await user.KickAsync("Inactivity");
                     usersPruned++;
                 }
             }
 
             // Announce prune in channel where prune was initiated
-            var embed = Embeds.PruneLurkers(usersPruned);
+            var embed = Embeds.PruneLurkers(usersPruned, channel.Guild.Id);
             await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
             // Log the unmute in the bot-logs channel along with who initiated it
-            await Processing.LogEmbed(Embeds.LogPruneLurkers(moderator, usersPruned), channel);
+            await Moderation.SendToBotLogs(Embeds.LogPruneLurkers(moderator, usersPruned), channel.Guild);
         }
     }
 }

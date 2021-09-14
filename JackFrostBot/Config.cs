@@ -23,43 +23,49 @@ namespace FrostBot
                 Status = status;
             }
             public string Token { get; set; } = "";
+            public bool Active { get; set; } = false;
             public List<Server> Servers { get; set; } = new List<Server>();
             public string Activity { get; set; } = "";
             public int ActivityType { get; set; } = 0;
             public int Status { get; set; } = 0;
 
             // Load settings.yml as settings object if it exists, or create a new one
-            public static Botsettings Load()
+            public static void Load()
             {
-                Botsettings settings = new Botsettings();
-
                 if (File.Exists(Program.ymlPath))
                 {
                     Console.WriteLine("Reading settings.yml");
                     var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
-                    settings = deserializer.Deserialize<Botsettings>(File.ReadAllText(Program.ymlPath));
+                    Program.settings = deserializer.Deserialize<Botsettings>(File.ReadAllText(Program.ymlPath));
                 }
                 else
                 {
                     Console.WriteLine("Creating settings.yml");
                     Directory.CreateDirectory(Path.GetDirectoryName(Program.ymlPath));
-                    Save(settings);
+                    Program.settings = new Botsettings();
+                    Botsettings.Save();
                 }
-
-                return settings;
             }
 
-            public static void Save(Botsettings settings)
+            internal static void Save()
             {
                 // Save settings object to new settings.yml
                 Console.WriteLine("Saving settings.yml");
                 var serializer = new SerializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
-                File.WriteAllText(Program.ymlPath, serializer.Serialize(settings));
+                File.WriteAllText(Program.ymlPath, serializer.Serialize(Program.settings));
             }
 
-            public static Server SelectedServer(ulong guildId)
+            internal static Server GetServer(ulong guildId)
             {
                 return Program.settings.Servers.First(x => x.Id.Equals(guildId));
+            }
+
+            internal static void UpdateServer(Server selectedServer)
+            {
+                for (int i = 0; i < Program.settings.Servers.Count; i++)
+                    if (Program.settings.Servers[i].Id.Equals(selectedServer.Id))
+                        Program.settings.Servers[i] = selectedServer;
+                Botsettings.Save();
             }
         }
 
@@ -158,6 +164,4 @@ namespace FrostBot
 
         }
     }
-
-
 }

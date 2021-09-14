@@ -26,17 +26,16 @@ namespace FrostBot
 {
     public class Program
     {
-        public static bool active;
         public static CommandService commands;
         public static DiscordSocketClient client;
         private IServiceProvider services;
         public static string ymlPath = "";
         public static Botsettings settings;
 
-        public static void Main()
-            => new Program().MainAsync().GetAwaiter().GetResult();
+        public static void Main(string[] args)
+            => new Program().MainAsync(args).GetAwaiter().GetResult();
 
-        public async Task MainAsync()
+        public async Task MainAsync(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             // Set path to config file
@@ -47,9 +46,12 @@ namespace FrostBot
             else
                 ymlPath = ".//App_Data//settings.yml";
 
-
             // Get settings from config file (token etc.)
-            settings = Botsettings.Load();
+            Botsettings.Load();
+
+            // Get token from commandline args
+            if (args != null && args.Length > 0 && args[0].Length == 59)
+                settings.Token = args[0];
 
             // Start up Bot
             client = new DiscordSocketClient(new DiscordSocketConfig
@@ -57,8 +59,10 @@ namespace FrostBot
                 DefaultRetryMode = RetryMode.AlwaysRetry,
                 AlwaysAcknowledgeInteractions = false,
                 GatewayIntents = GatewayIntents.All,
-                AlwaysDownloadUsers = true,
-                LogLevel = LogSeverity.Debug
+                #if DEBUG
+                LogLevel = LogSeverity.Debug,
+                #endif
+                AlwaysDownloadUsers = true
             });
             commands = new CommandService();
             services = new ServiceCollection()
@@ -79,7 +83,6 @@ namespace FrostBot
                     Console.ReadKey();
                     Close();
                 }
-                    
             }
             catch
             {
@@ -148,7 +151,6 @@ namespace FrostBot
                 });
         }
 
-
         private async Task HandleSlashCmd(SocketSlashCommand interaction)
 {
             // Checking command name
@@ -165,7 +167,7 @@ namespace FrostBot
 
         public async Task UserJoin(SocketGuildUser user)
         {
-            var selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            var selectedServer = Botsettings.GetServer(user.Guild.Id);
             // Give the new user the Lurker role if enabled
             if (selectedServer.Roles.Any(x => x.IsLurkerRole))
             {
@@ -217,16 +219,18 @@ namespace FrostBot
 
         public async Task Ready()
         {
-            active = true;
+            Program.settings.Active = true;
 
-            // Get updated list of servers
-            Processing.LogDebugMessage("Getting servers...");
+            // Get updated list of servers (and publish news)
             foreach (var guild in client.Guilds)
+            {
                 if (settings.Servers == null || !settings.Servers.Any(x => x.Id.Equals(guild.Id)))
                     AddServer(guild);
+                await Processing.PublishNews(guild);
+            }
 
             // Update settings.yml
-            Botsettings.Save(settings);
+            Botsettings.Save();
 
             // Set game activity and status from config
             /*if (settings.Activity != "")
@@ -237,7 +241,8 @@ namespace FrostBot
 
         private void AddServer(SocketGuild guild)
         {
-            // Add list of commands (only enabled for moderators by default)
+            Processing.LogDebugMessage($"Adding server {guild.Name} to config...");
+            // Add list of commands (only enabled for moderators by default unless debug)
             List<Command> cmds = new List<Command>();
             foreach (var cmdModule in commands.Modules.Where(m => m.Parent == null))
                 foreach (var cmd in cmdModule.Commands)
@@ -245,8 +250,14 @@ namespace FrostBot
                     if (cmd.Name == "setup")
                         cmds.Add(new Command { Name = cmd.Name, BotChannelOnly = false });
                     else
+                    {
+                        #if DEBUG
+                        cmds.Add(new Command { Name = cmd.Name, ModeratorsOnly = false, BotChannelOnly = false });
+                        #else
                         cmds.Add(new Command { Name = cmd.Name });
-                }   
+                        #endif
+                    }
+                }
 
             // Add list of moderator roles (derived from administrator permissions)
             List<Role> roles = new List<Role>();
@@ -273,12 +284,17 @@ namespace FrostBot
 
         public async Task HandleCommand(SocketMessage messageParam)
         {
+            // Ensure we have latest settings
+            settings = Botsettings.Load();
+            // Set status to offline and stop executing if bot has been deativated remotely
+            if (!settings.Active)
+                Close();
+
             // Get message content and channel
             var message = messageParam as SocketUserMessage;
             var channel = (SocketGuildChannel)message.Channel;
             var user = (IGuildUser)message.Author;
-            // Ensure we have latest settings
-            settings = Botsettings.Load();
+            
             // Get settings for the server the message is in
             var selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
 
@@ -290,15 +306,11 @@ namespace FrostBot
                 if (selectedServer.Roles.Any(x => x.Equals(roleId) && x.IsLurkerRole))
                     await user.RemoveRoleAsync(roleId);
 
-            // Set status to offline and stop executing if deactivate button has been clicked
-            if (!active)
-                Close();
-
             //Process message...
             await Processing.LogSentMessage(message);
             await Processing.DuplicateMsgCheck(message, channel);
-            await Processing.FilterCheck(message, channel);
-            await Processing.UnarchivePublish(channel.Guild);
+            await Processing.FilterCheck(message, (ITextChannel)channel);
+            await Processing.UnarchiveThreads(channel.Guild);
 
             // Track where the prefix ends and the command begins
             int argPos = 0;
@@ -333,10 +345,10 @@ namespace FrostBot
 
         public static void Close()
         {
+            // Save changes
+            Botsettings.Save(settings);
             // Set status to offline
             SetStatus(null, 0);
-            // Set that bot is inactive
-            active = false;
             // End program execution
             Environment.Exit(0);
         }
