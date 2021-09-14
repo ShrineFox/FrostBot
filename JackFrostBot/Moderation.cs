@@ -17,7 +17,7 @@ namespace FrostBot
         // Returns true if a user isn't a bot, the command is enabled, has proper authority and is in the right channel
         public static bool CommandAllowed(string commandName, ICommandContext context)
         {
-            Server selectedServer = Botsettings.SelectedServer(context.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(context.Guild.Id);
             ulong botChannelId = selectedServer.Channels.BotSandbox;
             bool isModerator = Moderation.IsModerator((IGuildUser)context.Message.Author, context.Guild.Id);
 
@@ -33,7 +33,7 @@ namespace FrostBot
         // If a user has a role marked as "moderator" in config.yml
         public static bool IsModerator(IGuildUser user, ulong guildId)
         {
-            Server selectedServer = Botsettings.SelectedServer(guildId);
+            Server selectedServer = Botsettings.GetServer(guildId);
             var guildUser = (SocketGuildUser)user;
 
             if (guildUser.Roles.Any(x => selectedServer.Roles.Any(y => y.Moderator && y.Id.Equals(x.Id))))
@@ -59,7 +59,7 @@ namespace FrostBot
         // Send moderation embed to bot logs channel
         public static async Task SendToBotLogs(Embed embed, IGuild guild)
         {
-            Server selectedServer = Botsettings.SelectedServer(guild.Id);
+            Server selectedServer = Botsettings.GetServer(guild.Id);
 
             var botlog = await guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
             if (botlog != null)
@@ -70,13 +70,13 @@ namespace FrostBot
         // Measure # of warns the user now has
         public static int WarnLevel(IGuildUser user)
         {
-            return Botsettings.SelectedServer(user.Guild.Id).Warns.Where(x => x.UserID.Equals(user.Id)).Count();
+            return Botsettings.GetServer(user.Guild.Id).Warns.Where(x => x.UserID.Equals(user.Id)).Count();
         }
 
         // Keep track of a rule infraction for automated moderation purposes
         public static async void Warn(IGuildUser moderator, ITextChannel channel, IGuildUser user, string reason)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             reason = $"({user.Username}#{user.Discriminator}) {reason}";
 
@@ -108,7 +108,7 @@ namespace FrostBot
         // Remove all records of infractions for a given user
         public static async void ClearWarns(SocketGuildUser moderator, ITextChannel channel, SocketGuildUser user)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             // Announce clearing of warns in both channel and bot-logs
             await Moderation.SendToBotLogs(Embeds.ClearWarns(moderator, user), channel.Guild);
@@ -120,7 +120,7 @@ namespace FrostBot
         // Remove a specific infraction from a user
         public static async void ClearWarn(SocketGuildUser moderator, ITextChannel channel, int index, SocketGuildUser user)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             try
             {
@@ -142,7 +142,7 @@ namespace FrostBot
         // Stop a user from typing in all channels until unmuted
         public static async void Mute(string moderator, ITextChannel channel, SocketGuildUser user)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             var guild = user.Guild;
 
             // Mute the specified user in each text channel if it's not a bot
@@ -249,7 +249,7 @@ namespace FrostBot
         // Removes a user from the server with a given reason
         public static async void Kick(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             try
             {
@@ -272,7 +272,7 @@ namespace FrostBot
 
         public static async void Ban(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             try
             {
@@ -303,7 +303,7 @@ namespace FrostBot
         // Kicks all users that still have an auto-assigned role, which is removed upon activity
         public static async void PruneLurkers(SocketGuildUser moderator, ITextChannel channel, IReadOnlyCollection<IGuildUser> users)
         {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             int usersPruned = 0;
             foreach (IGuildUser user in users)

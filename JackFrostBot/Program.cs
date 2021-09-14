@@ -285,7 +285,7 @@ namespace FrostBot
         public async Task HandleCommand(SocketMessage messageParam)
         {
             // Ensure we have latest settings
-            settings = Botsettings.Load();
+            Botsettings.Load();
             // Set status to offline and stop executing if bot has been deativated remotely
             if (!settings.Active)
                 Close();
@@ -296,7 +296,7 @@ namespace FrostBot
             var user = (IGuildUser)message.Author;
             
             // Get settings for the server the message is in
-            var selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            var selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             // Stop processing if it's a system message or author is a bot
             if (message == null || message.Author.IsBot) return;
@@ -346,7 +346,7 @@ namespace FrostBot
         public static void Close()
         {
             // Save changes
-            Botsettings.Save(settings);
+            Botsettings.Save();
             // Set status to offline
             SetStatus(null, 0);
             // End program execution

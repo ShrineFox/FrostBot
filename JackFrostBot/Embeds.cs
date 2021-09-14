@@ -62,7 +62,7 @@ namespace FrostBot
         {
             // Get list of commands, usage and descriptions as single string
             string help = "";
-            Server selectedServer = Botsettings.SelectedServer(guildId);
+            Server selectedServer = Botsettings.GetServer(guildId);
             var cmds = selectedServer.Commands;
             // Only show non-moderator commands if user is not a moderator
             if (!isModerator)
@@ -93,7 +93,7 @@ namespace FrostBot
         // Returns info from a wiki page of a specified name
         static public Embed Wiki(string keyword, ulong guildId)
         {
-            Server selectedServer = Botsettings.SelectedServer(guildId);
+            Server selectedServer = Botsettings.GetServer(guildId);
             string url = Path.Combine(selectedServer.Strings.WikiURL,
                 $"w/api.php?action=query&prop=revisions&titles={keyword}&rvslots=*&rvprop=content&formatversion=2&format=json");
 
@@ -132,7 +132,7 @@ namespace FrostBot
         // Shows that a user has been muted
         static public Embed Mute(SocketGuildUser user)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             return ColorMsg($":mute: **Muted {user.Username}**. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
         }
 
@@ -145,7 +145,7 @@ namespace FrostBot
         // Shows that a user has been unmuted
         static public Embed Unmute(SocketGuildUser user)
         {
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             return ColorMsg($":speaker: **Unmuted {user.Username}**. {selectedServer.Strings.UnmuteMsg}", user.Guild.Id, green);
         }
 
@@ -158,7 +158,7 @@ namespace FrostBot
         // Shows that a user has been unmuted (along with who issued it)
         static public Embed Lock(ITextChannel channel)
         {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
             return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", channel.Guild.Id, red);
         }
 
@@ -169,7 +169,7 @@ namespace FrostBot
 
         static public Embed Unlock(ITextChannel channel)
         {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
             return ColorMsg($":unlock: **Channel Unlocked.** {selectedServer.Strings.UnlockMsg}", channel.Guild.Id, green);
         }
 
@@ -215,7 +215,7 @@ namespace FrostBot
 
         public static Embed ShowWarns(SocketTextChannel channel, SocketGuildUser user = null)
         {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             List<string> warns = new List<string>();
             for (int i = 0; i < selectedServer.Warns.Count(); i++)
@@ -226,7 +226,7 @@ namespace FrostBot
 
         public static Embed ShowColors(SocketTextChannel channel, List<string> colorRoleNames, ulong guildId)
         {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             string desc = $"You can assign yourself the following color roles using " +
             $"``{selectedServer.Prefix}give color roleName``, " +
@@ -263,21 +263,21 @@ namespace FrostBot
 
         static public Embed Award(SocketGuildUser author, string username, int amount)
         {
-            Server selectedServer = Botsettings.SelectedServer(author.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
 
             return ColorMsg($":money_with_wings: **{username} was awarded** {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
         }
 
         static public Embed LogAward(SocketGuildUser author, string username, int amount)
         {
-            Server selectedServer = Botsettings.SelectedServer(author.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
 
             return ColorMsg($":money_with_wings: **{author.Username} awarded** {username} {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
         }
 
         static public Embed Redeem(SocketGuildUser author, string username, int amount)
         {
-            Server selectedServer = Botsettings.SelectedServer(author.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
 
             return ColorMsg($":money_with_wings: **{username} redeemed** {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
 
@@ -285,7 +285,7 @@ namespace FrostBot
 
         static public Embed LogRedeem(SocketGuildUser author, string username, int amount)
         {
-            Server selectedServer = Botsettings.SelectedServer(author.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
 
             return ColorMsg($":money_with_wings: **{author.Username} took {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
 
@@ -293,7 +293,7 @@ namespace FrostBot
 
         static public Embed Send(SocketGuildUser author, string username, int amount)
         {
-            Server selectedServer = Botsettings.SelectedServer(author.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
 
             return ColorMsg($":money_with_wings: **{author.Username} sent** {username} {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
 
@@ -301,7 +301,7 @@ namespace FrostBot
 
         static public Embed Earn(string author, int amount, ulong guildId)
         {
-            Server selectedServer = Botsettings.SelectedServer(guildId);
+            Server selectedServer = Botsettings.GetServer(guildId);
 
             return ColorMsg($":money_with_wings: **{author} earned** {amount} {selectedServer.Strings.CurrencyName}.", guildId, green);
 

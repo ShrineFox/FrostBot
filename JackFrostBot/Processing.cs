@@ -56,7 +56,7 @@ namespace FrostBot
         {
             var user = (IGuildUser)message.Author;
             var botUser = await user.Guild.GetUserAsync(Program.client.CurrentUser.Id);
-            Server selectedServer = Botsettings.SelectedServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             // Log deletion and delete message
             await message.DeleteAsync();
@@ -83,7 +83,7 @@ namespace FrostBot
         {
             var user = (IGuildUser)message.Author;
             var guild = user.Guild;
-            Server selectedServer = Botsettings.SelectedServer(guild.Id);
+            Server selectedServer = Botsettings.GetServer(guild.Id);
 
             if (selectedServer.AutoDeleteDupes && channel.Id != selectedServer.Channels.BotSandbox 
                 && !Moderation.IsModerator((IGuildUser)message.Author, guild.Id) && !message.Author.IsBot)
@@ -110,7 +110,7 @@ namespace FrostBot
         // Check if a message is filtered 
         public static async Task FilterCheck(IMessage message, ITextChannel channel)
         {
-            Server selectedServer = Botsettings.SelectedServer(channel.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             if (Convert.ToBoolean(selectedServer.EnableWordFilter))
                 foreach (string term in selectedServer.WordFilter)
@@ -182,7 +182,7 @@ namespace FrostBot
 
         public static async Task UnarchiveThreads(SocketGuild guild)
         {
-            var selectedServer = Botsettings.SelectedServer(guild.Id);
+            var selectedServer = Botsettings.GetServer(guild.Id);
             // Unarchive threads listed in bot config automatically
             foreach (var threadChannel in guild.ThreadChannels)
             {

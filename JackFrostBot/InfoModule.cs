@@ -32,7 +32,9 @@ namespace FrostBot
             if (Moderation.CommandAllowed("setup", Context))
             {
                 await Context.Message.DeleteAsync();
-                FrostBot.Components.BeginSetup(Context.Channel);
+                var msgProps = Interactions.Setup.Start(Botsettings.GetServer(Context.Guild.Id));
+                var components = (MessageComponent)msgProps.Components;
+                await Context.Channel.SendMessageAsync(embed: (Embed)msgProps.Embed, component: components );
             }
         }
 
@@ -79,7 +81,7 @@ namespace FrostBot
                     || Context.Channel.GetType().Equals(ChannelType.PublicThread)
                     || Context.Channel.GetType().Equals(ChannelType.NewsThread))
                 {
-                    var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+                    var selectedServer = Botsettings.GetServer(Context.Guild.Id);
                     if (!selectedServer.ThreadsToUnarchive.Any(x => x.Equals(Context.Channel.Id)))
                     {
                         Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).ThreadsToUnarchive.Add(Context.Channel.Id);
@@ -113,7 +115,7 @@ namespace FrostBot
         [Command("grant"), Summary("Grant yourself the specified opt-in role.")]
         public async Task GrantRole([Remainder, Summary("The name of the role.")] string roleName)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("grant", Context))
             {
@@ -135,7 +137,7 @@ namespace FrostBot
         [Command("remove"), Summary("Remove the specified role from yourself.")]
         public async Task RemoveRole([Remainder, Summary("The name of the role.")] string roleName)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("remove", Context))
             {
@@ -157,7 +159,7 @@ namespace FrostBot
         [Command("warn"), Summary("Warn a user.")]
         public async Task Warn([Summary("The user to warn.")] IGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("warn", Context))
             {
@@ -479,7 +481,7 @@ namespace FrostBot
         [Command("markov"), Summary("Replies with a randomly generated message.")]
         public async Task Markov([Remainder, Summary("The rest of your message.")] string msg = "")
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("markov", Context))
             {
@@ -524,7 +526,7 @@ namespace FrostBot
         [Command("pin"), Summary("Saves message to a pinned message channel.")]
         public async Task PinMessage([Summary("The ID of the message to pin.")] string messageId, [Remainder, Summary("The ID of the channel the message is in.")] IMessageChannel channel)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("pin", Context))
             {
@@ -550,7 +552,7 @@ namespace FrostBot
         [Command("award"), Summary("Give a user currency.")]
         public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award."), Remainder] int amount = 1)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             var botlog = await Context.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
             if (Moderation.CommandAllowed("award", Context))
@@ -570,7 +572,7 @@ namespace FrostBot
         [Command("redeem"), Summary("Take a user's currency.")]
         public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take."), Remainder] int amount = 1)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             var botlog = await Context.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
             if (Moderation.CommandAllowed("redeem", Context))
@@ -592,7 +594,7 @@ namespace FrostBot
         [Command("balance"), Summary("Check your balance.")]
         public async Task Balance([Summary("The user to check the balance of."), Remainder] SocketGuildUser mention = null)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("balance", Context))
             {
@@ -610,7 +612,7 @@ namespace FrostBot
         [Command("send"), Summary("Send currency to another user.")]
         public async Task Send([Summary("The user to send currency to.")] SocketGuildUser mention = null, [Summary("The amount to send."), Remainder] int amount = 1)
         {
-            var selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("send", Context))
             {
@@ -621,7 +623,7 @@ namespace FrostBot
                 if (!selectedServer.Currency.Any(x => x.UserID.Equals(mention.Id)))
                     Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.Add(new Currency() { 
                         UserName = mention.Username, UserID = mention.Id, Amount = 0 });
-                selectedServer = Botsettings.SelectedServer(Context.Guild.Id);
+                selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
                 // Check that the post author has enough currency to send the amount
                 var authorAmount = selectedServer.Currency.First(x => x.UserID.Equals(Context.Message.Author.Id)).Amount;
