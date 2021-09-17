@@ -76,8 +76,6 @@ namespace FrostBot
             #endif
         }
 
-        
-
         // Check if a message is a duplicate and if so, delete it
         public static async Task DuplicateMsgCheck(SocketMessage message, SocketGuildChannel channel)
         {

@@ -94,6 +94,7 @@ namespace FrostBot
             public int MuteLevel { get; set; } = 2;
             public int KickLevel { get; set; } = 3;
             public int BanLevel { get; set; } = 4;
+            public int MuteDuration { get; set; } = 0;
             public bool AutoDeleteDupes { get; set; } = false;
             public int DuplicateFreq { get; set; } = 2;
             public int MaxDuplicates { get; set; } = 2;

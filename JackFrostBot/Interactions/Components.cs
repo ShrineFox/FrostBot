@@ -29,6 +29,9 @@ namespace FrostBot
             // Name of button selection
             string customID = interaction.Data.CustomId;
 
+            // Log to console
+            Processing.LogDebugMessage($"interaction: {interactionValue}");
+            Processing.LogDebugMessage($"customID: {customID}");
 
             // Proceed with bot configuration
             if (customID.StartsWith("setup-"))
@@ -44,3 +47,4 @@ namespace FrostBot
         }
     }
 }
+

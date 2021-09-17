@@ -43,7 +43,7 @@ namespace FrostBot
             .WithDescription(msg)
             .WithColor(new Color(color));
             if (icon)
-                builder = builder.WithColor(new Color(color));
+                builder = builder.WithThumbnailUrl(Botsettings.GetServer(guildId).Strings.BotIconURL);
             if (fields != null)
                 foreach (var field in fields)
                     builder = builder.AddField(field.Item1, field.Item2);
@@ -103,7 +103,7 @@ namespace FrostBot
         }
 
         // Shows that a user has been warned
-        static public Embed Warn(IGuildUser user, IGuildUser moderator, ITextChannel channel, string reason, bool modDetails = false)
+        static public Embed Warn(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason, bool modDetails = false)
         {
             if (!modDetails)
                 return ColorMsg($":warning: **Warn** {user.Mention}: {reason}", user.Guild.Id, red);
@@ -112,108 +112,98 @@ namespace FrostBot
         }
 
         // Shows that all of a user's warns have been cleared
-        static public Embed ClearWarns(SocketGuildUser moderator, SocketGuildUser user)
+        static public Embed ClearWarns(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
         {
-            return ColorMsg($":ok_hand: **{moderator.Username} cleared all warns for** {user.Username}.", user.Guild.Id, green);
+            if (!modDetails)
+                return ColorMsg($":ok_hand: **Cleared all warns for** {user.Mention}.", user.Guild.Id, green);
+            else
+                return ColorMsg($":ok_hand: **{moderator.Mention} cleared all warns for** {user.Mention} in {channel.Mention}.", user.Guild.Id, green);
         }
 
         // Shows that a user's singular warn has been cleared
-        static public Embed ClearWarn(SocketGuildUser moderator, Warn removedWarn)
+        static public Embed ClearWarn(Warn removedWarn, SocketGuildUser moderator, bool modDetails = false)
         {
-            return ColorMsg($":ok_hand: **{moderator.Username} cleared {removedWarn.UserName}'s warn**:\n{removedWarn.Reason}", moderator.Guild.Id, green);
-        }
+            string userMention = "";
+            try
+            {
+                userMention = moderator.Guild.Users.First(x => x.Id.Equals(removedWarn.UserID)).Mention;
+            } catch { userMention = removedWarn.UserName; }
 
-        // Shows that a user has been warned (along with who issued it)
-        static public Embed LogWarn(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
-        {
-            return ColorMsg($":warning: **{moderator} warned {user.Username}** in #{channel}: {reason}", user.Guild.Id, red);
+            if (!modDetails)
+                return ColorMsg($":ok_hand: **Cleared {userMention}'s Warn**:\n{removedWarn.Reason}", moderator.Guild.Id, green);
+            else
+                return ColorMsg($":ok_hand: **{moderator.Username} cleared {removedWarn.UserName}'s warn**:\n{removedWarn.Reason}", moderator.Guild.Id, green);
         }
 
         // Shows that a user has been muted
-        static public Embed Mute(SocketGuildUser user)
+        static public Embed Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
-            return ColorMsg($":mute: **Muted {user.Username}**. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
-        }
-
-        // Shows that a user has been muted (along with who issued it)
-        static public Embed LogMute(string moderator, ITextChannel channel, SocketGuildUser user)
-        {
-            return ColorMsg($":mute: **{moderator} muted {user.Username}** in #{channel}.", user.Guild.Id, red);
+            if (!modDetails)
+                return ColorMsg($":mute: **Muted {user.Username}**. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
+            else
+                return ColorMsg($":mute: **{moderator} muted {user.Username}** in {channel.Mention}.", user.Guild.Id, red);
         }
 
         // Shows that a user has been unmuted
-        static public Embed Unmute(SocketGuildUser user)
+        static public Embed Unmute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
-            return ColorMsg($":speaker: **Unmuted {user.Username}**. {selectedServer.Strings.UnmuteMsg}", user.Guild.Id, green);
+            if (!modDetails)
+                return ColorMsg($":speaker: **Unmuted {user.Username}**. {selectedServer.Strings.UnmuteMsg}", user.Guild.Id, green);
+            else
+                return ColorMsg($":speaker: **{moderator} unmuted {user.Username}** in {channel.Mention}.", user.Guild.Id, green);
         }
 
         // Shows that a user has been unmuted (along with who issued it)
-        static public Embed LogUnmute(string moderator, ITextChannel channel, SocketGuildUser user)
-        {
-            return ColorMsg($":speaker: **{moderator} unmuted {user.Username}** in #{channel}.", user.Guild.Id, green);
-        }
-
-        // Shows that a user has been unmuted (along with who issued it)
-        static public Embed Lock(ITextChannel channel)
+        static public Embed Lock(SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
         {
             Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
-            return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", channel.Guild.Id, red);
+            if (!modDetails)
+                return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", channel.Guild.Id, red);
+            else
+                return ColorMsg($":lock: **{moderator.Username} locked** {channel.Mention}.", channel.Guild.Id, red);
         }
 
-        static public Embed LogLock(SocketGuildUser moderator, ITextChannel channel)
-        {
-            return ColorMsg($":lock: **{moderator.Username} locked** #{channel}.", channel.Guild.Id, red);
-        }
-
-        static public Embed Unlock(ITextChannel channel)
+        static public Embed Unlock(SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
         {
             Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
-            return ColorMsg($":unlock: **Channel Unlocked.** {selectedServer.Strings.UnlockMsg}", channel.Guild.Id, green);
+            if (!modDetails)
+                return ColorMsg($":unlock: **Channel Unocked.** {selectedServer.Strings.UnlockMsg}", channel.Guild.Id, green);
+            else
+                return ColorMsg($":unlock: **{moderator.Username} unlocked** {channel.Mention}.", channel.Guild.Id, green);
         }
 
-        static public Embed LogUnlock(SocketGuildUser moderator, ITextChannel channel)
+        static public Embed Kick(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason, bool modDetails = false)
         {
-            return ColorMsg($":unlock: **{moderator.Username} unlocked** #{channel}.", channel.Guild.Id, green);
+            if (!modDetails)
+                return ColorMsg($":boot: **Kick {user.Username}**: {reason}", user.Guild.Id, red);
+            else
+                return ColorMsg($":boot: **{moderator.Mention} kicked {user.Username}** in {channel.Mention}: {reason}", user.Guild.Id, red);
         }
 
-        static public Embed Kick(SocketGuildUser user, string reason)
+        static public Embed Ban(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason, bool modDetails = false)
         {
-            return ColorMsg($":boot: **Kick {user.Username}**: {reason}", user.Guild.Id, red);
+            if (!modDetails)
+                return ColorMsg($":hammer: **Ban {user.Username}**: {reason}", user.Guild.Id, red);
+            else
+                return ColorMsg($":hammer: **{moderator.Mention} banned {user.Username}** in {channel.Mention}: {reason}", user.Guild.Id, red);
         }
 
-        static public Embed KickLog(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
+        static public Embed PruneLurkers(SocketGuildUser moderator, int usersPruned, ulong guildId, bool modDetails = false)
         {
-            return ColorMsg($":boot: **{moderator} kicked {user.Username}** in #{channel}: {reason}", user.Guild.Id, red);
+            if (!modDetails)
+                return ColorMsg($":scissors: **Pruned** {usersPruned} Lurkers.", guildId, red);
+            else
+                return ColorMsg($":scissors: **{moderator.Mention} Pruned** {usersPruned} Lurkers.", moderator.Guild.Id, red);
         }
 
-        static public Embed Ban(SocketGuildUser user, string reason)
+        static public Embed LogRoleAdd(IGuildUser user, IRole role)
         {
-            return ColorMsg($":hammer: **Ban {user.Username}**: {reason}", user.Guild.Id, red);
+            return ColorMsg($":thumbsup: {user.Username} gained the {role.Name} role.", user.Guild.Id);
         }
 
-        static public Embed LogBan(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
-        {
-            return ColorMsg($":hammer: **{moderator} banned {user.Username}** in #{channel}: {reason}", user.Guild.Id, red);
-        }
-
-        static public Embed PruneLurkers(int usersPruned, ulong guildId)
-        {
-            return ColorMsg($":scissors: **Pruned** {usersPruned} Lurkers.", guildId, red);
-        }
-
-        static public Embed LogPruneLurkers(SocketGuildUser moderator, int usersPruned)
-        {
-            return ColorMsg($":scissors: **{moderator.Username} Pruned** {usersPruned} Lurkers.", moderator.Guild.Id, red);
-        }
-
-        static public Embed LogMemberAdd(IGuildUser user)
-        {
-            return ColorMsg($":thumbsup: {user.Username} gained the **Member** role.", user.Guild.Id);
-        }
-
-        public static Embed ShowWarns(SocketTextChannel channel, SocketGuildUser user = null)
+        public static Embed ShowWarns(SocketTextChannel channel)
         {
             Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
@@ -261,52 +251,29 @@ namespace FrostBot
             return eBuilder.Build();
         }
 
-        static public Embed Award(SocketGuildUser author, string username, int amount)
+        static public Embed Award(SocketGuildUser user, SocketGuildUser moderator, int amount, bool modDetails = false)
         {
-            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
-
-            return ColorMsg($":money_with_wings: **{username} was awarded** {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
+            if (!modDetails)
+                return ColorMsg($":money_with_wings: **{user.Mention} was awarded** {amount} {selectedServer.Strings.CurrencyName}.", user.Guild.Id, green);
+            else
+                return ColorMsg($":money_with_wings: **{moderator.Mention} awarded {user.Mention}** with {amount} {selectedServer.Strings.CurrencyName}.", user.Guild.Id, green);
         }
 
-        static public Embed LogAward(SocketGuildUser author, string username, int amount)
+        static public Embed Redeem(SocketGuildUser user, SocketGuildUser moderator, int amount, bool modDetails = false)
         {
-            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
-
-            return ColorMsg($":money_with_wings: **{author.Username} awarded** {username} {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
+            if (!modDetails)
+                return ColorMsg($":money_with_wings: **{user.Mention} redeemed** {amount} {selectedServer.Strings.CurrencyName}.", user.Guild.Id);
+            else
+                return ColorMsg($":money_with_wings: **{moderator.Mention} took {user.Mention}**'s {amount} {selectedServer.Strings.CurrencyName}.", user.Guild.Id);
         }
 
-        static public Embed Redeem(SocketGuildUser author, string username, int amount)
+        static public Embed Send(SocketGuildUser user, SocketGuildUser sender, int amount)
         {
-            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
-            return ColorMsg($":money_with_wings: **{username} redeemed** {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
-
+            return ColorMsg($":money_with_wings: **{sender.Mention} sent** {user.Mention} {amount} {selectedServer.Strings.CurrencyName}.", user.Guild.Id, green);
         }
-
-        static public Embed LogRedeem(SocketGuildUser author, string username, int amount)
-        {
-            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
-
-            return ColorMsg($":money_with_wings: **{author.Username} took {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
-
-        }
-
-        static public Embed Send(SocketGuildUser author, string username, int amount)
-        {
-            Server selectedServer = Botsettings.GetServer(author.Guild.Id);
-
-            return ColorMsg($":money_with_wings: **{author.Username} sent** {username} {amount} {selectedServer.Strings.CurrencyName}.", author.Guild.Id, green);
-
-        }
-
-        static public Embed Earn(string author, int amount, ulong guildId)
-        {
-            Server selectedServer = Botsettings.GetServer(guildId);
-
-            return ColorMsg($":money_with_wings: **{author} earned** {amount} {selectedServer.Strings.CurrencyName}.", guildId, green);
-
-        }
-
-        
     }
 }

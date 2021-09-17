@@ -552,19 +552,10 @@ namespace FrostBot
         [Command("award"), Summary("Give a user currency.")]
         public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award."), Remainder] int amount = 1)
         {
-            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
-
-            var botlog = await Context.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
             if (Moderation.CommandAllowed("award", Context))
             {
                 await Context.Message.DeleteAsync();
-
-                Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.Add(new Currency() { UserName = mention.Username, UserID = mention.Id, Amount = amount });
-                var embed = Embeds.LogAward((SocketGuildUser)Context.Message.Author, mention.Username, amount);
-                await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                embed = Embeds.Award((SocketGuildUser)Context.Message.Author, mention.Username, amount);
-                await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                
+                Moderation.Award(mention, (SocketGuildUser)Context.Message.Author, (ITextChannel)Context.Channel, amount);
             }
         }
 
@@ -572,21 +563,11 @@ namespace FrostBot
         [Command("redeem"), Summary("Take a user's currency.")]
         public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take."), Remainder] int amount = 1)
         {
-            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
-
-            var botlog = await Context.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
             if (Moderation.CommandAllowed("redeem", Context))
             {
                 await Context.Message.DeleteAsync();
-                if (Moderation.IsModerator((IGuildUser)Context.Message.Author, Context.Guild.Id))
-                {
-                    var userCurrency = selectedServer.Currency.First(x => x.UserID.Equals(mention.Id)).Amount;
-                    Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.First(x => x.UserID.Equals(mention.Id)).Amount = userCurrency - amount;
-                    var embed = Embeds.LogRedeem((SocketGuildUser)Context.Message.Author, mention.Username, amount);
-                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                    embed = Embeds.Redeem((SocketGuildUser)Context.Message.Author, mention.Username, amount);
-                    await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                }
+                Moderation.Redeem(mention, (SocketGuildUser)Context.Message.Author, (ITextChannel)Context.Channel, amount);
+
             }
         }
 
@@ -612,36 +593,10 @@ namespace FrostBot
         [Command("send"), Summary("Send currency to another user.")]
         public async Task Send([Summary("The user to send currency to.")] SocketGuildUser mention = null, [Summary("The amount to send."), Remainder] int amount = 1)
         {
-            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
-
             if (Moderation.CommandAllowed("send", Context))
             {
-                // Ensure both users have a currency entry
-                if (!selectedServer.Currency.Any(x => x.UserID.Equals(Context.Message.Author.Id)))
-                    Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.Add(new Currency() { 
-                        UserName = Context.Message.Author.Username, UserID = Context.Message.Author.Id, Amount = 0 });
-                if (!selectedServer.Currency.Any(x => x.UserID.Equals(mention.Id)))
-                    Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.Add(new Currency() { 
-                        UserName = mention.Username, UserID = mention.Id, Amount = 0 });
-                selectedServer = Botsettings.GetServer(Context.Guild.Id);
-
-                // Check that the post author has enough currency to send the amount
-                var authorAmount = selectedServer.Currency.First(x => x.UserID.Equals(Context.Message.Author.Id)).Amount;
-                if (authorAmount >= amount)
-                {
-                    var recipientAmount = selectedServer.Currency.First(x => x.UserID.Equals(mention.Id)).Amount;
-                    Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.First(x => x.UserID.Equals(Context.Message.Author.Id)).Amount = authorAmount - amount;
-                    Program.settings.Servers.First(x => x.Id.Equals(Context.Guild.Id)).Currency.First(x => x.UserID.Equals(mention.Id)).Amount = recipientAmount - amount;
-
-                    var botlog = await Context.Guild.GetTextChannelAsync(selectedServer.Channels.BotLogs);
-                    var embed = Embeds.Send((SocketGuildUser)Context.Message.Author, mention.Username, amount);
-                    await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                    await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-                }
-                else
-                {
-                    await Context.Channel.SendMessageAsync($"You don't have enough {selectedServer.Strings.CurrencyName}!");
-                }
+                await Context.Message.DeleteAsync();
+                Moderation.Send(mention, (SocketGuildUser)Context.Message.Author, (ITextChannel)Context.Channel, amount);
             }
         }
 

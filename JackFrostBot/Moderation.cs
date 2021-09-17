@@ -19,7 +19,7 @@ namespace FrostBot
         {
             Server selectedServer = Botsettings.GetServer(context.Guild.Id);
             ulong botChannelId = selectedServer.Channels.BotSandbox;
-            bool isModerator = Moderation.IsModerator((IGuildUser)context.Message.Author, context.Guild.Id);
+            bool isModerator = Moderation.IsModerator((SocketGuildUser)context.Message.Author, context.Guild.Id);
 
             Command cmd = selectedServer.Commands.First(x => x.Name.Equals(commandName));
 
@@ -31,12 +31,11 @@ namespace FrostBot
         }
 
         // If a user has a role marked as "moderator" in config.yml
-        public static bool IsModerator(IGuildUser user, ulong guildId)
+        public static bool IsModerator(SocketGuildUser user, ulong guildId)
         {
             Server selectedServer = Botsettings.GetServer(guildId);
-            var guildUser = (SocketGuildUser)user;
 
-            if (guildUser.Roles.Any(x => selectedServer.Roles.Any(y => y.Moderator && y.Id.Equals(x.Id))))
+            if (user.Roles.Any(x => selectedServer.Roles.Any(y => y.Moderator && y.Id.Equals(x.Id))))
                 return true;
             return false;
         }
@@ -74,11 +73,9 @@ namespace FrostBot
         }
 
         // Keep track of a rule infraction for automated moderation purposes
-        public static async void Warn(IGuildUser moderator, ITextChannel channel, IGuildUser user, string reason)
+        public static async void Warn(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
-
-            reason = $"({user.Username}#{user.Discriminator}) {reason}";
 
             // Warn user in channel where it was issued and log warn in bot-logs
             await channel.SendMessageAsync(embed: Embeds.Warn(user, moderator, channel, reason));
@@ -90,35 +87,38 @@ namespace FrostBot
             // Measure # of warns the user now has
             int warns = WarnLevel(user);
             // Mute, kick or ban a user if they've accumulated too many warns
-            if (warns > 0)
+            if (warns > 1)
             {
-                /*
-                await channel.SendMessageAsync($"{user.Username} has been warned {warns} times.");
+                // Program.client.Guilds.First(x => x.Id.Equals(guildId)).CurrentUser
+                await channel.SendMessageAsync($"{user.Mention} has been warned {warns} times.");
                 if (warns >= selectedServer.BanLevel) 
-                    Ban(user.Guild.CurrentUser.Username, channel, user,
+                    Ban(user, moderator, channel,
                                 "User was automatically banned for accumulating too many warnings.");
                 else if (warns >= selectedServer.KickLevel)
-                    Kick(user.Guild.CurrentUser.Username, channel, user,
+                    Kick(user, moderator, channel,
                                 "User was automatically kicked for accumulating too many warnings.");
                 else if (warns >= selectedServer.MuteLevel)
-                    Mute(user.Guild.CurrentUser.Username, channel, user);*/
+                    Mute(user, moderator, channel);
             }
+
+            // TODO: DM User
         }
 
         // Remove all records of infractions for a given user
-        public static async void ClearWarns(SocketGuildUser moderator, ITextChannel channel, SocketGuildUser user)
+        public static async void ClearWarns(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             // Announce clearing of warns in both channel and bot-logs
-            await Moderation.SendToBotLogs(Embeds.ClearWarns(moderator, user), channel.Guild);
+            await channel.SendMessageAsync(embed: Embeds.ClearWarns(user, moderator, channel));
+            await SendToBotLogs(Embeds.ClearWarns(user, moderator, channel, true), channel.Guild);
 
             // Clear warns from this user
             Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns = selectedServer.Warns.Where(x => !x.UserID.Equals(user.Id)).ToList();
         }
 
         // Remove a specific infraction from a user
-        public static async void ClearWarn(SocketGuildUser moderator, ITextChannel channel, int index, SocketGuildUser user)
+        public static async void ClearWarn(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int index)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
@@ -128,7 +128,8 @@ namespace FrostBot
                 var removedWarn = selectedServer.Warns.ElementAt(index - 1);
 
                 // Announce clearing of warns in both channel and bot-logs
-                await Moderation.SendToBotLogs(Embeds.ClearWarn(moderator, removedWarn), channel.Guild);
+                await channel.SendMessageAsync(embed: Embeds.ClearWarn(removedWarn, moderator));
+                await SendToBotLogs(Embeds.ClearWarn(removedWarn, moderator, true), channel.Guild);
 
                 // Write new warns list to file
                 Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns.Remove(removedWarn);
@@ -140,7 +141,7 @@ namespace FrostBot
         }
 
         // Stop a user from typing in all channels until unmuted
-        public static async void Mute(string moderator, ITextChannel channel, SocketGuildUser user)
+        public static async void Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             var guild = user.Guild;
@@ -164,15 +165,12 @@ namespace FrostBot
             }
 
             // Announce the mute (ambiguous as to who muted)
-            var embed = Embeds.Mute(user);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-            // Log the mute in the bot-logs channel (with admin name)
-            await Moderation.SendToBotLogs(Embeds.LogMute(moderator, channel, user), channel.Guild);
+            await channel.SendMessageAsync(embed: Embeds.Mute(user, moderator, channel));
+            await SendToBotLogs(Embeds.Mute(user, moderator, channel, true), channel.Guild);
         }
 
         // Removes a user's permission override in all channels
-        public static async void Unmute(string moderator, ITextChannel channel, SocketGuildUser user)
+        public static async void Unmute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel)
         {
             foreach (SocketTextChannel chan in user.Guild.TextChannels)
             {
@@ -188,11 +186,8 @@ namespace FrostBot
             }
 
             // Announce the unmute (ambiguous as to who unmuted
-            var embed = Embeds.Unmute(user);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-            // Log the unmute in the bot-logs channel
-            await Moderation.SendToBotLogs(Embeds.LogUnmute(moderator, channel, user), channel.Guild);
+            await channel.SendMessageAsync(embed: Embeds.Unmute(user, moderator, channel));
+            await SendToBotLogs(Embeds.Unmute(user, moderator, channel, true), channel.Guild);
         }
 
         // Stops @everyone (without a permission override) from typing in a public channel
@@ -214,11 +209,8 @@ namespace FrostBot
             }
             
             // Announce the lock
-            var embed = Embeds.Lock(channel);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-            // Log the lock in the bot-logs channel
-            await SendToBotLogs(Embeds.LogLock(moderator, channel), channel.Guild);
+            await channel.SendMessageAsync(embed: Embeds.Lock(moderator, channel));
+            await SendToBotLogs(Embeds.Lock(moderator, channel, true), channel.Guild);
         }
 
         // Removes @everyone's permission override in a public channel
@@ -239,15 +231,12 @@ namespace FrostBot
             }
 
             // Announce the unlock
-            var embed = Embeds.Unlock(channel);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-            // Log the lock in the bot-logs channel
-            await Moderation.SendToBotLogs(Embeds.LogUnlock(moderator, channel), channel.Guild);
+            await channel.SendMessageAsync(embed: Embeds.Unlock(moderator, channel));
+            await SendToBotLogs(Embeds.Unlock(moderator, channel, true), channel.Guild);
         }
 
         // Removes a user from the server with a given reason
-        public static async void Kick(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
+        public static async void Kick(SocketGuildUser moderator, SocketGuildUser user, ITextChannel channel, string reason)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
@@ -257,11 +246,8 @@ namespace FrostBot
                 await user.KickAsync(reason);
 
                 // Announce kick in channel where infraction occured (ambiguous as to who kicked)
-                var embed = Embeds.Kick(user, reason);
-                await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-                // Log kick in bot-logs (with name of moderator that kicked)
-                await Moderation.SendToBotLogs(Embeds.KickLog(moderator, channel, user, reason), channel.Guild);
+                await channel.SendMessageAsync(embed: Embeds.Kick(user, moderator, channel, reason));
+                await SendToBotLogs(Embeds.Kick(user, moderator, channel, reason, true), channel.Guild);
 
                 // TODO: DM User
             }
@@ -270,7 +256,7 @@ namespace FrostBot
             }
         }
 
-        public static async void Ban(string moderator, ITextChannel channel, SocketGuildUser user, string reason)
+        public static async void Ban(SocketGuildUser moderator, SocketGuildUser user, ITextChannel channel, string reason)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
@@ -280,11 +266,8 @@ namespace FrostBot
                 await user.Guild.AddBanAsync(user, 0, reason);
 
                 // Announce ban in channel where infraction occured (ambiguous as to who issued ban)
-                var embed = Embeds.Ban(user, reason);
-                await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
-
-                // Log ban in bot-logs (with who issued ban)
-                await Moderation.SendToBotLogs(Embeds.LogBan(moderator, channel, user, reason), channel.Guild);
+                await channel.SendMessageAsync(embed: Embeds.Ban(user, moderator, channel, reason));
+                await SendToBotLogs(Embeds.Ban(user, moderator, channel, reason, true), channel.Guild);
 
                 // TODO: DM User
             }
@@ -317,11 +300,56 @@ namespace FrostBot
             }
 
             // Announce prune in channel where prune was initiated
-            var embed = Embeds.PruneLurkers(usersPruned, channel.Guild.Id);
-            await channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            await channel.SendMessageAsync(embed: Embeds.PruneLurkers(moderator, usersPruned, channel.GuildId));
+            await SendToBotLogs(Embeds.PruneLurkers(moderator, usersPruned, channel.GuildId, true), channel.Guild);
+        }
 
-            // Log the unmute in the bot-logs channel along with who initiated it
-            await Moderation.SendToBotLogs(Embeds.LogPruneLurkers(moderator, usersPruned), channel.Guild);
+        // Put new currency into circulation by giving it to a user
+        public static async void Award(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int amount)
+        {
+            var selectedServer = Botsettings.GetServer(channel.GuildId);
+            if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)))
+                selectedServer.Currency.Add(new Currency() { UserName = user.Username, UserID = user.Id, Amount = amount });
+            else
+                selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount += amount;
+            Botsettings.UpdateServer(selectedServer);
+
+            await channel.SendMessageAsync("", embed: Embeds.Award(user, moderator, amount)).ConfigureAwait(false);
+            await SendToBotLogs(Embeds.Award(user, moderator, amount, true), channel.Guild);
+        }
+
+        // Remove currency in circulation by taking from a user
+        public static async void Redeem(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int amount)
+        {
+            var selectedServer = Botsettings.GetServer(channel.GuildId);
+            if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)) || selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount < amount)
+            {
+                await channel.SendMessageAsync($"User doesn't have enough {selectedServer.Currency}.");
+            }
+            else
+            {
+                selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount -= amount;
+                Botsettings.UpdateServer(selectedServer);
+                await channel.SendMessageAsync("", embed: Embeds.Redeem(user, moderator, amount)).ConfigureAwait(false);
+                await SendToBotLogs(Embeds.Redeem(user, moderator, amount, true), channel.Guild);
+            }
+        }
+
+        // Send currency you currently posess to another user
+        internal static async void Send(SocketGuildUser user, SocketGuildUser sender, ITextChannel channel, int amount)
+        {
+            var selectedServer = Botsettings.GetServer(channel.GuildId);
+            if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)) || selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount < amount)
+            {
+                await channel.SendMessageAsync($"User doesn't have enough {selectedServer.Currency}.");
+            }
+            else
+            {
+                selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount -= amount;
+                Botsettings.UpdateServer(selectedServer);
+                await channel.SendMessageAsync("", embed: Embeds.Send(user, sender, amount)).ConfigureAwait(false);
+                await SendToBotLogs(Embeds.Send(user, sender, amount, true), channel.Guild);
+            }
         }
     }
 }
