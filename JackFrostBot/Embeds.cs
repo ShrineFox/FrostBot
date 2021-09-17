@@ -203,13 +203,20 @@ namespace FrostBot
             return ColorMsg($":thumbsup: {user.Username} gained the {role.Name} role.", user.Guild.Id);
         }
 
-        public static Embed ShowWarns(SocketTextChannel channel)
+        public static Embed ShowWarns(ITextChannel channel, SocketGuildUser mention = null)
         {
             Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             List<string> warns = new List<string>();
-            for (int i = 0; i < selectedServer.Warns.Count(); i++)
-                warns.Add($"{i + 1}. **{selectedServer.Warns[i].UserName}**: {selectedServer.Warns[i].Reason}");
+            if (mention != null)
+                for (int i = 0; i < selectedServer.Warns.Count(); i++)
+                    warns.Add($"{i + 1}. **{selectedServer.Warns[i].UserName}**: {selectedServer.Warns[i].Reason}");
+            else
+            {
+                var userWarns = selectedServer.Warns.Where(x => x.UserID.Equals(mention.Id)).ToList();
+                for (int i = 0; i < userWarns.Count(); i++)
+                    warns.Add($"{i + 1}. **{userWarns[i].UserName}**: {userWarns[i].Reason}");
+            }
 
             return ColorMsg($"The following warns have been issued: \n\n{String.Join($"\n", warns.ToArray())}", channel.Guild.Id);
         }

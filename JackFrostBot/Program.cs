@@ -185,7 +185,7 @@ namespace FrostBot
             if (warnLevel >= selectedServer.MuteLevel)
             {
                 await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
-                Moderation.Mute(client.CurrentUser.Username, defaultChannel, user);
+                Moderation.Mute(user, client.Guilds.First(x => x.Id.Equals(user.Guild.Id)).CurrentUser, defaultChannel);
             }
             else
                 await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {selectedServer.Strings.WelcomeMessage}");

@@ -66,7 +66,7 @@ namespace FrostBot
         {
             if (Moderation.CommandAllowed("help", Context))
             {
-                var embed = Embeds.Help(Context.Guild.Id, Moderation.IsModerator((IGuildUser)Context.Message.Author, Context.Guild.Id));
+                var embed = Embeds.Help(Context.Guild.Id, Moderation.IsModerator((SocketGuildUser)Context.Message.Author, Context.Guild.Id));
                 await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
         }
@@ -157,14 +157,14 @@ namespace FrostBot
 
         // Warn a user and log it
         [Command("warn"), Summary("Warn a user.")]
-        public async Task Warn([Summary("The user to warn.")] IGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
+        public async Task Warn([Summary("The user to warn.")] SocketGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
         {
             var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
             if (Moderation.CommandAllowed("warn", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Warn((IGuildUser)Context.User, (ITextChannel)Context.Channel, mention, reason);
+                Moderation.Warn(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel, reason);
             }
         }
 
@@ -175,7 +175,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("mute", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Mute(Context.User.Username, (ITextChannel)Context.Channel, mention);
+                Moderation.Mute(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel);
             }
         }
 
@@ -186,7 +186,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("unmute", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Unmute(Context.User.Username, (ITextChannel)Context.Channel, mention);
+                Moderation.Unmute(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel);
             }
         }
 
@@ -219,7 +219,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("kick", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Kick(Context.User.Username, (ITextChannel)Context.Channel, mention, reason);
+                Moderation.Kick(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel, reason);
             }
         }
 
@@ -230,7 +230,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("ban", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Ban(Context.User.Username, (ITextChannel)Context.Channel, mention, reason);
+                Moderation.Ban(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel, reason);
             }
         }
 
@@ -252,7 +252,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("clear warns", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.ClearWarns((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, mention);
+                Moderation.ClearWarns(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel);
             }
         }
 
@@ -263,7 +263,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("clear warn", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.ClearWarn((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, Convert.ToInt32(index), mention);
+                Moderation.ClearWarn(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel, index);
             }
         }
 
@@ -273,7 +273,7 @@ namespace FrostBot
         {
             if (Moderation.CommandAllowed("show warns", Context))
             {
-                var embed = Embeds.ShowWarns((SocketTextChannel)Context.Channel, mention);
+                var embed = Embeds.ShowWarns((ITextChannel)Context.Channel, mention);
                 await Context.Channel.SendMessageAsync("", embed: embed).ConfigureAwait(false);
             }
         }

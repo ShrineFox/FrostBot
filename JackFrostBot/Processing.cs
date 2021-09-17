@@ -66,7 +66,7 @@ namespace FrostBot
 
             // Warn user depending on settings
             if (selectedServer.WarnOnAutoDelete)
-                Moderation.Warn(botUser, (ITextChannel)message.Channel, (SocketGuildUser)message.Author, reason);
+                Moderation.Warn((SocketGuildUser)message.Author, (SocketGuildUser)botUser, (ITextChannel)message.Channel, reason);
         }
 
         public static void LogDebugMessage(string message)
@@ -84,7 +84,7 @@ namespace FrostBot
             Server selectedServer = Botsettings.GetServer(guild.Id);
 
             if (selectedServer.AutoDeleteDupes && channel.Id != selectedServer.Channels.BotSandbox 
-                && !Moderation.IsModerator((IGuildUser)message.Author, guild.Id) && !message.Author.IsBot)
+                && !Moderation.IsModerator((SocketGuildUser)message.Author, guild.Id) && !message.Author.IsBot)
             {
                 int matches = 0;
 
@@ -124,7 +124,7 @@ namespace FrostBot
                         // Auto-warn on filter match depending on settings, then delete message
                         var botUser = await channel.Guild.GetUserAsync(Program.client.CurrentUser.Id);
                         if (selectedServer.WarnOnFilter)
-                            Moderation.Warn(botUser, channel, (IGuildUser)message.Author, deleteReason);
+                            Moderation.Warn((SocketGuildUser)botUser, (SocketGuildUser)message.Author, channel, deleteReason);
                         await LogDeletedMessage(message, deleteReason);
                     }
                 }

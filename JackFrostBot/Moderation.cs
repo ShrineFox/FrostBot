@@ -339,16 +339,19 @@ namespace FrostBot
         internal static async void Send(SocketGuildUser user, SocketGuildUser sender, ITextChannel channel, int amount)
         {
             var selectedServer = Botsettings.GetServer(channel.GuildId);
-            if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)) || selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount < amount)
+            if (selectedServer.Currency.Any(x => !x.UserID.Equals(sender.Id)) || selectedServer.Currency.Single(x => x.UserID.Equals(sender.Id)).Amount < amount)
             {
-                await channel.SendMessageAsync($"User doesn't have enough {selectedServer.Currency}.");
+                await channel.SendMessageAsync($"You doesn't have enough {selectedServer.Currency}.");
             }
             else
             {
-                selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount -= amount;
+                selectedServer.Currency.Single(x => x.UserID.Equals(sender.Id)).Amount -= amount;
+                if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)))
+                    selectedServer.Currency.Add(new Currency() { UserName = user.Username, UserID = user.Id, Amount = amount });
+                else
+                    selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount += amount;
                 Botsettings.UpdateServer(selectedServer);
                 await channel.SendMessageAsync("", embed: Embeds.Send(user, sender, amount)).ConfigureAwait(false);
-                await SendToBotLogs(Embeds.Send(user, sender, amount, true), channel.Guild);
             }
         }
     }
