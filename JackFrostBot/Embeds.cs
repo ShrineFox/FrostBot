@@ -21,24 +21,28 @@ namespace FrostBot
         public static uint green = 0x37FF68;
         public static uint blue = 0xD0021B;
 
-        public static uint GetUsernameColor(ulong guildId)
+        public static uint GetUsernameColor(SocketGuildUser user, ulong guildId)
         {
             // Default color is blue if no role colors found
             uint colorValue = blue;
             // Convert highest role with color to uint
-            var roles = Program.client.Guilds.First(x => x.Id.Equals(guildId)).CurrentUser.Roles.OrderBy(x => x.Position);
+            var roles = Program.client.Guilds.Single(x => x.Id.Equals(guildId)).Users.Single(x => x.Id.Equals(user.Id)).Roles.OrderBy(x => x.Position);
             if (roles.Count() > 0)
-                foreach (var role in roles)
-                    if (role.Color != new Discord.Color(0, 0, 0))
-                        colorValue = (uint)((role.Color.R << 16) | (role.Color.G << 8) | role.Color.B);
+                foreach (var role in roles.Where(x => x.Color != new Discord.Color(0, 0, 0)))
+                    colorValue = GetRoleColor(role);
             return colorValue;
+        }
+
+        public static uint GetRoleColor(SocketRole role)
+        {
+            return (uint)((role.Color.R << 16) | (role.Color.G << 8) | role.Color.B);
         }
 
         // Message with colored box and optional icon/fields
         public static Embed ColorMsg(string msg, ulong guildId, uint color = 0, bool icon = false, List<Tuple<string, string>> fields = null)
         {
             if (color == 0)
-                color = GetUsernameColor(guildId);
+                color = GetUsernameColor(Program.client.CurrentUser.Id);
             var builder = new EmbedBuilder()
             .WithDescription(msg)
             .WithColor(new Color(color));
@@ -47,6 +51,16 @@ namespace FrostBot
             if (fields != null)
                 foreach (var field in fields)
                     builder = builder.AddField(field.Item1, field.Item2);
+
+            return builder.Build();
+        }
+
+        // Message with red box and esclaimation icon
+        public static Embed ErrorMsg(string msg)
+        {
+            var builder = new EmbedBuilder()
+            .WithDescription(":no_entry: " + msg)
+            .WithColor(red);
 
             return builder.Build();
         }

@@ -340,18 +340,23 @@ namespace FrostBot
                 try
                 {
                     SocketGuildUser user = (SocketGuildUser)Context.User;
-                    var clrRole = Context.Guild.Roles.FirstOrDefault(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase));
-                    //Give role
-                    await user.AddRoleAsync(clrRole);
-                    await Context.Channel.SendMessageAsync("Role successfully added!");
-                    //Remove other color role user already has
-                    foreach (var role in user.Roles)
-                        if (role.Name.ToUpper().Contains("COLOR: ") && !role.Name.ToUpper().Contains(roleName.ToUpper()))
-                            await user.RemoveRoleAsync(role);
+                    if (Context.Guild.Roles.Any(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        var clrRole = Context.Guild.Roles.Single(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase));
+                        //Give role
+                        await user.AddRoleAsync(clrRole);
+                        await Context.Channel.SendMessageAsync("Role successfully added!");
+                        //Remove other color role user already has
+                        foreach (var role in user.Roles)
+                            if (role.Name.ToUpper().Contains("COLOR: ") && !role.Name.ToUpper().Equals("COLOR: " + roleName.ToUpper()))
+                                await user.RemoveRoleAsync(role);
+                    }
+                    else
+                        await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact color name!"));
                 }
                 catch
                 {
-                    await Context.Channel.SendMessageAsync($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact role name!");
+                    await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact color name!"));
                 }
             }
 
