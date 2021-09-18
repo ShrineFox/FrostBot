@@ -113,7 +113,8 @@ namespace FrostBot.Interactions
                 try
                 {
                     IRole role = guild.GetRole(modRole.Id);
-                    modRoles += $"{role.Mention}\n";
+                    if (role != null)
+                        modRoles += $"{role.Mention}\n";
                 }
                 catch { }
             }
@@ -191,7 +192,8 @@ namespace FrostBot.Interactions
                             try
                             {
                                 var channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.General);
-                                selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
+                                if (channel != null)
+                                    selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
                             }
                             catch { }
                         }
@@ -207,7 +209,8 @@ namespace FrostBot.Interactions
                             try
                             {
                                 var channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.BotSandbox);
-                                selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
+                                if (channel != null)
+                                    selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
                             }
                             catch { }
                         }
@@ -223,7 +226,8 @@ namespace FrostBot.Interactions
                             try
                             {
                                 var channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.BotLogs);
-                                selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
+                                if (channel != null)
+                                    selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
                             }
                             catch { }
                         }
@@ -233,12 +237,14 @@ namespace FrostBot.Interactions
                             "**Please choose a \"Pins\" channel.**\n" +
                             "This is a public channel where messages \"pinned\" with a bot command will go.\n" +
                             "This feature is intended as a workaround to the 50 message pin limit on channels.";
+                        nextBtnID = "setup-commands-btn-1";
                         if (selectedServer.Channels.Pins != 0)
                         {
                             try
                             {
                                 var channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.Pins);
-                                selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
+                                if (channel != null)
+                                    selectedTxt = $"\n\n**Current selection**: {channel.Mention}";
                             }
                             catch { }
                         }
@@ -259,7 +265,7 @@ namespace FrostBot.Interactions
                 msgProps.Components = new ComponentBuilder()
                     .WithSelectMenu(menu)
                     .WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                    .WithButton("Skip", nextBtnID)
+                    .WithButton("Next Step", nextBtnID)
                     .Build();
             else
                 msgProps.Components = new ComponentBuilder()
@@ -325,19 +331,19 @@ namespace FrostBot.Interactions
                         cmdToggles = cmdToggles.WithButton("Enabled", $"setup-commands-btn{additional}-{cmd.Name}-enabled-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
                     // ModeratorsOnly
                     if (cmd.ModeratorsOnly)
-                        cmdToggles = cmdToggles.WithButton("ModeratorsOnly", $"setup-commands-btn{additional}-{cmd.Name}-moderatorsonly-false", ButtonStyle.Primary, Components.chk, null, false, 0);
+                        cmdToggles = cmdToggles.WithButton("Moderators Only", $"setup-commands-btn{additional}-{cmd.Name}-moderatorsonly-false", ButtonStyle.Primary, Components.chk, null, false, 0);
                     else
-                        cmdToggles = cmdToggles.WithButton("ModeratorsOnly", $"setup-commands-btn{additional}-{cmd.Name}-moderatorsonly-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
+                        cmdToggles = cmdToggles.WithButton("Moderators Only", $"setup-commands-btn{additional}-{cmd.Name}-moderatorsonly-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
                     // BotChannelOnly
                     if (cmd.BotChannelOnly)
-                        cmdToggles = cmdToggles.WithButton("BotChannelOnly", $"setup-commands-btn{additional}-{cmd.Name}-botchannelonly-false", ButtonStyle.Primary, Components.chk, null, false, 0);
+                        cmdToggles = cmdToggles.WithButton("Bot Channel Only", $"setup-commands-btn{additional}-{cmd.Name}-botchannelonly-false", ButtonStyle.Primary, Components.chk, null, false, 0);
                     else
-                        cmdToggles = cmdToggles.WithButton("BotChannelOnly", $"setup-commands-btn{additional}-{cmd.Name}-botchannelonly-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
+                        cmdToggles = cmdToggles.WithButton("Bot Channel Only", $"setup-commands-btn{additional}-{cmd.Name}-botchannelonly-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
                     // IsSlashCmd
                     if (cmd.IsSlashCmd)
-                        cmdToggles = cmdToggles.WithButton("IsSlashCmd", $"setup-commands-btn{additional}-{cmd.Name}-isslashcmd-false", ButtonStyle.Primary, Components.chk, null, false, 0);
+                        cmdToggles = cmdToggles.WithButton("Is Slash Command", $"setup-commands-btn{additional}-{cmd.Name}-isslashcmd-false", ButtonStyle.Primary, Components.chk, null, false, 0);
                     else
-                        cmdToggles = cmdToggles.WithButton("IsSlashCmd", $"setup-commands-btn{additional}-{cmd.Name}-isslashcmd-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
+                        cmdToggles = cmdToggles.WithButton("Is Slash Command", $"setup-commands-btn{additional}-{cmd.Name}-isslashcmd-true", ButtonStyle.Secondary, Components.unchk, null, false, 0);
                     // Create embed contents
                     string summary = Program.commands.Modules.Where(m => m.Parent == null).First(x => x.Commands.Any(z => z.Name.Equals("say"))).Commands.First(y => y.Name.Equals(interactionValue)).Summary;
                     var parameters = Program.commands.Modules.Where(m => m.Parent == null).First(x => x.Commands.Any(z => z.Name.Equals("say"))).Commands.First(y => y.Name.Equals(interactionValue)).Parameters;
@@ -348,11 +354,6 @@ namespace FrostBot.Interactions
                     msgProps.Embed = Embeds.ColorMsg($"💬 __**{selectedServer.Prefix}{cmd.Name} Command**__\n\n" +
                         $"**Usage:** ``{selectedServer.Prefix}{cmd.Name}{paramList}``\n" +
                         $"**Description**: {summary}\n\n" +
-                        "**Enabled**: ``Whether command can be used at all.``\n" +
-                        "**ModeratorsOnly**: ``Whether command can be used only by moderators.``\n" +
-                        "**BotChannelOnly**: ``Whether command can be used only in the bot sandbox channel.``\n" +
-                        "**IsSlashCmd**: ``Whether command can be used as a slash command.``\n" +
-                        "By default, these are true for all commands.\n\n" +
                         "When finished, choose another command or press **Next Step**.",
                             selectedServer.Id, 0, true);
                 }
@@ -362,19 +363,16 @@ namespace FrostBot.Interactions
                     if (customIDParts.Length == 4)
                     {
                         if (!page2)
-                            msgProps.Embed = Embeds.ColorMsg("💬 __**Commands**__ (1/2)\n" +
-                                "Choose any **command** to configure.\n\n" +
-                                "For each command, you can toggle the following:\n" +
-                                "**Enabled**: ``Whether command can be used at all.``\n" +
-                                "**ModeratorsOnly**: ``Whether command can be used only by moderators.``\n" +
-                                "**BotChannelOnly**: ``Whether command can be used only in the bot sandbox channel.``\n" +
-                                "**IsSlashCmd**: ``Whether command can be used as a slash command.``\n" +
-                                "By default, these are true for all commands.",
+                            msgProps.Embed = Embeds.ColorMsg("💬 __**Commands**__ (1/2)\n\n" +
+                                "Choose any **command** to configure.\n" +
+                                "You can toggle how each command can be used.\n" +
+                                "By default, commands only work for moderators, and must " +
+                                "be used in the bot sandbox channel.",
                                 selectedServer.Id, 0, true);
                         else
-                            msgProps.Embed = Embeds.ColorMsg("💬 __**Commands**__ (2/2)\n" +
-                                "Choose more **commands** to configure.\n" +
-                                "These ones are different than the last set.\n\n" +
+                            msgProps.Embed = Embeds.ColorMsg("💬 __**Commands**__ (2/2)\n\n" +
+                                "Choose more **commands** to configure.\n\n" +
+                                "These ones are different than the last set.\n" +
                                 "Due to Discord limitations, only 25 can be shown at a time.",
                                 selectedServer.Id, 0, true);
                     }
@@ -389,6 +387,7 @@ namespace FrostBot.Interactions
                 commands = selectedServer.Commands.Take(25).ToList();
             foreach (var command in commands)
             {
+                Console.WriteLine(command.Name);
                 var desc = Program.commands.Modules.Where(m => m.Parent == null).First(x => x.Commands.Any(z => z.Name.Equals("say"))).Commands.First(y => y.Name.Equals(command.Name)).Summary;
                 menu.AddOption(new SelectMenuOptionBuilder() { Label = selectedServer.Prefix + command.Name + " - " + desc, Value = command.Name });
             }
@@ -711,10 +710,10 @@ namespace FrostBot.Interactions
             selectedServer.Configured = true;
             Botsettings.UpdateServer(selectedServer);
 
-            msgProps.Embed = Embeds.ColorMsg("👍 __**Setup Complete!**__\n" +
-                           "Everything should be all set for you to start using the bot.\n" +
-                           $" Use ``{selectedServer.Prefix}help`` in the bot sandbox channel\n" +
-                           "for a list of commands you can use. You can change these settings\n" +
+            msgProps.Embed = Embeds.ColorMsg("👍 __**Setup Complete!**__\n\n" +
+                           "Everything should be all set for you to start using the bot.\n\n" +
+                           $" Use ``{selectedServer.Prefix}help`` in the bot sandbox channel " +
+                           "for a list of commands you can use. You can change these settings " +
                            $"anytime by visiting ``{selectedServer.Prefix}setup``. Enjoy!",
                            selectedServer.Id, 0, true);
             msgProps.Components = new ComponentBuilder().Build();

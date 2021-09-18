@@ -21,6 +21,7 @@ using FrostBot;
 using static FrostBot.Config;
 using static FrostBot.Components;
 using static FrostBot.SlashCommands;
+using Discord.Net;
 
 namespace FrostBot
 {
@@ -220,13 +221,33 @@ namespace FrostBot
         public async Task Ready()
         {
             Program.settings.Active = true;
-
+            
             // Get updated list of servers (and publish news)
             foreach (var guild in client.Guilds)
             {
+                // Get updated list of servers
                 if (settings.Servers == null || !settings.Servers.Any(x => x.Id.Equals(guild.Id)))
                     AddServer(guild);
+                // Publish News
                 await Processing.PublishNews(guild);
+                // Set up Slash Commands
+                try
+                {
+                    foreach (var command in commands.Modules.Where(m => m.Parent == null).First(x => x.Commands.Any(z => z.Name.Equals("say"))).Commands.Where(x => !x.Name.Contains(" ")))
+                    {
+                        if (Botsettings.GetServer(guild.Id).Commands.Any(x => x.Name.Equals(command.Name) && x.IsSlashCmd))
+                        {
+                            var guildCommand = new SlashCommandBuilder().WithName(command.Name).WithDescription(command.Summary);
+                            foreach (var parameter in command.Parameters)
+                                guildCommand.AddOption(new SlashCommandOptionBuilder() { Name = parameter.Name, Description = parameter.Summary, Required = !parameter.IsOptional });
+                            await client.Rest.CreateGlobalCommand(guildCommand.Build());
+                        }
+                    }
+                }
+                catch (ApplicationCommandException exception)
+                {
+                    Processing.LogDebugMessage(exception.Message);
+                }
             }
 
             // Update settings.yml
@@ -298,8 +319,8 @@ namespace FrostBot
             // Get settings for the server the message is in
             var selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
-            // Stop processing if it's a system message or author is a bot
-            if (message == null || message.Author.IsBot) return;
+            // Stop processing if it's a system message
+            if (message == null) return;
 
             // Remove lurker role if member has one
             foreach (var roleId in user.RoleIds)
@@ -315,12 +336,15 @@ namespace FrostBot
             // Track where the prefix ends and the command begins
             int argPos = 0;
 
+            // Stop processing if user is a bot
+            if (message.Author.IsBot)
+                return;
             // If the message doesn't start with the server's command prefix or a bot mention...
             if (!message.HasCharPrefix(Convert.ToChar(settings.Servers.First(x => x.Id.Equals(channel.Guild.Id)).Prefix), ref argPos)
                 && !message.HasMentionPrefix(client.CurrentUser, ref argPos))
             {
                 // Send markov message if permissible by settings
-                if (selectedServer.AutoMarkov && !message.Author.IsBot && selectedServer.Channels.BotLogs == channel.Guild.Id)
+                if (selectedServer.AutoMarkov && (!selectedServer.BotChannelMarkovOnly || (selectedServer.BotChannelMarkovOnly && selectedServer.Channels.BotSandbox == channel.Id)))
                     await Processing.Markov(message, channel, selectedServer);
                 // Stop processing message
                 return;
@@ -333,7 +357,7 @@ namespace FrostBot
             var result = await commands.ExecuteAsync(context, argPos, services);
             // Send error message unless command is unknown
             if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)
-                await context.Channel.SendMessageAsync(result.ErrorReason);
+                await context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg(result.ErrorReason));
         }
 
         private Task Log(LogMessage msg)

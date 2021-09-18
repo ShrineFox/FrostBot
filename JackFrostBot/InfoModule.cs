@@ -25,7 +25,6 @@ namespace FrostBot
 {
     public class InfoModule : ModuleBase
     {
-        // Make the bot repeat a message
         [Command("setup"), Summary("Configure the bot.")]
         public async Task Setup()
         {
@@ -38,7 +37,6 @@ namespace FrostBot
             }
         }
 
-        // Make the bot repeat a message
         [Command("say"), Summary("Make the bot repeat a message.")]
         public async Task Say([Remainder, Summary("The format to get info about.")] string message)
         {
@@ -49,7 +47,6 @@ namespace FrostBot
             }
         }
 
-        // Get info from a wiki page
         [Command("wiki"), Summary("Get info from a wiki page.")]
         public async Task GetInfo([Remainder, Summary("The page to get info from.")] string keyword)
         {
@@ -60,7 +57,6 @@ namespace FrostBot
             }
         }
 
-        // Get info about bot commands available to you
         [Command("help"), Summary("Get info about using the bot.")]
         public async Task GetHelp()
         {
@@ -71,7 +67,6 @@ namespace FrostBot
             }
         }
 
-        // Direct users in a channel to another channel
         [Command("unarchive"), Summary("Set thread to remain unarchived.")]
         public async Task Unarchive()
         {
@@ -100,7 +95,6 @@ namespace FrostBot
             }
         }
 
-        // Change bot's currently Playing text
         [Command("set game"), Summary("Change the Currently Playing text.")]
         public async Task SetGame([Remainder, Summary("The text to set as the Game.")] string game)
         {
@@ -111,8 +105,7 @@ namespace FrostBot
             }
         }
 
-        // Grant yourself the specified opt-in role
-        [Command("grant"), Summary("Grant yourself the specified opt-in role.")]
+        [Command("join"), Summary("Grant yourself the specified opt-in role.")]
         public async Task GrantRole([Remainder, Summary("The name of the role.")] string roleName)
         {
             var selectedServer = Botsettings.GetServer(Context.Guild.Id);
@@ -133,7 +126,6 @@ namespace FrostBot
             }
         }
 
-        // Remove specified role from yourself
         [Command("remove"), Summary("Remove the specified role from yourself.")]
         public async Task RemoveRole([Remainder, Summary("The name of the role.")] string roleName)
         {
@@ -155,7 +147,6 @@ namespace FrostBot
             }
         }
 
-        // Warn a user and log it
         [Command("warn"), Summary("Warn a user.")]
         public async Task Warn([Summary("The user to warn.")] SocketGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
         {
@@ -168,7 +159,6 @@ namespace FrostBot
             }
         }
 
-        // Mute a user and log it
         [Command("mute"), Summary("Mute a user.")]
         public async Task Mute([Summary("The user to mute.")] SocketGuildUser mention, [Summary("The reason for the mute."), Remainder] string reason = "No reason given.")
         {
@@ -179,7 +169,6 @@ namespace FrostBot
             }
         }
 
-        // Unmute a user and log it
         [Command("unmute"), Summary("Unmute a muted user.")]
         public async Task Unmute([Summary("The user to unmute.")] SocketGuildUser mention)
         {
@@ -190,7 +179,6 @@ namespace FrostBot
             }
         }
 
-        // Lock a channel and log it
         [Command("lock"), Summary("Lock a channel.")]
         public async Task Lock()
         {
@@ -201,7 +189,6 @@ namespace FrostBot
             }
         }
 
-        // Unlock a channel and log it
         [Command("unlock"), Summary("Unlock a channel.")]
         public async Task Unlock()
         {
@@ -212,7 +199,6 @@ namespace FrostBot
             }
         }
 
-        // Kick a user and log it
         [Command("kick"), Summary("Kick a user.")]
         public async Task Kick([Summary("The user to kick.")] SocketGuildUser mention, [Summary("The reason for the kick."), Remainder] string reason = "No reason given.")
         {
@@ -223,7 +209,6 @@ namespace FrostBot
             }
         }
 
-        // Ban a user and log it
         [Command("ban"), Summary("Ban a user.")]
         public async Task Ban([Summary("The user to ban.")] SocketGuildUser mention, [Summary("The reason for the ban."), Remainder] string reason = "No reason given.")
         {
@@ -234,7 +219,6 @@ namespace FrostBot
             }
         }
 
-        // Direct users in a channel to another channel
         [Command("redirect"), Summary("Redirect discussion to another channel.")]
         public async Task Redirect([Summary("The channel to move discussion to.")] ITextChannel channel)
         {
@@ -245,7 +229,6 @@ namespace FrostBot
             }
         }
 
-        // Remove all of a user's warns
         [Command("clear warns"), Summary("Clears all warns that a user received.")]
         public async Task ClearWarns([Summary("The user whose warns to clear.")] SocketGuildUser mention)
         {
@@ -256,18 +239,16 @@ namespace FrostBot
             }
         }
 
-        // Remove one of a user's warns
         [Command("clear warn"), Summary("Clears a warn that a user received.")]
         public async Task ClearWarn([Summary("The index of the warn to clear.")] int index, [Summary("The user whose warn to clear.")] SocketGuildUser mention = null)
         {
             if (Moderation.CommandAllowed("clear warn", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.ClearWarn(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel, index);
+                Moderation.ClearWarn((SocketGuildUser)Context.Message.Author, (ITextChannel)Context.Channel, index, mention);
             }
         }
 
-        // Show all warns for all members, or a specific member if specified
         [Command("show warns"), Summary("Show all current warns.")]
         public async Task ShowWarns([Summary("The user whose warns to show.")] SocketGuildUser mention = null)
         {
@@ -278,7 +259,6 @@ namespace FrostBot
             }
         }
 
-        // Remove all users with the Lurkers role
         [Command("prune lurkers"), Summary("Removes all users with the Lurkers role.")]
         public async Task PruneLurkers()
         {
@@ -290,18 +270,6 @@ namespace FrostBot
             }
         }
 
-        // Get the ID of a role without pinging it
-        [Command("get id"), Summary("Get the ID of a role without pinging it.")]
-        public async Task GetID([Remainder, Summary("The name of the role to get the ID of.")] string roleName = null)
-        {
-            if (Moderation.CommandAllowed("get id", Context))
-            {
-                var role = Context.Guild.Roles.FirstOrDefault(x => x.Name == roleName);
-                await Context.Channel.SendMessageAsync(role.Id.ToString());
-            }
-        }
-
-        // Create a role with a specific color
         [Command("create color"), Summary("Create a role with a specific color")]
         public async Task CreateColor([Summary("The hex value of the Color Role.")] string colorValue, [Remainder, Summary("The name of the Color Role.")] string roleName)
         {
@@ -331,7 +299,6 @@ namespace FrostBot
             }
         }
 
-        // Assign yourself a role with a specific color
         [Command("give color"), Summary("Assigns yourself a role with a specific color")]
         public async Task CreateColor([Remainder, Summary("The name of the Color Role.")] string roleName)
         {
@@ -362,7 +329,6 @@ namespace FrostBot
 
         }
 
-        // List all color roles that you can assign to yourself
         [Command("show colors"), Summary("Lists all color roles that you can assign to yourself")]
         public async Task ShowColors()
         {
@@ -388,7 +354,6 @@ namespace FrostBot
             }
         }
 
-        // Change an existing role's color value
         [Command("update color"), Summary("Change an existing role's color value.")]
         public async Task UpdateColor([Summary("The hex value of the Color Role.")] string colorValue, [Remainder, Summary("The name of the Color Role.")] string roleName)
         {
@@ -426,7 +391,6 @@ namespace FrostBot
 
         }
 
-        // Remove unused color roles
         [Command("prune colors"), Summary("Remove unused Color Roles.")]
         public async Task PruneColors()
         {
@@ -452,7 +416,6 @@ namespace FrostBot
 
         }
 
-        // Change an existing color role's name
         [Command("rename color"), Summary("Change an existing color role's name.")]
         public async Task RenameColor([Summary("The name of the Color Role to update.")] string oldRoleName, [Remainder, Summary("The new name of the Color Role.")] string newRoleName)
         {
@@ -482,7 +445,6 @@ namespace FrostBot
 
         }
 
-        // Reply with a randomly generated message
         [Command("markov"), Summary("Replies with a randomly generated message.")]
         public async Task Markov([Remainder, Summary("The rest of your message.")] string msg = "")
         {
@@ -495,18 +457,17 @@ namespace FrostBot
             }
         }
 
-        // Reset the markov dictionary
         [Command("reset markov"), Summary("Resets the markov dictionary.")]
         public async Task ResetMarkov()
         {
             if (Moderation.CommandAllowed("reset markov", Context))
             {
-                File.Delete($"Servers\\{Context.Guild.Id.ToString()}\\{Context.Guild.Id.ToString()}.bin");
+
+                File.Delete(Program.ymlPath.Replace("settings.yml", $"Servers\\{Context.Guild.Id}\\markov.bin"));
                 await Context.Channel.SendMessageAsync("Markov dictionary successfully reset!");
             }
         }
 
-        // Run a message through multiple languages and back
         [Command("translate"), Summary("Run the message through multiple languages and back.")]
         public async Task Translate([Remainder, Summary("The text to translate.")] string text)
         {
@@ -514,7 +475,6 @@ namespace FrostBot
                 await Context.Channel.SendMessageAsync(BadTranslator.Translate(text));
         }
 
-        // Delete a number of messages
         [Command("delete"), Summary("Deletes a set number of messages from the channel.")]
         public async Task DeleteMessages([Summary("The number of messages to delete.")] int amount)
         {
@@ -527,7 +487,6 @@ namespace FrostBot
             }
         }
 
-        // Saves message to a "pinned" message channel
         [Command("pin"), Summary("Saves message to a pinned message channel.")]
         public async Task PinMessage([Summary("The ID of the message to pin.")] string messageId, [Remainder, Summary("The ID of the channel the message is in.")] IMessageChannel channel)
         {
@@ -553,7 +512,6 @@ namespace FrostBot
             }
         }
 
-        // Give a user an amount of currency
         [Command("award"), Summary("Give a user currency.")]
         public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award."), Remainder] int amount = 1)
         {
@@ -564,7 +522,6 @@ namespace FrostBot
             }
         }
 
-        // Take an amount of user's currency
         [Command("redeem"), Summary("Take a user's currency.")]
         public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take."), Remainder] int amount = 1)
         {
@@ -576,7 +533,6 @@ namespace FrostBot
             }
         }
 
-        // Check your currency balance
         [Command("balance"), Summary("Check your balance.")]
         public async Task Balance([Summary("The user to check the balance of."), Remainder] SocketGuildUser mention = null)
         {
@@ -594,7 +550,6 @@ namespace FrostBot
             }
         }
 
-        //Send currency to another user
         [Command("send"), Summary("Send currency to another user.")]
         public async Task Send([Summary("The user to send currency to.")] SocketGuildUser mention = null, [Summary("The amount to send."), Remainder] int amount = 1)
         {
@@ -605,7 +560,6 @@ namespace FrostBot
             }
         }
 
-        // Disable bot
         [Command("logoff"), Summary("End bot process.")]
         public async Task LogOff()
         {

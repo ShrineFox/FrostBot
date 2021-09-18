@@ -30,8 +30,12 @@ namespace FrostBot
                 File.Create(logPath);
 
             string logLine = ($"<{DateTime.Now.ToString("hh:mm")}> {user.Username} in #{message.Channel}: {message}");
+            foreach (Embed embed in message.Embeds)
+                if (embed.Description != null)
+                    logLine += "\n" + embed.Description;
+                
             if (message.Attachments.Count > 0)
-                logLine = logLine + message.Attachments.FirstOrDefault().Url;
+                logLine += "\n" + message.Attachments.FirstOrDefault().Url;
             Console.WriteLine(logLine);
             File.AppendAllText(logPath, logLine + "\n");
         }
@@ -55,12 +59,12 @@ namespace FrostBot
         public static async Task LogDeletedMessage(IMessage message, string reason)
         {
             var user = (IGuildUser)message.Author;
-            var botUser = await user.Guild.GetUserAsync(Program.client.CurrentUser.Id);
+            var botUser = Moderation.GetUser(user.Guild.Id, Program.client.CurrentUser.Id);
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             // Log deletion and delete message
             await message.DeleteAsync();
-            var botlog = (SocketTextChannel)user.Guild.GetChannelAsync(selectedServer.Channels.BotLogs).Result;
+            var botlog = Moderation.GetChannel(user.Guild.Id, selectedServer.Channels.BotLogs);
             var embed = Embeds.DeletedMessage(message, reason);
             await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
 
@@ -133,7 +137,9 @@ namespace FrostBot
         // Log replies and respond with a random reply
         public static async Task Markov(SocketUserMessage message, SocketGuildChannel channel, Server selectedServer, bool ignoreFreq = false)
         {
-            string binFilePath = Program.ymlPath.Replace("config.yml", $"Servers\\{channel.Guild.Id}\\{channel.Guild.Id}");
+            string binFilePath = Program.ymlPath.Replace("settings.yml", $"Servers\\{channel.Guild.Id}\\markov");
+            if (!Directory.Exists(Path.GetDirectoryName(binFilePath)))
+                Directory.CreateDirectory(binFilePath);
 
             // Create markov object, attempt to load from path
             Markov mkv = new Markov();

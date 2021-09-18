@@ -21,12 +21,12 @@ namespace FrostBot
         public static uint green = 0x37FF68;
         public static uint blue = 0xD0021B;
 
-        public static uint GetUsernameColor(SocketGuildUser user, ulong guildId)
+        public static uint GetUsernameColor(ulong userId, ulong guildId)
         {
             // Default color is blue if no role colors found
             uint colorValue = blue;
             // Convert highest role with color to uint
-            var roles = Program.client.Guilds.Single(x => x.Id.Equals(guildId)).Users.Single(x => x.Id.Equals(user.Id)).Roles.OrderBy(x => x.Position);
+            var roles = Moderation.GetUser(guildId, userId).Roles.OrderBy(x => x.Position);
             if (roles.Count() > 0)
                 foreach (var role in roles.Where(x => x.Color != new Discord.Color(0, 0, 0)))
                     colorValue = GetRoleColor(role);
@@ -42,7 +42,7 @@ namespace FrostBot
         public static Embed ColorMsg(string msg, ulong guildId, uint color = 0, bool icon = false, List<Tuple<string, string>> fields = null)
         {
             if (color == 0)
-                color = GetUsernameColor(Program.client.CurrentUser.Id);
+                color = GetUsernameColor(Program.client.CurrentUser.Id, guildId);
             var builder = new EmbedBuilder()
             .WithDescription(msg)
             .WithColor(new Color(color));
@@ -59,7 +59,7 @@ namespace FrostBot
         public static Embed ErrorMsg(string msg)
         {
             var builder = new EmbedBuilder()
-            .WithDescription(":no_entry: " + msg)
+            .WithDescription(":no_entry: **Error**: " + msg)
             .WithColor(red);
 
             return builder.Build();
@@ -75,7 +75,7 @@ namespace FrostBot
         static public Embed Help(ulong guildId, bool isModerator)
         {
             // Get list of commands, usage and descriptions as single string
-            string help = "";
+            string help = "💬 __**Commands**__\n\n";
             Server selectedServer = Botsettings.GetServer(guildId);
             var cmds = selectedServer.Commands;
             // Only show non-moderator commands if user is not a moderator
@@ -122,7 +122,7 @@ namespace FrostBot
             if (!modDetails)
                 return ColorMsg($":warning: **Warn** {user.Mention}: {reason}", user.Guild.Id, red);
             else
-                return ColorMsg($":warning: {moderator.Mention} **Warned** {user.Mention} in {channel.Mention}: {reason}", user.Guild.Id, red);
+                return ColorMsg($":warning: {moderator.Mention} **Warned** {user.Username} in {channel.Mention}: {reason}", user.Guild.Id, red);
         }
 
         // Shows that all of a user's warns have been cleared
@@ -131,7 +131,7 @@ namespace FrostBot
             if (!modDetails)
                 return ColorMsg($":ok_hand: **Cleared all warns for** {user.Mention}.", user.Guild.Id, green);
             else
-                return ColorMsg($":ok_hand: **{moderator.Mention} cleared all warns for** {user.Mention} in {channel.Mention}.", user.Guild.Id, green);
+                return ColorMsg($":ok_hand: **{moderator.Mention} cleared all warns for** {user.Username} in {channel.Mention}.", user.Guild.Id, green);
         }
 
         // Shows that a user's singular warn has been cleared
@@ -146,7 +146,7 @@ namespace FrostBot
             if (!modDetails)
                 return ColorMsg($":ok_hand: **Cleared {userMention}'s Warn**:\n{removedWarn.Reason}", moderator.Guild.Id, green);
             else
-                return ColorMsg($":ok_hand: **{moderator.Username} cleared {removedWarn.UserName}'s warn**:\n{removedWarn.Reason}", moderator.Guild.Id, green);
+                return ColorMsg($":ok_hand: **{moderator.Mention} cleared {removedWarn.UserName}'s warn**:\n{removedWarn.Reason}", moderator.Guild.Id, green);
         }
 
         // Shows that a user has been muted
@@ -154,9 +154,9 @@ namespace FrostBot
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             if (!modDetails)
-                return ColorMsg($":mute: **Muted {user.Username}**. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
+                return ColorMsg($":mute: **Muted {user.Mention}**. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
             else
-                return ColorMsg($":mute: **{moderator} muted {user.Username}** in {channel.Mention}.", user.Guild.Id, red);
+                return ColorMsg($":mute: **{moderator.Mention} muted {user.Username}** in {channel.Mention}.", user.Guild.Id, red);
         }
 
         // Shows that a user has been unmuted
@@ -164,9 +164,9 @@ namespace FrostBot
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             if (!modDetails)
-                return ColorMsg($":speaker: **Unmuted {user.Username}**. {selectedServer.Strings.UnmuteMsg}", user.Guild.Id, green);
+                return ColorMsg($":speaker: **Unmuted {user.Mention}**. {selectedServer.Strings.UnmuteMsg}", user.Guild.Id, green);
             else
-                return ColorMsg($":speaker: **{moderator} unmuted {user.Username}** in {channel.Mention}.", user.Guild.Id, green);
+                return ColorMsg($":speaker: **{moderator.Mention} unmuted {user.Username}** in {channel.Mention}.", user.Guild.Id, green);
         }
 
         // Shows that a user has been unmuted (along with who issued it)
@@ -176,7 +176,7 @@ namespace FrostBot
             if (!modDetails)
                 return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", channel.Guild.Id, red);
             else
-                return ColorMsg($":lock: **{moderator.Username} locked** {channel.Mention}.", channel.Guild.Id, red);
+                return ColorMsg($":lock: **{moderator.Mention} locked** {channel.Mention}.", channel.Guild.Id, red);
         }
 
         static public Embed Unlock(SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
@@ -185,13 +185,13 @@ namespace FrostBot
             if (!modDetails)
                 return ColorMsg($":unlock: **Channel Unocked.** {selectedServer.Strings.UnlockMsg}", channel.Guild.Id, green);
             else
-                return ColorMsg($":unlock: **{moderator.Username} unlocked** {channel.Mention}.", channel.Guild.Id, green);
+                return ColorMsg($":unlock: **{moderator.Mention} unlocked** {channel.Mention}.", channel.Guild.Id, green);
         }
 
         static public Embed Kick(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason, bool modDetails = false)
         {
             if (!modDetails)
-                return ColorMsg($":boot: **Kick {user.Username}**: {reason}", user.Guild.Id, red);
+                return ColorMsg($":boot: **Kick {user.Mention}**: {reason}", user.Guild.Id, red);
             else
                 return ColorMsg($":boot: **{moderator.Mention} kicked {user.Username}** in {channel.Mention}: {reason}", user.Guild.Id, red);
         }
@@ -199,7 +199,7 @@ namespace FrostBot
         static public Embed Ban(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason, bool modDetails = false)
         {
             if (!modDetails)
-                return ColorMsg($":hammer: **Ban {user.Username}**: {reason}", user.Guild.Id, red);
+                return ColorMsg($":hammer: **Ban {user.Mention}**: {reason}", user.Guild.Id, red);
             else
                 return ColorMsg($":hammer: **{moderator.Mention} banned {user.Username}** in {channel.Mention}: {reason}", user.Guild.Id, red);
         }
@@ -214,7 +214,7 @@ namespace FrostBot
 
         static public Embed LogRoleAdd(IGuildUser user, IRole role)
         {
-            return ColorMsg($":thumbsup: {user.Username} gained the {role.Name} role.", user.Guild.Id);
+            return ColorMsg($":thumbsup: {user.Mention} gained the {role.Name} role.", user.Guild.Id, GetRoleColor((SocketRole)role));
         }
 
         public static Embed ShowWarns(ITextChannel channel, SocketGuildUser mention = null)
@@ -222,7 +222,7 @@ namespace FrostBot
             Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
 
             List<string> warns = new List<string>();
-            if (mention != null)
+            if (mention == null)
                 for (int i = 0; i < selectedServer.Warns.Count(); i++)
                     warns.Add($"{i + 1}. **{selectedServer.Warns[i].UserName}**: {selectedServer.Warns[i].Reason}");
             else
@@ -256,7 +256,7 @@ namespace FrostBot
             .WithTimestamp(msg.Timestamp)
             .WithAuthor(msg.Author)
             .WithFooter($"Pinned by {user.Username} in #{channel.Name}", $"{user.GetAvatarUrl()}")
-            .WithColor(GetUsernameColor(channel.Guild.Id));
+            .WithColor(GetUsernameColor(Program.client.CurrentUser.Id, channel.Guild.Id));
 
             if (msg.Attachments.Count > 0)
                 eBuilder.WithImageUrl(msg.Attachments.FirstOrDefault().Url);

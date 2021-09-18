@@ -14,6 +14,27 @@ namespace FrostBot
 {
     class Moderation
     {
+        public static SocketGuild GetGuild(ulong guildId)
+        {
+            return Program.client.Guilds.First(x => x.Id.Equals(guildId));
+        }
+        public static SocketGuildUser GetUser(ulong guildId, ulong userId)
+        {
+            return GetGuild(guildId).Users.First(x => x.Id.Equals(userId));
+        }
+        public static SocketRole GetRole(ulong guildId, ulong roleId)
+        {
+            return GetGuild(guildId).Roles.First(x => x.Id.Equals(roleId));
+        }
+        public static SocketTextChannel GetChannel(ulong guildId, ulong channelId)
+        {
+            return GetGuild(guildId).TextChannels.First(x => x.Id.Equals(channelId));
+        }
+        public static SocketThreadChannel GetThread(ulong guildId, ulong channelId, ulong threadId)
+        {
+            return GetChannel(guildId, channelId).Threads.First(x => x.Id.Equals(threadId));
+        }
+
         // Returns true if a user isn't a bot, the command is enabled, has proper authority and is in the right channel
         public static bool CommandAllowed(string commandName, ICommandContext context)
         {
@@ -27,6 +48,7 @@ namespace FrostBot
                 if ((cmd.BotChannelOnly && (context.Channel.Id == botChannelId)) || !cmd.BotChannelOnly)
                     if (!cmd.ModeratorsOnly || (cmd.ModeratorsOnly && isModerator))
                         return true;
+            context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg("You don't have permission to use that command here."));
             return false;
         }
 
@@ -44,13 +66,9 @@ namespace FrostBot
         public static bool IsPublicChannel(SocketGuildChannel channel)
         {
             bool isPublic = false;
-            if (channel.PermissionOverwrites.Any(p =>
-                (p.TargetType == PermissionTarget.Role && channel.Guild.EveryoneRole.Id.Equals(p.TargetId))
-                    && (p.Permissions.ViewChannel.Equals(PermValue.Allow)
-                    || p.Permissions.ViewChannel.Equals(PermValue.Inherit))))
-            {
-                isPublic = true;
-            }
+            if (!channel.PermissionOverwrites.Any(p => channel.Guild.EveryoneRole.Id.Equals(p.TargetId) 
+                && p.Permissions.ViewChannel.Equals(PermValue.Deny)))
+                    isPublic = true;
 
             return isPublic;
         }
@@ -82,15 +100,17 @@ namespace FrostBot
             await SendToBotLogs(Embeds.Warn(user, moderator, channel, reason, true), channel.Guild);
 
             // Save warn info to settings
-            Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns.Add(new Warn() { UserName = user.Username, UserID = user.Id, Reason = reason, CreatedAt = DateTime.Now.ToString(), CreatedBy = moderator.Username});
+            Botsettings.GetServer(user.Guild.Id).Warns.Add(new Warn() { UserName = user.Username, UserID = user.Id, Reason = reason, CreatedAt = DateTime.Now.ToString(), CreatedBy = moderator.Username});
+            Botsettings.Save();
 
             // Measure # of warns the user now has
             int warns = WarnLevel(user);
             // Mute, kick or ban a user if they've accumulated too many warns
-            if (warns > 1)
+            if (warns >= 1)
             {
                 // Program.client.Guilds.First(x => x.Id.Equals(guildId)).CurrentUser
-                await channel.SendMessageAsync($"{user.Mention} has been warned {warns} times.");
+                if (warns >= 2)
+                    await channel.SendMessageAsync($"{user.Mention} has been warned {warns} times.");
                 if (warns >= selectedServer.BanLevel) 
                     Ban(user, moderator, channel,
                                 "User was automatically banned for accumulating too many warnings.");
@@ -118,25 +138,30 @@ namespace FrostBot
         }
 
         // Remove a specific infraction from a user
-        public static async void ClearWarn(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int index)
+        public static async void ClearWarn(SocketGuildUser moderator, ITextChannel channel, int index, SocketGuildUser user = null)
         {
-            Server selectedServer = Botsettings.GetServer(user.Guild.Id);
+            Server selectedServer = Botsettings.GetServer(moderator.Guild.Id);
 
             try
             {
+                var removedWarn = new Warn();
                 // Get warn user, reason and description
-                var removedWarn = selectedServer.Warns.ElementAt(index - 1);
+                if (user == null)
+                    removedWarn = selectedServer.Warns.ElementAt(index - 1);
+                else
+                    removedWarn = selectedServer.Warns.Where(x => x.UserID.Equals(user.Id)).ElementAt(index - 1);
 
                 // Announce clearing of warns in both channel and bot-logs
                 await channel.SendMessageAsync(embed: Embeds.ClearWarn(removedWarn, moderator));
                 await SendToBotLogs(Embeds.ClearWarn(removedWarn, moderator, true), channel.Guild);
 
                 // Write new warns list to file
-                Program.settings.Servers.First(x => x.Id.Equals(user.Guild.Id)).Warns.Remove(removedWarn);
+                selectedServer.Warns.Remove(removedWarn);
+                Botsettings.UpdateServer(selectedServer);
             }
             catch
             {
-                await channel.SendMessageAsync(embed: Embeds.ColorMsg("Couldn't clear warn!", user.Guild.Id));
+                await channel.SendMessageAsync(embed: Embeds.ErrorMsg("Couldn't clear warn!"));
             }
         }
 
@@ -236,7 +261,7 @@ namespace FrostBot
         }
 
         // Removes a user from the server with a given reason
-        public static async void Kick(SocketGuildUser moderator, SocketGuildUser user, ITextChannel channel, string reason)
+        public static async void Kick(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
@@ -256,20 +281,20 @@ namespace FrostBot
             }
         }
 
-        public static async void Ban(SocketGuildUser moderator, SocketGuildUser user, ITextChannel channel, string reason)
+        public static async void Ban(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, string reason)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
             try
             {
-                // Ban user
-                await user.Guild.AddBanAsync(user, 0, reason);
-
                 // Announce ban in channel where infraction occured (ambiguous as to who issued ban)
                 await channel.SendMessageAsync(embed: Embeds.Ban(user, moderator, channel, reason));
                 await SendToBotLogs(Embeds.Ban(user, moderator, channel, reason, true), channel.Guild);
 
                 // TODO: DM User
+
+                // Ban user
+                await user.Guild.AddBanAsync(user, 0, reason);
             }
             catch
             {
