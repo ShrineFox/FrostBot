@@ -12,7 +12,7 @@ namespace FrostBot.Interactions
 {
     public class Setup
     {
-        public static MessageProperties Begin(SocketGuild guild, string customID, string interactionValue, Server selectedServer)
+        public static MessageProperties Begin(SocketGuildUser user, SocketGuild guild, string customID, string interactionValue, Server selectedServer)
         {
             MessageProperties msgProps = new MessageProperties();
             string[] customIDParts = customID.Split('-');
@@ -25,19 +25,19 @@ namespace FrostBot.Interactions
                         msgProps = Start(selectedServer);
                         break;
                     case "moderators":
-                        msgProps = Moderators(guild, customID, interactionValue, selectedServer);
+                        msgProps = Moderators(user, guild, customID, interactionValue, selectedServer);
                         break;
                     case "channels":
-                        msgProps = Channels(guild, customID, interactionValue, selectedServer);
+                        msgProps = Channels(user, guild, customID, interactionValue, selectedServer);
                         break;
                     case "commands":
                         msgProps = Commands(customID, interactionValue, selectedServer);
                         break;
                     case "automod":
-                        msgProps = AutoMod(customID, interactionValue, selectedServer);
+                        msgProps = AutoMod(user, customID, interactionValue, selectedServer);
                         break;
                     case "markov":
-                        msgProps = Markov(customID, interactionValue, selectedServer);
+                        msgProps = Markov(user, customID, interactionValue, selectedServer);
                         break;
                     case "complete":
                         msgProps = Complete(selectedServer);
@@ -88,7 +88,7 @@ namespace FrostBot.Interactions
             return msgProps;
         }
 
-        private static MessageProperties Moderators(SocketGuild guild, string customID, string interactionValue, Server selectedServer)
+        private static MessageProperties Moderators(SocketGuildUser user, SocketGuild guild, string customID, string interactionValue, Server selectedServer)
         {
             MessageProperties msgProps = new MessageProperties();
             // Add selected Moderator Role to settings and save
@@ -104,6 +104,9 @@ namespace FrostBot.Interactions
                     CanPin = true
                 };
                 selectedServer.Roles.Add(modRole);
+                IRole role = guild.GetRole(modRole.Id);
+                if (role != null)
+                    Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} added {role.Mention}** as a ⚔️ **Moderator Role** for the bot.", guild.Id), guild);
             }
 
             // Return Moderator selection prompt with list of currently selected modroles
@@ -114,7 +117,7 @@ namespace FrostBot.Interactions
                 {
                     IRole role = guild.GetRole(modRole.Id);
                     if (role != null)
-                        modRoles += $"{role.Mention}\n";
+                        modRoles += $"{role.Mention}\n";  
                 }
                 catch { }
             }
@@ -147,7 +150,7 @@ namespace FrostBot.Interactions
             return msgProps;
         }
 
-        private static MessageProperties Channels(SocketGuild guild, string customID, string interactionValue, Server selectedServer)
+        private static MessageProperties Channels(SocketGuildUser user, SocketGuild guild, string customID, string interactionValue, Server selectedServer)
         {
             MessageProperties msgProps = new MessageProperties();
             string[] customIDParts = customID.Split('-');
@@ -165,15 +168,27 @@ namespace FrostBot.Interactions
                     {
                         case "general":
                             selectedServer.Channels.General = Convert.ToUInt64(interactionValue);
+                            var channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.General);
+                            if (channel != null)
+                                Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} selected {channel.Mention}** as the 👥 **General Channel** for the bot.", guild.Id), guild);
                             break;
                         case "botsandbox":
                             selectedServer.Channels.BotSandbox = Convert.ToUInt64(interactionValue);
+                            channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.BotSandbox);
+                            if (channel != null)
+                                Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} selected {channel.Mention}** as the 👥 **Bot Sandbox Channel** for the bot.", guild.Id), guild);
                             break;
                         case "botlogs":
                             selectedServer.Channels.BotLogs = Convert.ToUInt64(interactionValue);
+                            channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.BotLogs);
+                            if (channel != null)
+                                Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} selected {channel.Mention}** as the 👥 **Bot Logs Channel** for the bot.", guild.Id), guild);
                             break;
                         case "pins":
                             selectedServer.Channels.Pins = Convert.ToUInt64(interactionValue);
+                            channel = (ITextChannel)guild.GetChannel(selectedServer.Channels.Pins);
+                            if (channel != null)
+                                Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} selected {channel.Mention}** as the 👥 **Pins Channel** for the bot.", guild.Id), guild);
                             break;
                     }
                     Botsettings.UpdateServer(selectedServer);
@@ -401,7 +416,7 @@ namespace FrostBot.Interactions
             return msgProps;
         }
 
-        private static MessageProperties AutoMod(string customID, string interactionValue, Server selectedServer)
+        private static MessageProperties AutoMod(SocketGuildUser user, string customID, string interactionValue, Server selectedServer)
         {
             MessageProperties msgProps = new MessageProperties();
             string[] customIDParts = customID.Split('-');
@@ -413,21 +428,31 @@ namespace FrostBot.Interactions
                 {
                     case "setup-automod-select-mutelevel":
                         selectedServer.MuteLevel = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Mute Level** to {selectedServer.MuteLevel} warns.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-select-muteduration":
                         selectedServer.MuteDuration = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Mute Duration** to {selectedServer.MuteDuration} minutes.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-select-kicklevel":
                         selectedServer.KickLevel = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Kick Level** to {selectedServer.KickLevel} warns.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-select-banlevel":
                         selectedServer.BanLevel = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Ban Level** to {selectedServer.BanLevel} warns.", user.Guild.Id), user.Guild);
+                        break;
+                    case "setup-automod-select-lockduration":
+                        selectedServer.LockDuration = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Lock Duration** to {selectedServer.LockDuration} minutes.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-select-dupefreq":
                         selectedServer.DuplicateFreq = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Duplicate Frequency Threshold** to {selectedServer.DuplicateFreq} seconds.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-select-maxdupes":
                         selectedServer.MaxDuplicates = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Maximum Allowed Duplicates** to {selectedServer.MaxDuplicates} consecutive identical posts.", user.Guild.Id), user.Guild);
                         break;
                 }
             }
@@ -438,12 +463,15 @@ namespace FrostBot.Interactions
                 {
                     case "setup-automod-btn-deletedupes-toggle":
                         selectedServer.AutoDeleteDupes = !selectedServer.AutoDeleteDupes;
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set 🛡 Auto-Delete Duplicates** to {selectedServer.AutoDeleteDupes}.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-btn-warnondelete-toggle":
                         selectedServer.WarnOnAutoDelete = !selectedServer.WarnOnAutoDelete;
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set 🛡 Warn on Auto-Delete** to {selectedServer.WarnOnAutoDelete}.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-automod-btn-wordfilter-toggle":
                         selectedServer.WarnOnFilter = !selectedServer.WarnOnFilter;
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set 🛡 Warn on Filtered Message** to {selectedServer.WarnOnFilter}.", user.Guild.Id), user.Guild);
                         break;
                 }
             }
@@ -454,7 +482,7 @@ namespace FrostBot.Interactions
             switch (customID)
             {
                 case "setup-automod-btn-mutelevel":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute)**__ (1/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute)**__ (1/10)\n\n" +
                             $"With the ``{selectedServer.Prefix}warn`` command, moderators can **notify users of rule infractions**.\n" +
                             "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many warns, such as *muting, kicking, or banning*.\n\n" +
@@ -471,7 +499,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-muteduration":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute Duration)**__ (2/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute Duration)**__ (2/10)\n\n" +
                             $"With the ``{selectedServer.Prefix}unmute`` command, moderators can **restore speaking privileges** to muted users.\n" +
                             "However, you could also _allow a mute to automically expire_. This may be useful when a user gets auto-muted and no " +
                             "moderators are around, or if you simply forget to unmute them.\n\n" +
@@ -498,7 +526,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-kicklevel":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Kick)**__ (3/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Kick)**__ (3/10)\n\n" +
                             $"With the ``{selectedServer.Prefix}warn`` command, moderators can **notify users of rule infractions**.\n" +
                             "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many warns, such as *muting, kicking, or banning*.\n\n" +
@@ -515,7 +543,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-banlevel":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Ban)**__ (4/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Ban)**__ (4/10)\n\n" +
                             $"With the ``{selectedServer.Prefix}warn`` command, moderators can **notify users of rule infractions**.\n" +
                             "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many warns, such as *muting, kicking, or banning*.\n\n" +
@@ -528,11 +556,39 @@ namespace FrostBot.Interactions
                     msgProps.Components = new ComponentBuilder()
                         .WithSelectMenu(menu)
                         .WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
+                        .WithButton("Next Step", "setup-automod-btn-lockduration")
+                        .Build();
+                    break;
+                case "setup-automod-btn-lockduration":
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Lock Duration)**__ (5/10)\n\n" +
+                            $"With the ``{selectedServer.Prefix}unlock`` command, moderators can **restore speaking privileges** to " +
+                            $"a channel previously locked using the ``{selectedServer.Prefix}lock`` command.\n" +
+                            "However, you could also _allow a lock to automically expire_. This may be useful when no " +
+                            "moderators are around, or if you simply forget to unlock a channel.\n\n" +
+                            "**What should be the max duration before an 🔓 unlock**? (0 to never auto-unlock)\n" +
+                            $"**Current setting**: {selectedServer.LockDuration} minutes",
+                            selectedServer.Id, 0, true);
+                    menu = new SelectMenuBuilder()
+                    {
+                        CustomId = "setup-automod-select-lockduration",
+                        Options = new List<SelectMenuOptionBuilder> {
+                            new SelectMenuOptionBuilder() { Label = "🔇 Never Auto-unlock", Value = "0" },
+                            new SelectMenuOptionBuilder() { Label = "🕐 5 minutes", Value = "5" },
+                            new SelectMenuOptionBuilder() { Label = "🕑 15 minutes", Value = "15" },
+                            new SelectMenuOptionBuilder() { Label = "🕔 30 minutes", Value = "30" },
+                            new SelectMenuOptionBuilder() { Label = "🕤 1 hour", Value = "60" },
+                            new SelectMenuOptionBuilder() { Label = "🕙 4 hours", Value = "240" },
+                            new SelectMenuOptionBuilder() { Label = "🕛 12 hours", Value = "720" },
+                            new SelectMenuOptionBuilder() { Label = "🕠 1 day", Value = "1440" }}
+                    };
+                    msgProps.Components = new ComponentBuilder()
+                        .WithSelectMenu(menu)
+                        .WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
                         .WithButton("Next Step", "setup-automod-btn-deletedupes")
                         .Build();
                     break;
                 case "setup-automod-btn-deletedupes":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Delete Duplicates)**__ (5/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Delete Duplicates)**__ (6/10)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "Would you like to **enable this feature?**\n",
                             selectedServer.Id, 0, true);
@@ -547,7 +603,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-dupefreq":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Duplicate Freq)**__ (6/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Duplicate Freq)**__ (7/10)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "**How close together (in seconds)** should identical messages " +
                             "be in order to be considered duplicates? (0 for always)\n" +
@@ -563,7 +619,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-maxdupes":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Max Duplicates)**__ (7/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Max Duplicates)**__ (8/10)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "After **how many identical messages in succession** should messages " +
                             "be considered duplicates? (0 for any)\n" +
@@ -579,7 +635,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-warnondelete":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Warn Duplicates)**__ (8/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Warn Duplicates)**__ (9/10)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "Should it also issue an **automatic warn when duplicates are posted**?",
                                 selectedServer.Id, 0, true);
@@ -594,7 +650,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-wordfilter":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Word Filter)**__ (9/9)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Word Filter)**__ (10/10)\n\n" +
                             "The bot can automatically detect and delete messages containing **filtered terms**.\n\n" +
                             "You will need to add these terms to ``settings.yml`` yourself.\n" +
                             "Would you like to issue an **automatic warn when the filter is tripped?**",
@@ -614,7 +670,7 @@ namespace FrostBot.Interactions
             return msgProps;
         }
 
-        private static MessageProperties Markov(string customID, string interactionValue, Server selectedServer)
+        private static MessageProperties Markov(SocketGuildUser user, string customID, string interactionValue, Server selectedServer)
         {
             MessageProperties msgProps = new MessageProperties();
             string[] customIDParts = customID.Split('-');
@@ -626,6 +682,7 @@ namespace FrostBot.Interactions
                 {
                     case "setup-markov-select-freq":
                         selectedServer.MarkovFreq = Convert.ToInt32(interactionValue);
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🤖 Markov Frequency** to {selectedServer.MarkovFreq}.", user.Guild.Id), user.Guild);
                         break;
                 }
             }
@@ -636,9 +693,11 @@ namespace FrostBot.Interactions
                 {
                     case "setup-markov-btn-enabled-toggle":
                         selectedServer.AutoMarkov = !selectedServer.AutoMarkov;
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set 🤖 Auto-Markov Enabled** to {selectedServer.AutoMarkov}.", user.Guild.Id), user.Guild);
                         break;
                     case "setup-markov-btn-botchannelonly-toggle":
                         selectedServer.BotChannelMarkovOnly = !selectedServer.BotChannelMarkovOnly;
+                        Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set 🤖 Auto-Markov Bot Channel Only** to {selectedServer.BotChannelMarkovOnly}.", user.Guild.Id), user.Guild);
                         break;
                 }
             }

@@ -68,7 +68,7 @@ namespace FrostBot
         static public Embed DeletedMessage(IMessage message, string reason)
         {
             ITextChannel channel = (ITextChannel)message.Channel;
-            return ColorMsg($"**Deleted Message** by {message.Author.Mention} in #{channel.Mention}:\n\n{message.Content}\n\nReason:{reason}", red);
+            return ColorMsg($"**Deleted Message** by {message.Author} in {channel.Mention}:\n\n> {message.Content}\n\nReason:{reason}", red);
         }
 
         // List of commands you're permitted to use
@@ -150,13 +150,16 @@ namespace FrostBot
         }
 
         // Shows that a user has been muted
-        static public Embed Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
+        static public Embed Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, bool modDetails = false, int duration = 0)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
+            var durString = "";
+            if (duration > 0)
+                durString = $" for {duration} minutes";
             if (!modDetails)
-                return ColorMsg($":mute: **Muted {user.Mention}**. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
+                return ColorMsg($":mute: **Muted {user.Mention}**{durString}. {selectedServer.Strings.MuteMsg}", user.Guild.Id, red);
             else
-                return ColorMsg($":mute: **{moderator.Mention} muted {user.Username}** in {channel.Mention}.", user.Guild.Id, red);
+                return ColorMsg($":mute: **{moderator.Mention} muted {user.Username}** in {channel.Mention}{durString}.", user.Guild.Id, red);
         }
 
         // Shows that a user has been unmuted
@@ -170,13 +173,16 @@ namespace FrostBot
         }
 
         // Shows that a user has been unmuted (along with who issued it)
-        static public Embed Lock(SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)
+        static public Embed Lock(SocketGuildUser moderator, ITextChannel channel, bool modDetails = false, int duration = 0)
         {
             Server selectedServer = Botsettings.GetServer(channel.Guild.Id);
+            var durString = "";
+            if (duration > 0)
+                durString = $" for {duration} minutes";
             if (!modDetails)
-                return ColorMsg($":lock: **Channel Locked.** {selectedServer.Strings.LockMsg}", channel.Guild.Id, red);
+                return ColorMsg($":lock: **Channel Locked**{durString}. {selectedServer.Strings.LockMsg}", channel.Guild.Id, red);
             else
-                return ColorMsg($":lock: **{moderator.Mention} locked** {channel.Mention}.", channel.Guild.Id, red);
+                return ColorMsg($":lock: **{moderator.Mention} locked**{durString} {channel.Mention}.", channel.Guild.Id, red);
         }
 
         static public Embed Unlock(SocketGuildUser moderator, ITextChannel channel, bool modDetails = false)

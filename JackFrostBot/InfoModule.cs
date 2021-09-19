@@ -160,12 +160,12 @@ namespace FrostBot
         }
 
         [Command("mute"), Summary("Mute a user.")]
-        public async Task Mute([Summary("The user to mute.")] SocketGuildUser mention, [Summary("The reason for the mute."), Remainder] string reason = "No reason given.")
+        public async Task Mute([Summary("The user to mute.")] SocketGuildUser mention, [Summary("The duration of mute in minutes."), Remainder] int duration = 0)
         {
             if (Moderation.CommandAllowed("mute", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Mute(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel);
+                Moderation.Mute(mention, (SocketGuildUser)Context.User, (ITextChannel)Context.Channel, duration);
             }
         }
 
@@ -180,12 +180,12 @@ namespace FrostBot
         }
 
         [Command("lock"), Summary("Lock a channel.")]
-        public async Task Lock()
+        public async Task Lock([Summary("The duration of mute in minutes."), Remainder] int duration = 0)
         {
             if (Moderation.CommandAllowed("lock", Context))
             {
                 await Context.Message.DeleteAsync();
-                Moderation.Lock((SocketGuildUser)Context.User, (ITextChannel)Context.Channel);
+                Moderation.Lock((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, duration);
             }
         }
 

@@ -118,7 +118,7 @@ namespace FrostBot
                     Kick(user, moderator, channel,
                                 "User was automatically kicked for accumulating too many warnings.");
                 else if (warns >= selectedServer.MuteLevel)
-                    Mute(user, moderator, channel);
+                    Mute(user, moderator, channel, selectedServer.MuteDuration);
             }
 
             // TODO: DM User
@@ -166,7 +166,7 @@ namespace FrostBot
         }
 
         // Stop a user from typing in all channels until unmuted
-        public static async void Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel)
+        public static async void Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int muteDur)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             var guild = user.Guild;
@@ -181,6 +181,20 @@ namespace FrostBot
                         await chan.AddPermissionOverwriteAsync(user, 
                             new OverwritePermissions(sendMessages: PermValue.Deny, addReactions: PermValue.Deny), 
                             RequestOptions.Default);
+                        // Save mute info to settings
+                        // Remove mute info from settings
+                        var server = Botsettings.GetServer(user.Guild.Id);
+                        if (!server.Mutes.Any(x => x.UserID.Equals(user.Id)))
+                        {
+                            // Base default duration on settings, override with specified duration unique to this mute
+                            var duration = 0;
+                            if (server.MuteDuration > 0)
+                                duration = server.MuteDuration;
+                            if (muteDur > 0)
+                                duration = muteDur;
+                            server.Mutes.Add(new Mute() { UserName = user.Username, UserID = user.Id, CreatedAt = DateTime.Now.ToString(), CreatedBy = moderator.Username, Duration = duration });
+                            Botsettings.UpdateServer(server);
+                        }
                     }
                     catch
                     {
@@ -190,8 +204,8 @@ namespace FrostBot
             }
 
             // Announce the mute (ambiguous as to who muted)
-            await channel.SendMessageAsync(embed: Embeds.Mute(user, moderator, channel));
-            await SendToBotLogs(Embeds.Mute(user, moderator, channel, true), channel.Guild);
+            await channel.SendMessageAsync(embed: Embeds.Mute(user, moderator, channel, false, muteDur));
+            await SendToBotLogs(Embeds.Mute(user, moderator, channel, true, muteDur), channel.Guild);
         }
 
         // Removes a user's permission override in all channels
@@ -203,6 +217,13 @@ namespace FrostBot
                 try
                 {
                     await chan.RemovePermissionOverwriteAsync(user, RequestOptions.Default);
+                    // Remove mute info from settings
+                    var server = Botsettings.GetServer(user.Guild.Id);
+                    if (server.Mutes.Any(x => x.UserID.Equals(user.Id)))
+                    {
+                        server.Mutes.Remove(server.Mutes.First(x => x.UserID.Equals(user.Id)));
+                        Botsettings.UpdateServer(server);
+                    }
                 }
                 catch
                 {
@@ -216,7 +237,7 @@ namespace FrostBot
         }
 
         // Stops @everyone (without a permission override) from typing in a public channel
-        public static async void Lock(SocketGuildUser moderator, ITextChannel channel)
+        public static async void Lock(SocketGuildUser moderator, ITextChannel channel, int lockDur)
         {
             // Lock the channel
             var guild = channel.Guild;
@@ -226,6 +247,13 @@ namespace FrostBot
                 try
                 {
                     await channel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(readMessageHistory: PermValue.Allow, sendMessages: PermValue.Deny, addReactions: PermValue.Deny), RequestOptions.Default);
+                    // Base default duration on settings, override with specified duration unique to this lock
+                    var duration = 0;
+                    var server = Botsettings.GetServer(channel.Guild.Id);
+                    if (server.LockDuration > 0)
+                        duration = server.LockDuration;
+                    if (lockDur > 0)
+                        duration = lockDur;
                 }
                 catch
                 {

@@ -76,6 +76,8 @@ namespace FrostBot
             public string BotNickname { get; set; } = "";
             public char Prefix { get; set; } = '?';
             public List<Warn> Warns { get; set; } = new List<Warn>();
+            public List<Mute> Mutes { get; set; } = new List<Mute>();
+            public List<Lock> Locks { get; set; } = new List<Lock>();
             public Channels Channels { get; set; } = new Channels();
             public List<Command> Commands { get; set; } = new List<Command>();
             public List<Role> Roles { get; set; } = new List<Role>();
@@ -83,7 +85,6 @@ namespace FrostBot
             public List<ulong> ThreadsToUnarchive { get; set; } = new List<ulong>();
             public List<string> WordFilter { get; set; } = new List<string>();
             public bool Configured { get; set; } = false;
-
             // Chat
             public bool PublishAnnouncements { get; set; } = true;
             public bool SendTypingMsg { get; set; } = true;
@@ -95,6 +96,7 @@ namespace FrostBot
             public int KickLevel { get; set; } = 3;
             public int BanLevel { get; set; } = 4;
             public int MuteDuration { get; set; } = 0;
+            public int LockDuration { get; set; } = 0;
             public bool AutoDeleteDupes { get; set; } = false;
             public int DuplicateFreq { get; set; } = 2;
             public int MaxDuplicates { get; set; } = 2;
@@ -113,6 +115,23 @@ namespace FrostBot
             public string Reason { get; set; } = "";
             public string CreatedAt { get; set; } = "";
             public string CreatedBy { get; set; } = "";
+        }
+
+        public class Mute
+        {
+            public ulong UserID { get; set; } = 0;
+            public string UserName { get; set; } = "";
+            public string CreatedAt { get; set; } = "";
+            public string CreatedBy { get; set; } = "";
+            public int Duration { get; set; } = 0;
+        }
+
+        public class Lock
+        {
+            public ulong ChannelID { get; set; } = 0;
+            public string CreatedAt { get; set; } = "";
+            public string CreatedBy { get; set; } = "";
+            public int Duration { get; set; } = 0;
         }
 
         public class Channels

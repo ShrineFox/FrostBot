@@ -186,7 +186,7 @@ namespace FrostBot
             if (warnLevel >= selectedServer.MuteLevel)
             {
                 await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
-                Moderation.Mute(user, client.Guilds.First(x => x.Id.Equals(user.Guild.Id)).CurrentUser, defaultChannel);
+                Moderation.Mute(user, client.Guilds.First(x => x.Id.Equals(user.Guild.Id)).CurrentUser, defaultChannel, selectedServer.MuteDuration);
             }
             else
                 await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {selectedServer.Strings.WelcomeMessage}");
@@ -332,6 +332,8 @@ namespace FrostBot
             await Processing.DuplicateMsgCheck(message, channel);
             await Processing.FilterCheck(message, (ITextChannel)channel);
             await Processing.UnarchiveThreads(channel.Guild);
+            Processing.UnmuteCheck(channel);
+            Processing.UnlockCheck(channel);
 
             // Track where the prefix ends and the command begins
             int argPos = 0;

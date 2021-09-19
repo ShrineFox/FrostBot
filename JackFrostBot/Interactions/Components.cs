@@ -40,7 +40,7 @@ namespace FrostBot
                 if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                     return msgProps;
                 // Return new setup embed/components
-                msgProps = Interactions.Setup.Begin(guild, customID, interactionValue, selectedServer);
+                msgProps = Interactions.Setup.Begin((SocketGuildUser)interaction.User, guild, customID, interactionValue, selectedServer);
             }
 
             return msgProps;

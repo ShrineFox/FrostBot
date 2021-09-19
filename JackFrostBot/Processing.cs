@@ -62,11 +62,9 @@ namespace FrostBot
             var botUser = Moderation.GetUser(user.Guild.Id, Program.client.CurrentUser.Id);
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
 
-            // Log deletion and delete message
+            // Delete message and log deletion
             await message.DeleteAsync();
-            var botlog = Moderation.GetChannel(user.Guild.Id, selectedServer.Channels.BotLogs);
-            var embed = Embeds.DeletedMessage(message, reason);
-            await botlog.SendMessageAsync("", embed: embed).ConfigureAwait(false);
+            await Moderation.SendToBotLogs(Embeds.DeletedMessage(message, reason), user.Guild);
 
             // Warn user depending on settings
             if (selectedServer.WarnOnAutoDelete)
@@ -87,26 +85,19 @@ namespace FrostBot
             var guild = user.Guild;
             Server selectedServer = Botsettings.GetServer(guild.Id);
 
+            int matches = 0;
             if (selectedServer.AutoDeleteDupes && channel.Id != selectedServer.Channels.BotSandbox 
                 && !Moderation.IsModerator((SocketGuildUser)message.Author, guild.Id) && !message.Author.IsBot)
             {
-                int matches = 0;
-
+                
                 foreach (IMessage msg in (await message.Channel.GetMessagesAsync(10).FlattenAsync()))
-                {
                     if ((msg.Content.ToString() == message.Content.ToString()) && (msg.Author == message.Author) && (message.Attachments.Count == 0))
-                    {
                         if (((message.Timestamp - msg.Timestamp).TotalSeconds < selectedServer.DuplicateFreq) && (msg.Timestamp < message.Timestamp))
-                        {
                             matches++;
-                            if (matches >= selectedServer.MaxDuplicates)
-                            {
-                                await LogDeletedMessage(message, "Duplicate message");
-                            }
-                        }
-                    }
-                }
             }
+
+            if (matches > selectedServer.MaxDuplicates)
+                await LogDeletedMessage(message, $"Duplicate message sent {selectedServer.MaxDuplicates} times within {selectedServer.DuplicateFreq} seconds.");
         }
 
         // Check if a message is filtered 
@@ -207,6 +198,66 @@ namespace FrostBot
                 {
                     var usermsg = (IUserMessage)message;
                     await usermsg.CrosspostAsync();
+                }
+            }
+        }
+
+        internal static void UnmuteCheck(SocketGuildChannel channel)
+        {
+            var server = Botsettings.GetServer(channel.Guild.Id);
+            if (server.Mutes != null && server.Mutes.Count > 0)
+            {
+                // For each mute with a duration...
+                foreach (var mute in server.Mutes.Where(x => x.Duration > 0))
+                {
+                    var unmuteTime = DateTime.Parse(mute.CreatedAt).AddMinutes(mute.Duration);
+                    var doUnmute = DateTime.Now.CompareTo(unmuteTime);
+                    // If mute has expired...
+                    if (doUnmute > 0)
+                    {
+                        // If user is in the server...
+                        if (channel.Guild.Users.Any(x => x.Id.Equals(mute.UserID)))
+                        {
+                            // Unmute user and remove warn
+                            var user = channel.Guild.Users.First(x => x.Id.Equals(mute.UserID));
+                            var unmuteChannel = (ITextChannel)channel;
+                            // Announce in #general if specified, otherwise last messaged channel
+                            if (channel.Guild.Channels.Any(x => x.Id.Equals(server.Channels.General)))
+                                unmuteChannel = (ITextChannel)channel.Guild.Channels.First(x => x.Id.Equals(server.Channels.General));
+                            Moderation.Unmute(user, Moderation.GetUser(channel.Guild.Id, Program.client.CurrentUser.Id), unmuteChannel);
+                        }
+                        // Remove mute and update settings
+                        server.Mutes.Remove(mute);
+                        Botsettings.UpdateServer(server);
+                    }
+                }
+            }
+        }
+
+        internal static void UnlockCheck(SocketGuildChannel channel)
+        {
+            var server = Botsettings.GetServer(channel.Guild.Id);
+            if (server.Locks != null && server.Locks.Count > 0)
+            {
+                // For each mute with a duration...
+                foreach (var channelLock in server.Locks.Where(x => x.Duration > 0))
+                {
+                    var unlockTime = DateTime.Parse(channelLock.CreatedAt).AddMinutes(channelLock.Duration);
+                    var doUnlock = DateTime.Now.CompareTo(unlockTime);
+                    // If lock has expired...
+                    if (doUnlock > 0)
+                    {
+                        // If channel is in the server...
+                        if (channel.Guild.Channels.Any(x => x.Id.Equals(channelLock.ChannelID)))
+                        {
+                            // Unlock channel and announce
+                            var lockedChannel = channel.Guild.TextChannels.First(x => x.Id.Equals(channelLock.ChannelID));
+                            Moderation.Unlock(Moderation.GetUser(channel.Guild.Id, Program.client.CurrentUser.Id), lockedChannel);
+                        }
+                        // Remove mute and update settings
+                        server.Locks.Remove(channelLock);
+                        Botsettings.UpdateServer(server);
+                    }
                 }
             }
         }
