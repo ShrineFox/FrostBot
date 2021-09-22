@@ -166,7 +166,7 @@ namespace FrostBot
         }
 
         // Stop a user from typing in all channels until unmuted
-        public static async void Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int muteDur)
+        public static async void Mute(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int muteDur = 0)
         {
             Server selectedServer = Botsettings.GetServer(user.Guild.Id);
             var guild = user.Guild;
@@ -237,7 +237,7 @@ namespace FrostBot
         }
 
         // Stops @everyone (without a permission override) from typing in a public channel
-        public static async void Lock(SocketGuildUser moderator, ITextChannel channel, int lockDur)
+        public static async void Lock(SocketGuildUser moderator, ITextChannel channel, int lockDur = 0)
         {
             // Lock the channel
             var guild = channel.Guild;
@@ -254,6 +254,8 @@ namespace FrostBot
                         duration = server.LockDuration;
                     if (lockDur > 0)
                         duration = lockDur;
+                    server.Locks.Add(new Lock() { ChannelID = channel.Id, CreatedAt = DateTime.Now.ToString(), CreatedBy = moderator.Username, Duration = duration });
+                    Botsettings.UpdateServer(server);
                 }
                 catch
                 {

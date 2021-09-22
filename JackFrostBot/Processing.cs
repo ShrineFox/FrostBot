@@ -68,7 +68,7 @@ namespace FrostBot
 
             // Warn user depending on settings
             if (selectedServer.WarnOnAutoDelete)
-                Moderation.Warn((SocketGuildUser)message.Author, (SocketGuildUser)botUser, (ITextChannel)message.Channel, reason);
+                Moderation.Warn((SocketGuildUser)message.Author, botUser, (ITextChannel)message.Channel, reason);
         }
 
         public static void LogDebugMessage(string message)
@@ -119,7 +119,7 @@ namespace FrostBot
                         // Auto-warn on filter match depending on settings, then delete message
                         var botUser = await channel.Guild.GetUserAsync(Program.client.CurrentUser.Id);
                         if (selectedServer.WarnOnFilter)
-                            Moderation.Warn((SocketGuildUser)botUser, (SocketGuildUser)message.Author, channel, deleteReason);
+                            Moderation.Warn((SocketGuildUser)message.Author, (SocketGuildUser)botUser, channel, deleteReason);
                         await LogDeletedMessage(message, deleteReason);
                     }
                 }

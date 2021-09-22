@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using FrostBot.Interactions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +41,11 @@ namespace FrostBot
                 if (!user.Roles.Any(x => selectedServer.Roles.Where(z => z.Moderator).Any(y => y.Id.Equals(x.Id))))
                     return msgProps;
                 // Return new setup embed/components
-                msgProps = Interactions.Setup.Begin((SocketGuildUser)interaction.User, guild, customID, interactionValue, selectedServer);
+                msgProps = Setup.Begin(user, guild, customID, interactionValue, selectedServer);
+            }
+            else if (customID.StartsWith("colorroles-"))
+            {
+                msgProps = ColorRoles.Start(user, selectedServer, customID, interactionValue);
             }
 
             return msgProps;

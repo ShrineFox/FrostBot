@@ -83,7 +83,7 @@ namespace FrostBot
             public List<Role> Roles { get; set; } = new List<Role>();
             public List<Currency> Currency { get; set; } = new List<Currency>();
             public List<ulong> ThreadsToUnarchive { get; set; } = new List<ulong>();
-            public List<string> WordFilter { get; set; } = new List<string>();
+            public List<string> WordFilter { get; set; } = new List<string>() { "samplefilterterm1", "samplefilterterm2" };
             public bool Configured { get; set; } = false;
             // Chat
             public bool PublishAnnouncements { get; set; } = true;

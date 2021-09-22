@@ -402,7 +402,6 @@ namespace FrostBot.Interactions
                 commands = selectedServer.Commands.Take(25).ToList();
             foreach (var command in commands)
             {
-                Console.WriteLine(command.Name);
                 var desc = Program.commands.Modules.Where(m => m.Parent == null).First(x => x.Commands.Any(z => z.Name.Equals("say"))).Commands.First(y => y.Name.Equals(command.Name)).Summary;
                 menu.AddOption(new SelectMenuOptionBuilder() { Label = selectedServer.Prefix + command.Name + " - " + desc, Value = command.Name });
             }
@@ -454,6 +453,19 @@ namespace FrostBot.Interactions
                         selectedServer.MaxDuplicates = Convert.ToInt32(interactionValue);
                         Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} set the 🛡 Maximum Allowed Duplicates** to {selectedServer.MaxDuplicates} consecutive identical posts.", user.Guild.Id), user.Guild);
                         break;
+                    case "setup-automod-select-lurkerrole":
+                        var guild = Moderation.GetGuild(selectedServer.Id);
+                        var lurkRole = new Role
+                        {
+                            Name = guild.Roles.Where(x => x.Id.Equals(Convert.ToUInt64(interactionValue))).First().Name,
+                            Id = Convert.ToUInt64(interactionValue),
+                            IsLurkerRole = true
+                        };
+                        selectedServer.Roles.Add(lurkRole);
+                        IRole role = guild.GetRole(lurkRole.Id);
+                        if (role != null)
+                            Moderation.SendToBotLogs(Embeds.ColorMsg($"⚙️ **{user.Mention} added {role.Mention}** as a ⚔️ **Lurker Role** for the bot.", guild.Id), guild); 
+                        break;
                 }
             }
             // If toggle button, set opposite of current value in settings
@@ -482,7 +494,7 @@ namespace FrostBot.Interactions
             switch (customID)
             {
                 case "setup-automod-btn-mutelevel":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute)**__ (1/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute)**__ (1/11)\n\n" +
                             $"With the ``{selectedServer.Prefix}warn`` command, moderators can **notify users of rule infractions**.\n" +
                             "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many warns, such as *muting, kicking, or banning*.\n\n" +
@@ -499,7 +511,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-muteduration":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute Duration)**__ (2/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Mute Duration)**__ (2/11)\n\n" +
                             $"With the ``{selectedServer.Prefix}unmute`` command, moderators can **restore speaking privileges** to muted users.\n" +
                             "However, you could also _allow a mute to automically expire_. This may be useful when a user gets auto-muted and no " +
                             "moderators are around, or if you simply forget to unmute them.\n\n" +
@@ -526,7 +538,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-kicklevel":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Kick)**__ (3/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Kick)**__ (3/11)\n\n" +
                             $"With the ``{selectedServer.Prefix}warn`` command, moderators can **notify users of rule infractions**.\n" +
                             "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many warns, such as *muting, kicking, or banning*.\n\n" +
@@ -543,7 +555,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-banlevel":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Ban)**__ (4/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Ban)**__ (4/11)\n\n" +
                             $"With the ``{selectedServer.Prefix}warn`` command, moderators can **notify users of rule infractions**.\n" +
                             "These infractions are tracked and managed by the bot as **warns**. You can set automatic penalties " +
                             "for accumulating too many warns, such as *muting, kicking, or banning*.\n\n" +
@@ -560,7 +572,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-lockduration":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Lock Duration)**__ (5/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Lock Duration)**__ (5/11)\n\n" +
                             $"With the ``{selectedServer.Prefix}unlock`` command, moderators can **restore speaking privileges** to " +
                             $"a channel previously locked using the ``{selectedServer.Prefix}lock`` command.\n" +
                             "However, you could also _allow a lock to automically expire_. This may be useful when no " +
@@ -588,7 +600,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-deletedupes":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Delete Duplicates)**__ (6/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Delete Duplicates)**__ (6/11)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "Would you like to **enable this feature?**\n",
                             selectedServer.Id, 0, true);
@@ -603,7 +615,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-dupefreq":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Duplicate Freq)**__ (7/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Duplicate Freq)**__ (7/11)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "**How close together (in seconds)** should identical messages " +
                             "be in order to be considered duplicates? (0 for always)\n" +
@@ -619,7 +631,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-maxdupes":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Max Duplicates)**__ (8/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Max Duplicates)**__ (8/11)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "After **how many identical messages in succession** should messages " +
                             "be considered duplicates? (0 for any)\n" +
@@ -635,7 +647,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-warnondelete":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Warn Duplicates)**__ (9/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Warn Duplicates)**__ (9/11)\n\n" +
                             "The bot can automatically detect and delete **duplicate messages**.\n\n" +
                             "Should it also issue an **automatic warn when duplicates are posted**?",
                                 selectedServer.Id, 0, true);
@@ -650,7 +662,7 @@ namespace FrostBot.Interactions
                         .Build();
                     break;
                 case "setup-automod-btn-wordfilter":
-                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Word Filter)**__ (10/10)\n\n" +
+                    msgProps.Embed = Embeds.ColorMsg("🛡 __**Automatic Moderation (Word Filter)**__ (10/11)\n\n" +
                             "The bot can automatically detect and delete messages containing **filtered terms**.\n\n" +
                             "You will need to add these terms to ``settings.yml`` yourself.\n" +
                             "Would you like to issue an **automatic warn when the filter is tripped?**",
@@ -662,8 +674,36 @@ namespace FrostBot.Interactions
                         cmdToggles = cmdToggles.WithButton("Disabled", $"setup-automod-btn-wordfilter-toggle", ButtonStyle.Secondary, Components.unchk);
                     msgProps.Components = cmdToggles
                         .WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
-                        .WithButton("Next Step", "setup-markov-btn-enabled")
+                        .WithButton("Next Step", "setup-automod-btn-lurkerrole")
                         .Build();
+                    break;
+                case "setup-automod-btn-lurkerrole":
+                    string currentSetting = "";
+                    if (selectedServer.Roles.Any(x => x.IsLurkerRole))
+                        currentSetting = $"\n\n**Current setting**: {selectedServer.Roles.First(x => x.IsLurkerRole).Name}";
+                    msgProps.Embed = Embeds.ColorMsg("🕵 __**Automatic Moderation (Lurker Role)**__ (11/11)\n\n" +
+                            "The bot can automatically assign a role to mark a newly joined user as a **Lurker**.\n" +
+                            "This role gets removed when the user sends a message. This way, you can prune all users " +
+                            "that have never spoken in your server with the ``?prune lurkers`` command. It's much " +
+                            "more reliable than Discord's built-in pruning, which goes by time last seen rather than " +
+                            "activity. It also allows you to prune users that have been assigned other roles." +
+                            currentSetting,
+                            selectedServer.Id, 0, true);
+                    menu = new SelectMenuBuilder() { CustomId = "setup-automod-select-lurkerrole" };
+                    foreach (var role in Moderation.GetGuild(selectedServer.Id).Roles.OrderBy(p => p.Position).Where(x => !x.IsEveryone && !selectedServer.Roles.Any(i => i.Id.Equals(x.Id))))
+                        menu.AddOption(new SelectMenuOptionBuilder() { Label = role.Name, Value = role.Id.ToString() });
+                    // Show menu if there's at least 1 role to select
+                    if (menu.Options.Count() > 0)
+                        msgProps.Components = new ComponentBuilder()
+                            .WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
+                            .WithSelectMenu(menu)
+                            .WithButton("Skip", "setup-markov-btn-enabled")
+                            .Build();
+                    else
+                        msgProps.Components = new ComponentBuilder()
+                            .WithButton("End Setup", "setup-complete", ButtonStyle.Danger)
+                            .WithButton("Next Step", "setup-markov-btn-enabled")
+                            .Build();
                     break;
             }
 

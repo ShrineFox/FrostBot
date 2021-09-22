@@ -249,6 +249,7 @@
     <Compile Include="Embeds.cs" />
     <Compile Include="InfoModule.cs" />
     <Compile Include="Interactions\Components.cs" />
+    <Compile Include="Interactions\Components\ColorRoles.cs" />
     <Compile Include="Interactions\Components\Setup.cs" />
     <Compile Include="Interactions\SlashCommands.cs" />
     <Compile Include="Moderation.cs" />

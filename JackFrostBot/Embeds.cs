@@ -38,6 +38,11 @@ namespace FrostBot
             return (uint)((role.Color.R << 16) | (role.Color.G << 8) | role.Color.B);
         }
 
+        public static uint GetRoleColor(IRole role)
+        {
+            return (uint)((role.Color.R << 16) | (role.Color.G << 8) | role.Color.B);
+        }
+
         // Message with colored box and optional icon/fields
         public static Embed ColorMsg(string msg, ulong guildId, uint color = 0, bool icon = false, List<Tuple<string, string>> fields = null)
         {

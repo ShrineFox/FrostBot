@@ -95,6 +95,57 @@ namespace FrostBot
             }
         }
 
+        [Command("color"), Summary("Choose a username color.")]
+        public async Task Color([Summary("The hex value of the Color Role.")] string colorValue = "", [Remainder, Summary("The name of the Color Role.")] string roleName = "")
+        {
+            if (Moderation.CommandAllowed("color", Context))
+            {
+                if (colorValue == "" || roleName == "")
+                {
+                    // Show color role picker embed
+                    await Context.Message.DeleteAsync();
+                    var msgProps = Interactions.ColorRoles.Start((SocketGuildUser)Context.User, Botsettings.GetServer(Context.Guild.Id), "colorroles-start", "");
+                    var components = (MessageComponent)msgProps.Components;
+                    await Context.Channel.SendMessageAsync(embed: (Embed)msgProps.Embed, component: components);
+                }
+                else if (!Context.Guild.Roles.Any( x => x.Name.ToLower().Equals($"color: {roleName.ToLower()}")))
+                {
+                    // If role doesn't already exist...
+                    try
+                    {
+                        await Context.Message.DeleteAsync();
+                        // Create color role at highest possible position
+                        var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
+                        colorValue = colorValue.Replace("#", "");
+                        Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
+
+                        var colorRole = await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor, false, null);
+                        await colorRole.ModifyAsync(r => r.Position = lowestModeratorRole - 1);
+
+                        var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
+                        foreach (var role in orderedRoles)
+                            await role.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
+
+                        var user = (SocketGuildUser)Context.User;
+                        // Remove other color role user already has
+                        foreach (var userRole in user.Roles)
+                            if (userRole.Name.ToLower().StartsWith("color: "))
+                                await user.RemoveRoleAsync(userRole);
+                        // Grant new color role
+                        await user.AddRoleAsync(colorRole);
+                        // Announce change
+                        await Context.Channel.SendMessageAsync(embed: Embeds.ColorMsg($"🎨 **Username color created** by {Context.User.Mention}: **{colorRole.Name.Replace("Color: ", "")}**", Context.Guild.Id, Embeds.GetRoleColor(colorRole)));
+                    }
+                    catch
+                    {
+                        await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg("**Color Role couldn't be created**. Make sure you entered a valid hexadecimal value!"));
+                    }
+                }
+                else
+                    await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg("**Color Role couldn't be created**. The specified name may already be in use by another role!"));
+            }
+        }
+
         [Command("set game"), Summary("Change the Currently Playing text.")]
         public async Task SetGame([Remainder, Summary("The text to set as the Game.")] string game)
         {
@@ -148,7 +199,7 @@ namespace FrostBot
         }
 
         [Command("warn"), Summary("Warn a user.")]
-        public async Task Warn([Summary("The user to warn.")] SocketGuildUser mention, [Summary("The reason for the warn."), Remainder] string reason = "No reason given.")
+        public async Task Warn([Summary("The user to warn.")] SocketGuildUser mention, [Remainder, Summary("The reason for the warn.")] string reason = "No reason given.")
         {
             var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
@@ -160,7 +211,7 @@ namespace FrostBot
         }
 
         [Command("mute"), Summary("Mute a user.")]
-        public async Task Mute([Summary("The user to mute.")] SocketGuildUser mention, [Summary("The duration of mute in minutes."), Remainder] int duration = 0)
+        public async Task Mute([Summary("The user to mute.")] SocketGuildUser mention, [Remainder, Summary("The duration of mute in minutes.")] int duration = 0)
         {
             if (Moderation.CommandAllowed("mute", Context))
             {
@@ -180,7 +231,7 @@ namespace FrostBot
         }
 
         [Command("lock"), Summary("Lock a channel.")]
-        public async Task Lock([Summary("The duration of mute in minutes."), Remainder] int duration = 0)
+        public async Task Lock([Remainder, Summary("The duration of lock in minutes.")] int duration = 0)
         {
             if (Moderation.CommandAllowed("lock", Context))
             {
@@ -225,7 +276,7 @@ namespace FrostBot
             if (Moderation.CommandAllowed("redirect", Context))
             {
                 await Context.Message.DeleteAsync();
-                await Context.Channel.SendMessageAsync($"Move this discussion to <#{channel.Id}>!");
+                await Context.Channel.SendMessageAsync(embed: Embeds.ColorMsg($"Move this conversation to {channel.Mention}!", channel.Guild.Id));
             }
         }
 
@@ -240,7 +291,7 @@ namespace FrostBot
         }
 
         [Command("clear warn"), Summary("Clears a warn that a user received.")]
-        public async Task ClearWarn([Summary("The index of the warn to clear.")] int index, [Summary("The user whose warn to clear.")] SocketGuildUser mention = null)
+        public async Task ClearWarn([Summary("The index of the warn to clear.")] int index, [Remainder, Summary("The user whose warn to clear.")] SocketGuildUser mention = null)
         {
             if (Moderation.CommandAllowed("clear warn", Context))
             {
@@ -250,7 +301,7 @@ namespace FrostBot
         }
 
         [Command("show warns"), Summary("Show all current warns.")]
-        public async Task ShowWarns([Summary("The user whose warns to show.")] SocketGuildUser mention = null)
+        public async Task ShowWarns([Remainder, Summary("The user whose warns to show.")] SocketGuildUser mention = null)
         {
             if (Moderation.CommandAllowed("show warns", Context))
             {
@@ -267,90 +318,6 @@ namespace FrostBot
                 await Context.Message.DeleteAsync();
                 var users = await Context.Guild.GetUsersAsync();
                 Moderation.PruneLurkers((SocketGuildUser)Context.User, (ITextChannel)Context.Channel, users);
-            }
-        }
-
-        [Command("create color"), Summary("Create a role with a specific color")]
-        public async Task CreateColor([Summary("The hex value of the Color Role.")] string colorValue, [Remainder, Summary("The name of the Color Role.")] string roleName)
-        {
-            if (Moderation.CommandAllowed("create color", Context))
-            {
-                try
-                {
-                    //Create color role at highest possible position
-                    var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
-                    colorValue = colorValue.Replace("#", "");
-                    Discord.Color roleColor = new Discord.Color(uint.Parse(colorValue, NumberStyles.HexNumber));
-
-                    var colorRole = await Context.Guild.CreateRoleAsync($"Color: {roleName}", null, roleColor, false, null);
-                    await colorRole.ModifyAsync(r => r.Position = lowestModeratorRole - 1);
-
-                    await Context.Channel.SendMessageAsync("Role successfully created!");
-
-                    //Sort color roles by hue as high as possible on list
-                    var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
-                    foreach (var role in orderedRoles)
-                        await role.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
-                }
-                catch
-                {
-                    await Context.Channel.SendMessageAsync("Role couldn't be created. Make sure you entered a valid hexadecimal value!");
-                }
-            }
-        }
-
-        [Command("give color"), Summary("Assigns yourself a role with a specific color")]
-        public async Task CreateColor([Remainder, Summary("The name of the Color Role.")] string roleName)
-        {
-            if (Moderation.CommandAllowed("give color", Context))
-            {
-                try
-                {
-                    SocketGuildUser user = (SocketGuildUser)Context.User;
-                    if (Context.Guild.Roles.Any(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase)))
-                    {
-                        var clrRole = Context.Guild.Roles.Single(r => r.Name.Equals($"Color: {roleName}", StringComparison.CurrentCultureIgnoreCase));
-                        //Give role
-                        await user.AddRoleAsync(clrRole);
-                        await Context.Channel.SendMessageAsync("Role successfully added!");
-                        //Remove other color role user already has
-                        foreach (var role in user.Roles)
-                            if (role.Name.ToUpper().Contains("COLOR: ") && !role.Name.ToUpper().Equals("COLOR: " + roleName.ToUpper()))
-                                await user.RemoveRoleAsync(role);
-                    }
-                    else
-                        await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact color name!"));
-                }
-                catch
-                {
-                    await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg($"Role 'Color: {roleName}' couldn't be found. Make sure you entered the exact color name!"));
-                }
-            }
-
-        }
-
-        [Command("show colors"), Summary("Lists all color roles that you can assign to yourself")]
-        public async Task ShowColors()
-        {
-            if (Moderation.CommandAllowed("show colors", Context))
-            {
-                List<IRole> colorRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue()).ToList();
-
-                Bitmap bitmap = new Bitmap(320, 15 * colorRoles.Count, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                using (Graphics graphics = Graphics.FromImage(bitmap))
-                {
-                    graphics.Clear(System.Drawing.Color.FromArgb(255, 54, 57, 63));
-                    using (System.Drawing.Font fnt = new System.Drawing.Font("Whitney Medium", 10))
-                        for (int i = 0; i < colorRoles.Count; i++)
-                        {
-                            System.Drawing.Color roleColor = System.Drawing.Color.FromArgb(Convert.ToInt32(colorRoles[i].Color.R), Convert.ToInt32(colorRoles[i].Color.G), Convert.ToInt32(colorRoles[i].Color.B));
-                            System.Drawing.Brush brush = new System.Drawing.SolidBrush(roleColor);
-                            graphics.DrawString(colorRoles[i].Name, fnt, brush, 5, 15 * i);
-                        }
-                }
-                    
-                bitmap.Save("colors.png", System.Drawing.Imaging.ImageFormat.Png);
-                await Context.Channel.SendFileAsync("colors.png");
             }
         }
 
