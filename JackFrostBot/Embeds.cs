@@ -12,6 +12,10 @@ using IniParser;
 using IniParser.Model;
 using FrostBot;
 using static FrostBot.Config;
+using Newtonsoft.Json;
+using System.Net;
+using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace FrostBot
 {
@@ -113,12 +117,41 @@ namespace FrostBot
         static public Embed Wiki(string keyword, ulong guildId)
         {
             Server selectedServer = Botsettings.GetServer(guildId);
-            string url = Path.Combine(selectedServer.Strings.WikiURL,
-                $"w/api.php?action=query&prop=revisions&titles={keyword}&rvslots=*&rvprop=content&formatversion=2&format=json");
+            string url = selectedServer.Strings.WikiURL +
+                $"/w/api.php?action=query&prop=revisions&titles={keyword}&rvslots=*&rvprop=content&formatversion=2&format=json";
 
-            // TODO: Separate json into embed fields
+            Console.WriteLine(url);
+            // Separate json into embed fields
+            string json = new WebClient().DownloadString(url);
+            JToken token = JObject.Parse(json);
 
-            return ColorMsg("", guildId);
+            var title = (string)token.SelectToken("query.pages[0].title");
+            var link = selectedServer.Strings.WikiURL + "/" + keyword;
+            var content = (string)token.SelectToken("query.pages[0].revisions[0].slots.main.content");
+
+            var engine = new WikiPlex.WikiEngine();
+            string output = engine.Render(content).Replace("<br />","\n").Replace("<b></b>","").Replace("<b>", "**").Replace("</b>","**").Replace("&#39;","").Replace("&lt;br&gt;","");
+            foreach (Match match in Regex.Matches(@"\[\[.*?\]\]", output, RegexOptions.Multiline))
+            {
+                var split = match.Value.Split('|');
+                for (int i = 0; i < split.Count(); i++)
+                    split[i] = split[i].Replace("[[","").Replace("]]","");
+                if (split.Count() > 1)
+                    output = output.Replace(match.Value, $"[{split[1]}]({selectedServer.Strings.WikiURL + "/" + split[0]})");
+                else
+                    output = output.Replace(match.Value, $"[{split[0]}]({selectedServer.Strings.WikiURL + "/" + split[0]})");
+            }
+            // Replace links to other pages (regex nested quantifier error?!?!?!?!?!?)
+            /*foreach (Match match in Regex.Matches(@"\[\[((?:(?![\[\]]).)*)\]\]", content))
+                content = content.Replace(match.Value, "");
+            foreach (Match match in Regex.Matches(@"\[\[([A-Za-z][A-Za-z\d+]*)(\|\1)*\]\]", content))
+                foreach (Capture capture in match.Captures)
+                    content = content.Replace(capture.Value, $"[{capture.Value}]({selectedServer.Strings.WikiURL}/{capture.Value})");
+            foreach (Match match in Regex.Matches(@"\[\[([^\]\[:]+)\|([^\]\[:]+)\]\]", content))
+                foreach (Capture capture in match.Captures)
+                    content = content.Replace($"[[{match}]]", $"[{match}]({selectedServer.Strings.WikiURL}/{match})");*/
+
+            return ColorMsg($"__**[{title}]({link})**__\n\n{output}", guildId);
         }
 
         // Shows that a user has been warned
@@ -309,3 +342,4 @@ namespace FrostBot
         }
     }
 }
+

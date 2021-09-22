@@ -38,12 +38,22 @@ namespace FrostBot
         }
 
         [Command("say"), Summary("Make the bot repeat a message.")]
-        public async Task Say([Remainder, Summary("The format to get info about.")] string message)
+        public async Task Say([Remainder, Summary("The text to repeat.")] string message)
         {
             if (Moderation.CommandAllowed("say", Context))
             {
                 await Context.Message.DeleteAsync();
                 await ReplyAsync(message);
+            }
+        }
+
+        [Command("embed"), Summary("Make the bot embed a message.")]
+        public async Task Embed([Remainder, Summary("The text to embed.")] string message)
+        {
+            if (Moderation.CommandAllowed("embed", Context))
+            {
+                await Context.Message.DeleteAsync();
+                await ReplyAsync(embed: Embeds.ColorMsg(message, Context.Guild.Id, 0, true));
             }
         }
 
@@ -474,7 +484,7 @@ namespace FrostBot
         }
 
         [Command("award"), Summary("Give a user currency.")]
-        public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award."), Remainder] int amount = 1)
+        public async Task Award([Summary("The user to award.")] SocketGuildUser mention, [Summary("The amount to award.")] int amount = 1, [Remainder] string remainder = "")
         {
             if (Moderation.CommandAllowed("award", Context))
             {
@@ -484,7 +494,7 @@ namespace FrostBot
         }
 
         [Command("redeem"), Summary("Take a user's currency.")]
-        public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take."), Remainder] int amount = 1)
+        public async Task Redeem([Summary("The user to take from.")] SocketGuildUser mention, [Summary("The amount to take.")] int amount = 1, [Remainder] string remainder = "")
         {
             if (Moderation.CommandAllowed("redeem", Context))
             {
@@ -495,7 +505,7 @@ namespace FrostBot
         }
 
         [Command("balance"), Summary("Check your balance.")]
-        public async Task Balance([Summary("The user to check the balance of."), Remainder] SocketGuildUser mention = null)
+        public async Task Balance([Summary("The user to check the balance of.")] SocketGuildUser mention = null, [Remainder] string remainder = "")
         {
             var selectedServer = Botsettings.GetServer(Context.Guild.Id);
 
@@ -506,13 +516,18 @@ namespace FrostBot
                 if (mention != null)
                     user = mention;
 
-                amount = selectedServer.Currency.First(x => x.UserID.Equals(user.Id)).Amount;
-                await Context.Channel.SendMessageAsync($"{user.Username} has {amount} {selectedServer.Strings.CurrencyName}.");
+                if (selectedServer.Currency.Any(x => x.UserID.Equals(user.Id)))
+                {
+                    amount = selectedServer.Currency.First(x => x.UserID.Equals(user.Id)).Amount;
+                    await Context.Channel.SendMessageAsync($"{user.Username} has {amount} {selectedServer.Strings.CurrencyName}.");
+                }
+                else
+                    await Context.Channel.SendMessageAsync($"{user.Username} has 0 {selectedServer.Strings.CurrencyName}.");
             }
         }
 
         [Command("send"), Summary("Send currency to another user.")]
-        public async Task Send([Summary("The user to send currency to.")] SocketGuildUser mention = null, [Summary("The amount to send."), Remainder] int amount = 1)
+        public async Task Send([Summary("The user to send currency to.")] SocketGuildUser mention = null, [Summary("The amount to send.")] int amount = 1, [Remainder] string remainder = "")
         {
             if (Moderation.CommandAllowed("send", Context))
             {
@@ -525,7 +540,10 @@ namespace FrostBot
         public async Task LogOff()
         {
             if (Moderation.CommandAllowed("logoff", Context))
+            {
                 Program.settings.Active = false;
+                Botsettings.Save();
+            }
             await Context.Channel.SendMessageAsync($"Logging off...");
         }
     }

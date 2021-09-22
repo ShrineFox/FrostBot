@@ -58,12 +58,11 @@ namespace FrostBot
             client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 DefaultRetryMode = RetryMode.AlwaysRetry,
-                AlwaysAcknowledgeInteractions = false,
-                GatewayIntents = GatewayIntents.All,
+                //GatewayIntents = GatewayIntents.All,
                 #if DEBUG
-                LogLevel = LogSeverity.Debug,
+                LogLevel = LogSeverity.Debug
                 #endif
-                AlwaysDownloadUsers = true
+                //AlwaysDownloadUsers = true
             });
             commands = new CommandService();
             services = new ServiceCollection()
@@ -82,14 +81,14 @@ namespace FrostBot
                 {
                     Processing.LogConsoleText("Failed to connect. Please set bot token in settings.yml.");
                     Console.ReadKey();
-                    Close();
+                    return;
                 }
             }
             catch
             {
                 Processing.LogConsoleText("Failed to connect. Invalid token?");
                 Console.ReadKey();
-                Close();
+                return;
             }
 
             // Tasks
@@ -182,14 +181,17 @@ namespace FrostBot
             // OR mute user automatically if their warn level is equal to or higher than the mute level
             int warnLevel = Moderation.WarnLevel(user);
             var defaultChannel = (SocketTextChannel)user.Guild.GetChannel(selectedServer.Channels.General);
-
-            if (warnLevel >= selectedServer.MuteLevel)
+            if (defaultChannel != null)
             {
-                await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
-                Moderation.Mute(user, client.Guilds.First(x => x.Id.Equals(user.Guild.Id)).CurrentUser, defaultChannel, selectedServer.MuteDuration);
+                if (warnLevel >= selectedServer.MuteLevel)
+                {
+                    await defaultChannel.SendMessageAsync($"**A user with multiple warns has rejoined: {user.Mention}.** Automatically muting...");
+                    Moderation.Mute(user, client.Guilds.First(x => x.Id.Equals(user.Guild.Id)).CurrentUser, defaultChannel, selectedServer.MuteDuration);
+                }
+                else
+                    await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {selectedServer.Strings.WelcomeMessage}");
+
             }
-            else
-                await defaultChannel.SendMessageAsync($"**Welcome to the server, {user.Mention}!** {selectedServer.Strings.WelcomeMessage}");
         }
 
         private async Task ReactionAdded(Cacheable<IUserMessage, ulong> usrMsg, Cacheable<IMessageChannel, ulong> msgChannel, SocketReaction reaction)
@@ -230,8 +232,8 @@ namespace FrostBot
                     AddServer(guild);
                 // Publish News
                 await Processing.PublishNews(guild);
-                // Set up Slash Commands
-                try
+                // Set up Slash Commands (NOT WORKING ATM)
+                /*try
                 {
                     foreach (var command in commands.Modules.Where(m => m.Parent == null).First(x => x.Commands.Any(z => z.Name.Equals("say"))).Commands.Where(x => !x.Name.Contains(" ")))
                     {
@@ -247,15 +249,19 @@ namespace FrostBot
                 catch (ApplicationCommandException exception)
                 {
                     Processing.LogDebugMessage(exception.Message);
-                }
+                }*/
             }
 
             // Update settings.yml
             Botsettings.Save();
 
             // Set game activity and status from config
-            /*if (settings.Activity != "")
-                SetStatus(new Game(settings.Activity, (ActivityType)settings.ActivityType), (UserStatus)settings.Status);*/
+            if (settings.Status != "")
+                await client.SetStatusAsync((UserStatus)Enum.Parse(typeof(UserStatus), settings.Status));
+            if (settings.Activity != "")
+                await client.SetGameAsync(settings.Activity);
+            if (client.Activity != null  && settings.ActivityType != "")
+                await client.SetActivityAsync(new Game(client.Activity.Name, (ActivityType)Enum.Parse(typeof(ActivityType), settings.ActivityType)));
 
             Processing.LogDebugMessage("Ready");
         }
@@ -288,13 +294,6 @@ namespace FrostBot
             settings.Servers.Add(new Server { Id = guild.Id, Name = guild.Name, Commands = cmds, Roles = roles });
         }
 
-        public static void SetStatus(Game activity, UserStatus status)
-        {
-            Processing.LogDebugMessage("Setting activity and status...");
-            client.SetActivityAsync(activity);
-            client.SetStatusAsync(status);
-        }
-
         public async Task InstallCommands()
         {
             // Hook the MessageReceived Event into our Command Handler
@@ -309,7 +308,11 @@ namespace FrostBot
             Botsettings.Load();
             // Set status to offline and stop executing if bot has been deativated remotely
             if (!settings.Active)
-                Close();
+            {
+                await client.SetStatusAsync(0);
+                Botsettings.Save();
+                Environment.Exit(0);
+            }
 
             // Get message content and channel
             var message = messageParam as SocketUserMessage;
@@ -328,6 +331,7 @@ namespace FrostBot
                     await user.RemoveRoleAsync(roleId);
 
             //Process message...
+
             await Processing.LogSentMessage(message);
             await Processing.DuplicateMsgCheck(message, channel);
             await Processing.FilterCheck(message, (ITextChannel)channel);
@@ -364,19 +368,9 @@ namespace FrostBot
 
         private Task Log(LogMessage msg)
         {
-            if (!msg.ToString().Contains("handler is blocking the gateway task"))
+            if (!msg.ToString().Contains("handler is blocking the gateway task") && (!msg.ToString().Contains("Not authenticated.")))
                 Processing.LogConsoleText(msg.Message);
             return Task.CompletedTask;
-        }
-
-        public static void Close()
-        {
-            // Save changes
-            Botsettings.Save();
-            // Set status to offline
-            SetStatus(null, 0);
-            // End program execution
-            Environment.Exit(0);
         }
     }
 }

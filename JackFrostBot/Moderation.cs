@@ -45,7 +45,7 @@ namespace FrostBot
             Command cmd = selectedServer.Commands.First(x => x.Name.Equals(commandName));
 
             if (cmd.Enabled && !context.Message.Author.IsBot)
-                if ((cmd.BotChannelOnly && (context.Channel.Id == botChannelId)) || !cmd.BotChannelOnly)
+                if ((cmd.BotChannelOnly && (context.Channel.Id == botChannelId)) || !cmd.BotChannelOnly || isModerator)
                     if (!cmd.ModeratorsOnly || (cmd.ModeratorsOnly && isModerator))
                         return true;
             context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg("You don't have permission to use that command here."));
@@ -363,10 +363,10 @@ namespace FrostBot
         public static async void Award(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int amount)
         {
             var selectedServer = Botsettings.GetServer(channel.GuildId);
-            if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)))
+            if (!selectedServer.Currency.Any(x => x.UserID.Equals(user.Id)))
                 selectedServer.Currency.Add(new Currency() { UserName = user.Username, UserID = user.Id, Amount = amount });
             else
-                selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount += amount;
+                selectedServer.Currency.First(x => x.UserID.Equals(user.Id)).Amount += amount;
             Botsettings.UpdateServer(selectedServer);
 
             await channel.SendMessageAsync("", embed: Embeds.Award(user, moderator, amount)).ConfigureAwait(false);
@@ -377,9 +377,9 @@ namespace FrostBot
         public static async void Redeem(SocketGuildUser user, SocketGuildUser moderator, ITextChannel channel, int amount)
         {
             var selectedServer = Botsettings.GetServer(channel.GuildId);
-            if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)) || selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount < amount)
+            if (!selectedServer.Currency.Any(x => x.UserID.Equals(user.Id)) || selectedServer.Currency.First(x => x.UserID.Equals(user.Id)).Amount < amount)
             {
-                await channel.SendMessageAsync($"User doesn't have enough {selectedServer.Currency}.");
+                await channel.SendMessageAsync($"User doesn't have enough {selectedServer.Strings.CurrencyName}.");
             }
             else
             {
@@ -394,17 +394,17 @@ namespace FrostBot
         internal static async void Send(SocketGuildUser user, SocketGuildUser sender, ITextChannel channel, int amount)
         {
             var selectedServer = Botsettings.GetServer(channel.GuildId);
-            if (selectedServer.Currency.Any(x => !x.UserID.Equals(sender.Id)) || selectedServer.Currency.Single(x => x.UserID.Equals(sender.Id)).Amount < amount)
+            if (!selectedServer.Currency.Any(x => x.UserID.Equals(sender.Id)) || selectedServer.Currency.First(x => x.UserID.Equals(sender.Id)).Amount < amount)
             {
-                await channel.SendMessageAsync($"You doesn't have enough {selectedServer.Currency}.");
+                await channel.SendMessageAsync($"You don't have enough {selectedServer.Strings.CurrencyName}.");
             }
             else
             {
-                selectedServer.Currency.Single(x => x.UserID.Equals(sender.Id)).Amount -= amount;
-                if (selectedServer.Currency.Any(x => !x.UserID.Equals(user.Id)))
+                selectedServer.Currency.First(x => x.UserID.Equals(sender.Id)).Amount -= amount;
+                if (!selectedServer.Currency.Any(x => x.UserID.Equals(user.Id)))
                     selectedServer.Currency.Add(new Currency() { UserName = user.Username, UserID = user.Id, Amount = amount });
                 else
-                    selectedServer.Currency.Single(x => x.UserID.Equals(user.Id)).Amount += amount;
+                    selectedServer.Currency.First(x => x.UserID.Equals(user.Id)).Amount += amount;
                 Botsettings.UpdateServer(selectedServer);
                 await channel.SendMessageAsync("", embed: Embeds.Send(user, sender, amount)).ConfigureAwait(false);
             }

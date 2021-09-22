@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ namespace FrostBot
         public class Botsettings
         {
             public Botsettings() { }
-            public Botsettings(string token, List<Server> servers, string activity, int activityType, int status) 
+            public Botsettings(string token, List<Server> servers, string activity, string activityType, string status) 
             {
                 Token = token;
                 Servers = servers;
@@ -26,8 +27,8 @@ namespace FrostBot
             public bool Active { get; set; } = false;
             public List<Server> Servers { get; set; } = new List<Server>();
             public string Activity { get; set; } = "";
-            public int ActivityType { get; set; } = 0;
-            public int Status { get; set; } = 0;
+            public string ActivityType { get; set; } = "";
+            public string Status { get; set; } = "";
 
             // Load settings.yml as settings object if it exists, or create a new one
             public static void Load()
@@ -49,6 +50,13 @@ namespace FrostBot
 
             internal static void Save()
             {
+                // Include latest status update in settings
+                if (Program.client != null)
+                {
+                    try { if (Program.settings.Status != "") { Program.settings.Status = Enum.GetName(typeof(UserStatus), Program.client.Status); } } catch { }
+                    try { if (Program.client.Activity != null) { Program.settings.Activity = Program.client.Activity.Name; } } catch { }
+                    try { if (Program.client.Activity != null) { Program.settings.ActivityType = Enum.GetName(typeof(ActivityType), Program.client.Activity.Type); } } catch { }
+                }
                 // Save settings object to new settings.yml
                 Console.WriteLine("Saving settings.yml");
                 var serializer = new SerializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
