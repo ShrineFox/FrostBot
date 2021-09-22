@@ -47,6 +47,10 @@ namespace FrostBot
             {
                 msgProps = ColorRoles.Start(user, selectedServer, customID, interactionValue);
             }
+            else if (customID.StartsWith("optinroles-"))
+            {
+                msgProps = OptInRoles.Start(user, selectedServer, customID, interactionValue);
+            }
 
             return msgProps;
         }

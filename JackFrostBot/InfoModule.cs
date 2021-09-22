@@ -147,7 +147,7 @@ namespace FrostBot
         }
 
         [Command("set game"), Summary("Change the Currently Playing text.")]
-        public async Task SetGame([Remainder, Summary("The text to set as the Game.")] string game)
+        public async Task SetGame([Remainder, Summary("The text to set as the Game.")] string game = "")
         {
             if (Moderation.CommandAllowed("set game", Context))
             {
@@ -156,45 +156,39 @@ namespace FrostBot
             }
         }
 
-        [Command("join"), Summary("Grant yourself the specified opt-in role.")]
-        public async Task GrantRole([Remainder, Summary("The name of the role.")] string roleName)
+        [Command("set status"), Summary("Change the Online status.")]
+        public async Task SetStatus([Remainder, Summary("The status to set.")] string status)
         {
-            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
-
-            if (Moderation.CommandAllowed("grant", Context))
+            if (Moderation.CommandAllowed("set status", Context))
             {
-                var user = (IGuildUser)Context.Message.Author;
-                ulong roleId = 0;
-                roleId = selectedServer.Roles.First(x => x.Name.ToLower().Equals(roleName.ToLower())).Id;
-
-                if (roleId != 0)
-                {
-                    await user.AddRoleAsync(roleId);
-                    await Context.Channel.SendMessageAsync("Role successfully added!");
-                }
-                else
-                    await Context.Channel.SendMessageAsync("The specified role isn't available for opt-in!");
+                var client = (DiscordSocketClient)Context.Client;
+                await client.SetStatusAsync((UserStatus)Enum.Parse(typeof(UserStatus), status));
             }
         }
 
-        [Command("remove"), Summary("Remove the specified role from yourself.")]
-        public async Task RemoveRole([Remainder, Summary("The name of the role.")] string roleName)
+        [Command("set activity"), Summary("Change the Activity type.")]
+        public async Task SetActivity([Remainder, Summary("The type of activity to set.")] string activity)
         {
-            var selectedServer = Botsettings.GetServer(Context.Guild.Id);
-
-            if (Moderation.CommandAllowed("remove", Context))
+            if (Moderation.CommandAllowed("set status", Context))
             {
-                var user = (IGuildUser)Context.Message.Author;
-                ulong roleId = 0;
-                roleId = selectedServer.Roles.First(x => x.Name.ToLower().Equals(roleName.ToLower())).Id;
-
-                if (roleId != 0)
-                {
-                    await user.RemoveRoleAsync(roleId);
-                    await Context.Channel.SendMessageAsync("Role successfully removed!");
-                }
+                var client = (DiscordSocketClient)Context.Client;
+                if (client.Activity != null)
+                    await client.SetActivityAsync(new Game(client.Activity.Name, (ActivityType)Enum.Parse(typeof(ActivityType), activity)));
                 else
-                    await Context.Channel.SendMessageAsync("The specified role cannot be found!");
+                    await Context.Channel.SendMessageAsync(embed: Embeds.ErrorMsg("**Can't set activity without game name**. Try using ``?set game <gameName>`` first!"));
+            }
+        }
+
+        [Command("roles"), Summary("Join or leave an opt-in role.")]
+        public async Task Roles()
+        {
+            if (Moderation.CommandAllowed("roles", Context))
+            {
+                // Show opt-in roles embed
+                await Context.Message.DeleteAsync();
+                var msgProps = Interactions.OptInRoles.Start((SocketGuildUser)Context.User, Botsettings.GetServer(Context.Guild.Id), "optinroles-start", "");
+                var components = (MessageComponent)msgProps.Components;
+                await Context.Channel.SendMessageAsync(embed: (Embed)msgProps.Embed, component: components);
             }
         }
 

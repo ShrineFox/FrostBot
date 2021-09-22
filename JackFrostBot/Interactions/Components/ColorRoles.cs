@@ -41,7 +41,7 @@ namespace FrostBot.Interactions
                     msgProps.Embed = Embeds.ColorMsg(
                             "🎨 __**Color Roles**__\n\n" +
                             "Change your **username color** by choosing a cosmetic role.\n\n" +
-                            "You can add your own colors using the command ``?create color <#HEXVALUE> <color name>``. " +
+                            $"You can add your own colors using the command ``{selectedServer.Prefix}color <#HEXVALUE> <color name>``. " +
                             "Need help picking a hex value? Try an [online color picker](https://htmlcolorcodes.com/color-picker/)!" +
                             selected,
                             selectedServer.Id, color, true);
@@ -58,7 +58,7 @@ namespace FrostBot.Interactions
                             "🎨 __**Color Roles**__\n\n" +
                             "Change your **username color** by choosing a cosmetic role.\n\n" +
                             "**This server has no color roles yet**!\n" +
-                            "You can add your own colors using the command ``?create color <#HEXVALUE> <color name>``. " +
+                            $"You can add your own colors using the command ``{selectedServer.Prefix}color <#HEXVALUE> <color name>``. " +
                             "Need help picking a hex value? Try an [online color picker](https://htmlcolorcodes.com/color-picker/)!",
                             selectedServer.Id, 0, true);
                     msgProps.Components = builder.Build();
