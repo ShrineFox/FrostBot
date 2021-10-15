@@ -316,14 +316,13 @@ namespace FrostBot
 
             // Get message content and channel
             var message = messageParam as SocketUserMessage;
+            // Stop processing if it's a system message
+            if (message == null) return;
             var channel = (SocketGuildChannel)message.Channel;
             var user = (IGuildUser)message.Author;
             
             // Get settings for the server the message is in
             var selectedServer = Botsettings.GetServer(channel.Guild.Id);
-
-            // Stop processing if it's a system message
-            if (message == null) return;
 
             // Remove lurker role if member has one
             foreach (var roleId in user.RoleIds)
@@ -331,11 +330,10 @@ namespace FrostBot
                     await user.RemoveRoleAsync(roleId);
 
             //Process message...
-
             await Processing.LogSentMessage(message);
-            await Processing.DuplicateMsgCheck(message, channel);
-            await Processing.FilterCheck(message, (ITextChannel)channel);
-            await Processing.UnarchiveThreads(channel.Guild);
+            //await Processing.DuplicateMsgCheck(message, channel);
+            //await Processing.FilterCheck(message, (ITextChannel)channel);
+            //await Processing.UnarchiveThreads(channel.Guild);
             Processing.UnmuteCheck(channel);
             Processing.UnlockCheck(channel);
 

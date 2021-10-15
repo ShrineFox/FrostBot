@@ -19,8 +19,9 @@ namespace FrostBot.Interactions
             SocketGuild guild = Moderation.GetGuild(selectedServer.Id);
             string selected = "";
             uint color = 0;
+            int page = 1;
 
-            if (customID == "colorroles-start" || customID == "colorroles-select-color")
+            if (customID.StartsWith("colorroles-start") || customID == "colorroles-select-color")
             {
                 if (guild.Roles.Any(x => x.Name.ToLower().StartsWith("color: ")))
                 {
@@ -38,6 +39,18 @@ namespace FrostBot.Interactions
                         catch { }
                     }
 
+                    // Set up pages
+                    var colorRoles = Moderation.GetGuild(selectedServer.Id).Roles.OrderBy(p => p.Position).Where(x => x.Name.ToLower().StartsWith("color: "));
+                    if (customID.Contains("page"))
+                        page = Convert.ToInt32(customID.Replace("colorroles-start-page-", ""));
+                    if (page > 1 && colorRoles.Skip(25 * page).Count() > 0)
+                        colorRoles = colorRoles.Skip(25 * page).ToList();
+                    else
+                    {
+                        page = 1;
+                        colorRoles = colorRoles.Take(25).ToList();
+                    }
+
                     msgProps.Embed = Embeds.ColorMsg(
                             "🎨 __**Color Roles**__\n\n" +
                             "Change your **username color** by choosing a cosmetic role.\n\n" +
@@ -46,10 +59,11 @@ namespace FrostBot.Interactions
                             selected,
                             selectedServer.Id, color, true);
                     var menu = new SelectMenuBuilder() { CustomId = "colorroles-select-color" };
-                    foreach (var role in Moderation.GetGuild(selectedServer.Id).Roles.OrderBy(p => p.Position).Where(x => x.Name.ToLower().StartsWith("color: ")))
+                    foreach (var role in colorRoles)
                         menu.AddOption(new SelectMenuOptionBuilder() { Label = role.Name, Value = role.Id.ToString() });
                     if (menu.Options.Count > 0)
                         builder = builder.WithSelectMenu(menu);
+                    builder = builder.WithButton("More", $"colorroles-start-page-{page + 1}");
                     msgProps.Components = builder.WithButton("Exit", "colorroles-btn-complete", ButtonStyle.Danger).Build();
                 }
                 else
