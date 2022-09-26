@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrostBot", "JackFrostBot\FrostBot.csproj", "{04641D5B-F952-42B0-9AF8-24BADD7991D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShrineFox.IO", "..\ShrineFox.IO\ShrineFox.IO.csproj", "{7640412A-7372-4925-B20C-0178D8818A8F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShrineForm", "..\ShrineForm\ShrineForm.csproj", "{440E6330-938F-4500-AD07-4CEA58D50A84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{04641D5B-F952-42B0-9AF8-24BADD7991D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04641D5B-F952-42B0-9AF8-24BADD7991D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04641D5B-F952-42B0-9AF8-24BADD7991D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7640412A-7372-4925-B20C-0178D8818A8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7640412A-7372-4925-B20C-0178D8818A8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7640412A-7372-4925-B20C-0178D8818A8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7640412A-7372-4925-B20C-0178D8818A8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{440E6330-938F-4500-AD07-4CEA58D50A84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{440E6330-938F-4500-AD07-4CEA58D50A84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{440E6330-938F-4500-AD07-4CEA58D50A84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{440E6330-938F-4500-AD07-4CEA58D50A84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
