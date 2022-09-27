@@ -33,13 +33,32 @@ namespace FrostBot
 
             // Tasks
             client.Log += Log;
-            client.Ready += Ready;
-            commands.Log += LogCommands;
+            //client.Ready += Ready;
+            //commands.Log += LogCommands;
             // message edited
             // message deleted
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
+        }
+
+        private void LoadSettings(string[] args)
+        {
+            settings = new Settings();
+
+            // Get token from commandline args
+            if (args != null && args[0].Length == 70)
+                settings.Token = args[0];
+        }
+
+        private void SetupAppearance()
+        {
+            Console.OutputEncoding = System.Text.Encoding.Unicode;
+            Output.Logging = true;
+            Output.LogPath = "FrostBot_Log.txt";
+            #if DEBUG
+                Output.VerboseLogging = true;
+            #endif
         }
 
         private async Task ConnectBot()
@@ -48,11 +67,11 @@ namespace FrostBot
             client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 DefaultRetryMode = RetryMode.AlwaysRetry,
-                //GatewayIntents = GatewayIntents.All,
+                GatewayIntents = GatewayIntents.All,
                 #if DEBUG
-                    LogLevel = LogSeverity.Debug
+                    //LogLevel = LogSeverity.Debug,
                 #endif
-                //AlwaysDownloadUsers = true
+                AlwaysDownloadUsers = true
             });
             commands = new CommandService();
             services = new ServiceCollection()
@@ -69,7 +88,7 @@ namespace FrostBot
                 }
                 else
                 {
-                    Output.Log("Failed to connect. Please set bot token in settings.yml.", ConsoleColor.Red);
+                    Output.Log("Failed to connect. Please set bot token as first argument.", ConsoleColor.Red);
                     Console.ReadKey();
                     return;
                 }
@@ -82,35 +101,8 @@ namespace FrostBot
             }
         }
 
-        private void LoadSettings(string[] args)
-        {
-            // Get settings from config file (token etc.)
-            //Botsettings.Load();
-
-            settings = new Settings();
-
-            // Get token from commandline args
-            if (args != null && args[0].Length == 70)
-                settings.Token = args[0];
-        }
-
-        private void SetupAppearance()
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            #if DEBUG
-                Output.VerboseLogging = true;
-            #endif
-        }
-
-        private Task LogCommands(LogMessage arg)
-        {
-            Output.Log($"Message source: {arg.Source} ||| Severity: {arg.Severity} ||| Source message: {arg.Message} ||| Exception(if applicable): {arg.Exception}");
-            return Task.CompletedTask;
-        }
-
         private Task Ready()
         {
-            Output.Log("Ready", ConsoleColor.Green);
             return Task.CompletedTask;
         }
 
@@ -125,35 +117,29 @@ namespace FrostBot
         public async Task HandleCommand(SocketMessage messageParam)
         {
             // Ensure up-to-date settings are loaded
-            LoadSettings(new string[] { });
+            LoadSettings(new string[] { settings.Token });
 
             // Get message content and channel
             var message = messageParam as SocketUserMessage;
 
             // Stop processing if it's a system message
-            if (message == null) return;
-
-            var channel = (SocketGuildChannel)message.Channel;
-            var user = (IGuildUser)message.Author;
-            
-            //Process message...
-            await LogMessage(message);
-            await Phpbb.ForumUpdate(message, channel);
-
-            // Track where the prefix ends and the command begins
-            int argPos = 0;
-
+            if (message == null)
+                return;
             // Stop processing if user is a bot
             if (message.Author.IsBot)
                 return;
 
+            //Process message...
+            await LogMessage(message);
+            //await Phpbb.ForumUpdate(message, channel);
+
+            // Track where the prefix ends and the command begins
+            int argPos = 0;
             // Stop processing if no command character or user mention prefix
             if (!message.HasCharPrefix('?', ref argPos) && !message.HasMentionPrefix(client.CurrentUser, ref argPos))
                 return;
-
             // Create Command Context
             var context = new CommandContext(client, message);
-
             // Execute the command (result indicates if the command executed successfully)
             var result = await commands.ExecuteAsync(context, argPos, services);
             // Send error message unless command is unknown
@@ -163,36 +149,40 @@ namespace FrostBot
 
         private Task Log(LogMessage msg)
         {
-            Output.Log(msg.Message);
+            Output.Log(msg.Message, ConsoleColor.DarkGray);
+            if (msg.Exception != null)
+                LogException(msg.Exception);
 
             return Task.CompletedTask;
+        }
+
+        private void LogException(Exception exception)
+        {
+            if (exception.Message.Contains("WebSocket connection was closed"))
+                Output.Log("Connection was lost", ConsoleColor.Red);
+            else
+                Output.Log(exception.Message, ConsoleColor.Red);
         }
 
         public async Task LogMessage(SocketMessage message)
         {
             var user = (IGuildUser)message.Author;
-            string nickname = user.Nickname;
+            string nickname = user.DisplayName;
             var guild = user.Guild;
 
             //Create txt if it doesn't exist
             string path = Path.Combine(Exe.Directory(), $"Servers//{guild.Id}//Log.txt");
-            if (!File.Exists(path))
-            {
+            if (!Directory.Exists(Path.GetDirectoryName(path)))
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
-                File.Create(path);
-            }
 
             // Write timestamp, message, channel and username/nickname
             string timeStamp = DateTime.Now.ToString("hh: mm");
-            string logLine = "";
-            if (nickname != "")
-                logLine = $"<{timeStamp}> {nickname} ({user.Username}) in {guild.Name} #{message.Channel}: {message}";
-            else
-                logLine = $"<{timeStamp}> {nickname} ({user.Username}) in {guild.Name} #{message.Channel}: {message}";
+            string logLine = $"<{timeStamp}> {nickname} ({user.Username}#{user.Discriminator}) in \"{guild.Name}\" #{message.Channel}: {message}";
             // Include attachment URL
             if (message.Attachments.Count > 0)
-                logLine = logLine + message.Attachments.FirstOrDefault().Url;
+                logLine += "\n" + message.Attachments.FirstOrDefault().Url;
 
+            Console.WriteLine(logLine);
             File.AppendAllText(path, logLine + "\n");
 
             await Task.CompletedTask;

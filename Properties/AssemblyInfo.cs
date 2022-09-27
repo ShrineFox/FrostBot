@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("FrostBot")]
-[assembly: AssemblyDescription("Flexible Discord automation tool")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("ShrineFox")]
-[assembly: AssemblyProduct("JackFrostBot")]
-[assembly: AssemblyCopyright("Copyright ©  2018 - 2021")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("FrostBot")]
+[assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("04641d5b-f952-42b0-9af8-24badd7991d8")]
+[assembly: Guid("7889fbec-c7a3-411b-a22a-343e4d6135ec")]
 
 // Version information for an assembly consists of the following four values:
 //
