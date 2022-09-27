@@ -11,6 +11,8 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Discord.Net;
 using ShrineFox.IO;
+using System.Threading;
+using Discord.Interactions;
 
 namespace FrostBot
 {
@@ -19,6 +21,7 @@ namespace FrostBot
         public static CommandService commands;
         public static DiscordSocketClient client;
         private IServiceProvider services;
+        public static InteractionService interactions;
         public static Settings settings;
 
         public static void Main(string[] args)
@@ -28,19 +31,48 @@ namespace FrostBot
         {
             LoadSettings(args);
             SetupAppearance();
-
             await ConnectBot();
 
             // Tasks
             client.Log += Log;
-            //client.Ready += Ready;
+            client.Ready += Ready;
             //commands.Log += LogCommands;
+            client.SlashCommandExecuted += SlashCommandHandler;
+            //client.MessageCommandExecuted += MessageCommandHandler;
+            //client.UserCommandExecuted += UserCommandHandler;
             // message edited
             // message deleted
 
             // Block this task until the program is closed.
-            await Task.Delay(-1);
+            await Task.Delay(Timeout.Infinite);
         }
+
+        private async Task SlashCommandHandler(SocketSlashCommand command)
+        {
+            ulong guildId = command.GuildId ?? 0;
+            string location = "";
+            if (guildId != 0)
+            {
+                SocketGuild guild = client.GetGuild(guildId);
+                location = $"\"{guild.Name}\" #{command.Channel}";
+            }
+            else if (command.IsDMInteraction)
+                location = "DMs";
+            
+            Output.Log(LogString((IGuildUser)command.User, location, 
+                $"used Slash Command {command.CommandName}: {command.Data}"), ConsoleColor.Blue);
+            
+            await command.RespondAsync($"You executed {command.Data.Name}");
+        }
+
+        public async Task InstallCommands()
+        {
+            // Hook the MessageReceived Event into our Command Handler
+            client.MessageReceived += HandleCommand;
+            // Discover all of the commands in this assembly and load them.
+            await commands.AddModulesAsync(Assembly.GetExecutingAssembly(), services);
+        }
+
 
         private void LoadSettings(string[] args)
         {
@@ -76,6 +108,7 @@ namespace FrostBot
             commands = new CommandService();
             services = new ServiceCollection()
                 .BuildServiceProvider();
+            interactions = new InteractionService(client.Rest);
             await InstallCommands();
 
             // Attempt to connect
@@ -101,17 +134,50 @@ namespace FrostBot
             }
         }
 
-        private Task Ready()
+        private async Task Ready()
         {
-            return Task.CompletedTask;
+            await RegisterSlashCmds();
+            return;
         }
 
-        public async Task InstallCommands()
+        private async Task RegisterSlashCmds()
         {
-            // Hook the MessageReceived Event into our Command Handler
-            client.MessageReceived += HandleCommand;
-            // Discover all of the commands in this assembly and load them.
-            await commands.AddModulesAsync(Assembly.GetExecutingAssembly(), services);
+            foreach (var guild in client.Guilds)
+            {
+                var guildCommand = new SlashCommandBuilder();
+
+                // Note: Names have to be all lowercase and match the regular expression ^[\w-]{3,32}$
+                guildCommand.WithName("say");
+
+                // Descriptions can have a max length of 100.
+                guildCommand.WithDescription("This is my first guild slash command!");
+
+                // Let's do our global command
+                //var globalCommand = new SlashCommandBuilder();
+                //globalCommand.WithName("first-global-command");
+                //globalCommand.WithDescription("This is my first global slash command");
+
+                try
+                {
+                    // Now that we have our builder, we can call the CreateApplicationCommandAsync method to make our slash command.
+                    await guild.CreateApplicationCommandAsync(guildCommand.Build());
+
+                    // With global commands we don't need the guild.
+                    //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
+                    // Using the ready event is a simple implementation for the sake of the example. Suitable for testing and development.
+                    // For a production bot, it is recommended to only run the CreateGlobalApplicationCommandAsync() once for each command.
+
+                    Output.Log("Slash Commands have been registered.", ConsoleColor.Gray);
+                }
+                catch (HttpException exception)
+                {
+                    // If our command was invalid, we should catch an ApplicationCommandException. This exception contains the path of the error as well as the error message. You can serialize the Error field in the exception to get a visual of where your error is.
+                    //var json = JsonConvert.SerializeObject(exception.Error, Formatting.Indented);
+
+                    // You can send this error somewhere or just print it to the console, for this example we're just going to print it.
+                    Output.Log(exception.Message);
+                }
+            }
         }
 
         public async Task HandleCommand(SocketMessage messageParam)
@@ -125,13 +191,14 @@ namespace FrostBot
             // Stop processing if it's a system message
             if (message == null)
                 return;
-            // Stop processing if user is a bot
-            if (message.Author.IsBot)
-                return;
 
             //Process message...
             await LogMessage(message);
             //await Phpbb.ForumUpdate(message, channel);
+
+            // Stop processing if user is a bot
+            if (message.Author.IsBot)
+                return;
 
             // Track where the prefix ends and the command begins
             int argPos = 0;
@@ -159,34 +226,31 @@ namespace FrostBot
         private void LogException(Exception exception)
         {
             if (exception.Message.Contains("WebSocket connection was closed"))
-                Output.Log("Connection was lost", ConsoleColor.Red);
+                Output.Log("Connection Lost", ConsoleColor.Red);
             else
                 Output.Log(exception.Message, ConsoleColor.Red);
         }
 
         public async Task LogMessage(SocketMessage message)
         {
-            var user = (IGuildUser)message.Author;
-            string nickname = user.DisplayName;
-            var guild = user.Guild;
-
-            //Create txt if it doesn't exist
-            string path = Path.Combine(Exe.Directory(), $"Servers//{guild.Id}//Log.txt");
-            if (!Directory.Exists(Path.GetDirectoryName(path)))
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-
-            // Write timestamp, message, channel and username/nickname
-            string timeStamp = DateTime.Now.ToString("hh: mm");
-            string logLine = $"<{timeStamp}> {nickname} ({user.Username}#{user.Discriminator}) in \"{guild.Name}\" #{message.Channel}: {message}";
+            IGuildUser user = (IGuildUser)message.Author;
+            string logLine = LogString(user, $"\"{user.Guild.Name}\" #{message.Channel}", $": {message}");
             // Include attachment URL
             if (message.Attachments.Count > 0)
-                logLine += "\n" + message.Attachments.FirstOrDefault().Url;
-
-            Console.WriteLine(logLine);
-            File.AppendAllText(path, logLine + "\n");
+            {
+                logLine += "\n\tAttachments:";
+                foreach (var attachment in message.Attachments)
+                    logLine += $"\n\t\t{attachment.Url}";
+            }
+            Output.Log(logLine);
 
             await Task.CompletedTask;
             return;
+        }
+
+        public static string LogString(IGuildUser user, string location, string message)
+        {
+            return $"{user.DisplayName} ({user.Username}#{user.Discriminator}) in {location} {message}";
         }
     }
 }
