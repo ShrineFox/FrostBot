@@ -56,7 +56,7 @@ namespace FrostBot
                         desc: components.First(x => x.CustomId == "embed_desc").Value,
                         url: components.First(x => x.CustomId == "embed_url").Value,
                         imgUrl: components.First(x => x.CustomId == "embed_img").Value,
-                        hexColor: components.First(x => x.CustomId == "embed_color").Value
+                        color: Embeds.GetDiscordColor(components.First(x => x.CustomId == "embed_color").Value)
                         );
                     break;
                 case "embed_menu_author":
@@ -65,7 +65,7 @@ namespace FrostBot
                         desc: components.First(x => x.CustomId == "embed_desc").Value,
                         url: components.First(x => x.CustomId == "embed_url").Value,
                         imgUrl: components.First(x => x.CustomId == "embed_img").Value,
-                        hexColor: components.First(x => x.CustomId == "embed_color").Value,
+                        color: Embeds.GetDiscordColor(components.First(x => x.CustomId == "embed_color").Value),
                         authorName: modal.User.Username,
                         authorImgUrl: modal.User.GetAvatarUrl()
                         );

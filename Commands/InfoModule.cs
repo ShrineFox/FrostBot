@@ -42,7 +42,7 @@ namespace FrostBot
 
         [RequireContext(ContextType.Guild)]
         [SlashCommand("color", "Change your username color.")]
-        public async Task Color([Summary(description: "Existing color role to use.")] SocketRole role = null, 
+        public async Task Color([Summary(description: "Existing color role to use.")] SocketRole existingRole = null, 
             [Summary(description: "Name of the role to create.")] string colorName = "",
             [Summary(description: "RGB value in hex of the role color.")] string hexValue = "")
         {
@@ -53,29 +53,35 @@ namespace FrostBot
 
             if (String.IsNullOrEmpty(colorName) || String.IsNullOrEmpty(hexValue))
             {
-                if (role != null)
+                // If user chose an existing role...
+                if (existingRole != null)
                 {
                     // Ensure role doesn't have any permissions
-                    if (role.Name.StartsWith("Color: ") && role.Permissions.ToList().Count == 0)
+                    if (existingRole.Name.StartsWith("Color: ") && existingRole.Permissions.ToList().Count == 0)
                     {
-                        // Remove other color role user already has
-                        foreach (var userRole in user.Roles)
-                            if (userRole.Name.StartsWith("Color: "))
-                                await user.RemoveRoleAsync(userRole);
-                        // Grant new color role
-                        await user.AddRoleAsync(role);
+                        await Task.Run(async () =>
+                        {
+                            // Remove any other color role the user already has
+                            foreach (var userRole in user.Roles)
+                                if (userRole.Name.StartsWith("Color: "))
+                                    await user.RemoveRoleAsync(userRole);
+                            // Grant new color role to user
+                            await user.AddRoleAsync(existingRole);
+                        });
 
-                        await RespondAsync("­", new Embed[] { Embeds.Build(":tada: Joined Color Role", colorName, "#" + hexValue, hexColor: hexValue) },
+                        await RespondAsync("­", new Embed[] { Embeds.Build(existingRole.Color,
+                            $":art: Joined Color Role: {existingRole.Name.Replace("Color: ","")} (#{Embeds.GetHexColor(existingRole.Color)})",
+                            "Any other Color Roles you had previously have been removed." )},
                             ephemeral: true);
                     }
                     else
-                        await RespondAsync("­", new Embed[] { Embeds.Build(desc:
-                            $"Error: Could not assign role \"{role.Name}\", it is not a Color Role.", hexColor: "#FF0000") }, 
+                        await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
+                            ":warning: Error: Could not assign Role", $"Selected Role \"{existingRole.Name}\" is not a Color Role.")}, 
                             ephemeral: true);
                 }
                 else
-                    await RespondAsync("­", new Embed[] { Embeds.Build(desc:
-                        "Error: Could not create Color Role, missing required info (name/color value or role selection).", hexColor: "#FF0000") }, 
+                    await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
+                        $":warning: Error: Could not create Color Role", "Missing required input: name & hex value.")}, 
                         ephemeral: true);
             }
             else
@@ -83,21 +89,28 @@ namespace FrostBot
                 Color color = Embeds.GetDiscordColor(hexValue);
                 // Create color role
                 var colorRole = await Context.Guild.CreateRoleAsync($"Color: {colorName}", GuildPermissions.None, color);
-                // Reorder Color Roles by color value
-                var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => 
-                    System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
-                // Move to highest possible position before moderator roles
-                var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
-                foreach (var clrRole in orderedRoles)
-                    await clrRole.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
-                // Remove other color role user already has
-                foreach (var userRole in user.Roles)
-                    if (userRole.Name.StartsWith("Color: "))
-                        await user.RemoveRoleAsync(userRole);
-                // Grant new color role
-                await user.AddRoleAsync(colorRole);
 
-                await RespondAsync("­", new Embed[] { Embeds.Build(":tada: Created Color Role", colorName, "#" + hexValue, hexColor: hexValue) },
+                Task.Run(async () =>
+                {
+                    // Remove other color role user already has
+                    foreach (var userRole in user.Roles)
+                        if (userRole.Name.StartsWith("Color: "))
+                            await user.RemoveRoleAsync(userRole);
+                    // Grant new color role
+                    await user.AddRoleAsync(colorRole);
+
+                    // Reorder Color Roles by color value
+                    var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x => 
+                        System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
+                    // Move to highest possible position before moderator roles
+                    var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
+                    foreach (var clrRole in orderedRoles)
+                        await clrRole.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
+                });
+
+                await RespondAsync("­", new Embed[] { Embeds.Build(new Discord.Color(Embeds.GetRoleColor(colorRole)),
+                    $":art: Created Color Role: {colorName} (#{Embeds.GetHexColor(colorRole.Color)})", 
+                    "You have been assigned this role. Any other Color Roles you had previously have been removed.")},
                     ephemeral: true);
             }
         }

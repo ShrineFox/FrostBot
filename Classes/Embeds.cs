@@ -24,11 +24,16 @@ namespace FrostBot
 
         public static Discord.Color GetDiscordColor(string hexColor)
         {
-            return new Discord.Color(uint.Parse(hexColor.TrimStart('#').Substring(0,6), NumberStyles.HexNumber));
+            return new Discord.Color(uint.Parse(hexColor.TrimStart('#'), NumberStyles.HexNumber));
         }
 
-        public static Embed Build(string title = "", string desc = "", string foot = "", string url = "", 
-            string imgUrl = "", List<Tuple<string, string>> fields = null, string hexColor = "#0094FF",
+        public static string GetHexColor(Color color)
+        {
+            return color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+
+        public static Embed Build(Color color, string title = "", string desc = "", string foot = "", string url = "", 
+            string imgUrl = "", List<Tuple<string, string>> fields = null,
             string authorName = "", string authorUrl = "", string authorImgUrl = "")
         {
             var builder = new EmbedBuilder()
@@ -36,7 +41,7 @@ namespace FrostBot
             .WithDescription(desc)
             .WithFooter(foot)
             .WithUrl(url)
-            .WithColor(GetDiscordColor(hexColor))
+            .WithColor(color)
             .WithImageUrl(imgUrl)
             .WithAuthor(new EmbedAuthorBuilder() { Name = authorName, IconUrl = authorImgUrl, Url = authorUrl });
             if (fields != null)
