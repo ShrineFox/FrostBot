@@ -78,6 +78,7 @@ namespace FrostBot
     {
         public string Username { get; set; } = "";
         public string UserID { get; set; } = "";
+        public string Date { get; set; } = "";
         public string Reason { get; set; } = "";
         public string ModeratorName { get; set; } = "";
     }

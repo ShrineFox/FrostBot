@@ -228,6 +228,114 @@ namespace FrostBot
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.BanMembers)]
         [RequireBotPermission(GuildPermission.BanMembers)]
+        [SlashCommand("warn", "Warn a user.")]
+        public async Task WarnUser([Summary(description: "User to warn.")] SocketGuildUser user, string reason)
+        {
+            // Record warn in Settings
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+            Warn warn = new Warn { Username = user.Username, UserID = user.Id.ToString(), 
+                ModeratorName = Context.User.Username, Reason = reason, Date = DateTime.Now.ToString("MM/dd/yyyy") };
+            serverSettings.Warns.Add(warn);
+            Program.settings.Save();
+
+            // Notify user of warn
+            int warnCount = serverSettings.Warns.Where(x => x.UserID.Equals(user.Id.ToString())).Count();
+            string warnCountMsg = $"User has {warnCount} warn";
+            if (warnCount > 1)
+                warnCountMsg += "s";
+
+            await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
+                    desc: $":warning: Warn {user.Mention}: {reason}",
+                    foot: warnCountMsg));
+
+            // Penalize user according to settings
+            if (serverSettings.WarnOptions.TimeOutAfter != 0 && warnCount >= serverSettings.WarnOptions.TimeOutAfter)
+            {
+                if (serverSettings.WarnOptions.KickAfter != 0 && warnCount >= serverSettings.WarnOptions.KickAfter)
+                {
+                    if (serverSettings.WarnOptions.BanAfter != 0 && warnCount >= serverSettings.WarnOptions.BanAfter)
+                    {
+                        await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
+                            desc: $"\n:hammer: **Banned** automatically for accumulating {serverSettings.WarnOptions.KickAfter} or more warns."
+                            ));
+
+                        await user.Guild.AddBanAsync(user, 0, reason);
+                    }
+                    else
+                    {
+                        await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
+                            desc: $"\n:boot: **Kicked** automatically for accumulating {serverSettings.WarnOptions.KickAfter} or more warns."
+                            ));
+
+                        await user.KickAsync(reason);
+                    }
+                }
+                else
+                {
+                    await user.SetTimeOutAsync(new TimeSpan(0, serverSettings.WarnOptions.TimeOutLength, 0, 0));
+
+                    await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
+                        desc: $"\n:mute: **Muted** automatically for accumulating {serverSettings.WarnOptions.TimeOutAfter} or more warns."
+                        ));
+                }
+            }
+
+            // Notify moderator of successful action
+            await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                $"User has been warned successfully." )},
+                ephemeral: true);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("check-warns", "Display a list of a user's warns.")]
+        public async Task CheckWarns([Summary(description: "User whose warns to check.")] SocketGuildUser user = null)
+        {
+            List<Warn> warns = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).Warns;
+            if (user != null)
+                warns = warns.Where(x => x.UserID == user.Id.ToString()).ToList();
+            string warnsList = "";
+            for (int i = 0; i < warns.Count; i++)
+                warnsList += $"\n{i + 1}. {warns[i].Username}: {warns[i].Reason} ({warns[i].Date})";
+
+            if (warns.Count > 0)
+            {
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Red,
+                    $":warning: **Warns List**", warnsList )},
+                    ephemeral: true);
+            }
+            else
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Gold,
+                    desc: $":warning: Warning: No warns to list!" )},
+                    ephemeral: true);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("clear-warn", "Clear one of a user's warns.")]
+        public async Task CheckWarns([Summary(description: "Number of the warn to clear.")] int warnNumber, 
+            [Summary(description: "User whose warn to clear.")] SocketGuildUser user = null)
+        {
+            List<Warn> warns = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).Warns;
+            if (user != null)
+                warns = warns.Where(x => x.UserID == user.Id.ToString()).ToList();
+
+            if (warns.Count >= warnNumber)
+            {
+                Warn warn = warns[warnNumber - 1];
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).Warns.Remove(warn);
+                Program.settings.Save();
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    desc: $":ok_hand: **Warn Cleared**: {warn.Username}: {warn.Reason} ({warn.Date}" )},
+                    ephemeral: true);
+            }
+            else
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Red,
+                    desc: $":warning: Error: Could not find warn to clear!" )},
+                    ephemeral: true);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
         [SlashCommand("forum", "Make the bot sync the forum.")]
         public async Task ForumSync()
         {
