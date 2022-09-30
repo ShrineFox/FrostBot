@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ShrineFox.IO;
 using FrostBot;
+using System.Linq;
 
 namespace FrostBot
 {
@@ -15,6 +16,7 @@ namespace FrostBot
     {
         private readonly IServiceProvider _services;
         public static Settings settings;
+        public static string settingsPath = "_settings.json";
 
         private readonly DiscordSocketConfig _socketConfig = new DiscordSocketConfig()
         {
@@ -35,18 +37,19 @@ namespace FrostBot
         }
 
         static void Main(string[] args)
-            => new Program().RunAsync(args)
+            => new Program().RunAsync()
                 .GetAwaiter()
                 .GetResult();
 
-        public async Task RunAsync(string[] args)
+        public async Task RunAsync()
         {
             settings = new Settings();
-            settings.Load(args);
+            settings.Load(settingsPath);
 
             var client = _services.GetRequiredService<DiscordSocketClient>();
 
             client.Log += LogAsync;
+            client.Ready += ReadyAsync;
 
             // Here we can initialize the service that will register and execute our commands
             await _services.GetRequiredService<InteractionHandler>()
@@ -58,6 +61,44 @@ namespace FrostBot
 
             // Never quit the program until manually forced to.
             await Task.Delay(Timeout.Infinite);
+        }
+
+        private async Task ReadyAsync()
+        {
+            UpdateServerList();
+            await Task.CompletedTask;
+        }
+
+        private void UpdateServerList()
+        {
+            var client = _services.GetRequiredService<DiscordSocketClient>();
+
+            foreach (var server in client.Guilds)
+            {
+                if (settings.Servers.Any(x => x.ServerID.Equals(server.Id.ToString())))
+                {
+                    // Update server name
+                    settings.Servers.First(x => x.ServerID.Equals(server.Id.ToString())).ServerName = server.Name;
+                    Output.Log($"Server \"{server.Name}\" settings updated.", ConsoleColor.DarkGray);
+                }
+                else
+                {
+                    // Add server to settings
+                    settings.Servers.Add(new Server() { ServerID = server.Id.ToString(), ServerName = server.Name });
+                    Output.Log($"Server \"{server.Name}\" added to settings.", ConsoleColor.Green);
+                }
+            }
+
+            foreach (var server in settings.Servers)
+            {
+                if (!client.Guilds.Any(x => x.Id.ToString().Equals(server.ServerID)))
+                {
+                    settings.Servers.Remove(server);
+                    Output.Log($"Server \"{server.ServerName}\" not found, removed from settings.", ConsoleColor.Yellow);
+                }
+            }
+            Output.Log("Done updating server settings.", ConsoleColor.DarkGray);
+            settings.Save(settingsPath);
         }
 
         private async Task LogAsync(LogMessage message)
