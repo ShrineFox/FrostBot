@@ -334,6 +334,32 @@ namespace FrostBot
         }
 
         [RequireContext(ContextType.Guild)]
+        [MessageCommand("Pin to Channel")]
+        public async Task PinMessage(IMessage message)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+            if (serverSettings.PinChannel.ID != "")
+            {
+                var msgChannel = Context.Guild.GetTextChannel(message.Channel.Id);
+                var pinChannel = Context.Guild.GetTextChannel(Convert.ToUInt64(serverSettings.PinChannel.ID));
+
+                await pinChannel.SendMessageAsync(embed: Embeds.Build(Embeds.GetUsernameColor((SocketGuildUser)message.Author),
+                    title: $"#{msgChannel.Name} ({message.Timestamp.DateTime})",
+                    url: message.GetJumpUrl(),
+                    desc: message.Content,
+                    foot: $"Pinned by {Context.User.Username} on {DateTime.Now}",
+                    authorName: message.Author.Username,
+                    authorImgUrl: message.Author.GetAvatarUrl()));
+            }
+            else
+            {
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Red,
+                    desc: $":warning: **Error**: No pinned message channel set!" )},
+                    ephemeral: true);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.BanMembers)]
         [RequireBotPermission(GuildPermission.BanMembers)]
         [SlashCommand("forum", "Make the bot sync the forum.")]

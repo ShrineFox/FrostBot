@@ -11,6 +11,14 @@ namespace FrostBot
 {
     class Embeds
     {
+        public static uint GetUsernameColor(SocketGuildUser user)
+        {
+            var colorRoles = user.Roles.OrderBy(x => x.Position).Where(x => x.Color != new Discord.Color(0, 0, 0));
+            if (colorRoles.Count() > 0)
+                return GetRoleColor(colorRoles.FirstOrDefault());
+            else
+                return Color.Blue;
+        }
 
         public static uint GetRoleColor(SocketRole role)
         {

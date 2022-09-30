@@ -37,14 +37,21 @@ namespace FrostBot
         }
 
         static void Main(string[] args)
-            => new Program().RunAsync()
+            => new Program().RunAsync(args)
                 .GetAwaiter()
                 .GetResult();
 
-        public async Task RunAsync()
+        public async Task RunAsync(string[] args)
         {
             settings = new Settings();
-            settings.Load();
+            if (!IsDebug() || args.Length == 0)
+                settings.Load();
+            else
+            {
+                // Get token from commandline argument instead of loading settings file
+                settings.Token = args[0];
+                Output.Log("Got token from commandline args!", ConsoleColor.Green);
+            }
 
             var client = _services.GetRequiredService<DiscordSocketClient>();
 
@@ -66,6 +73,10 @@ namespace FrostBot
         private async Task ReadyAsync()
         {
             UpdateServerList();
+            if (IsDebug())
+            {
+                settings.Servers.First(x => x.ServerID.Equals("866656658774949898")).PinChannel = new Channel { ID = "866656775133593610", Name = "Pins" };
+            }
             await Task.CompletedTask;
         }
 
