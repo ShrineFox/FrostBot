@@ -90,7 +90,7 @@ namespace FrostBot
                 // Create color role
                 var colorRole = await Context.Guild.CreateRoleAsync($"Color: {colorName}", GuildPermissions.None, color);
 
-                Task.Run(async () =>
+                await Task.Run(async () =>
                 {
                     // Remove other color role user already has
                     foreach (var userRole in user.Roles)
@@ -111,8 +111,118 @@ namespace FrostBot
                 await RespondAsync("­", new Embed[] { Embeds.Build(new Discord.Color(Embeds.GetRoleColor(colorRole)),
                     $":art: Created Color Role: {colorName} (#{Embeds.GetHexColor(colorRole.Color)})", 
                     "You have been assigned this role. Any other Color Roles you had previously have been removed.")},
+                        ephemeral: true);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
+        [SlashCommand("add-joinable-role", "Add a role to the joinable roles list.")]
+        public async Task AddJoinableRole([Summary(description: "Existing role to make joinable.")] SocketRole existingRole)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+            
+            // Ensure role doesn't have admin permissions
+            if (!existingRole.Permissions.ToList().Any(x => 
+            x.Equals(GuildPermission.Administrator) || x.Equals(GuildPermission.ModerateMembers) || x.Equals(GuildPermission.BanMembers) || x.Equals(GuildPermission.KickMembers)))
+            {
+                if (!serverSettings.OptInRoles.Any(x => x.RoleID.Equals(existingRole.Id.ToString())))
+                {
+                    Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).OptInRoles.Add(new OptInRole { RoleID = existingRole.Id.ToString(), RoleName = existingRole.Name });
+                    Program.settings.Save();
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Role has been made joinable: {existingRole.Name}",
+                    "Selected Role has been added to the bot's server settings." )},
+                        ephemeral: true);
+                }
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
+                    ":warning: Warning: Role is already joinable", $"Selected Role \"{existingRole.Name}\" is present in the bot's server settings.")},
+                        ephemeral: true);
+            }
+            else
+                await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
+                    ":warning: Error: Could not make Role joinable", $"Selected Role \"{existingRole.Name}\" has administrative or moderation permissions (kick/ban/timeout).")},
+                        ephemeral: true);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
+        [SlashCommand("remove-joinable-role", "Remove a role from the joinable roles list.")]
+        public async Task RemoveJoinableRole([Summary(description: "Existing role to revoke from being joinable.")] SocketRole existingRole)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+
+            if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(existingRole.Id.ToString())))
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).OptInRoles.Remove(
+                    serverSettings.OptInRoles.First(x => x.RoleID.Equals(existingRole.Id.ToString())));
+                Program.settings.Save();
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                $":busts_in_silhouette: Joinable Role has been removed: {existingRole.Name}",
+                "Selected Role is no longer in the bot's server settings." )},
                     ephemeral: true);
             }
+            else
+                await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
+                ":warning: Warning: Role is already not joinable", $"Selected Role \"{existingRole.Name}\" is not present in the bot's server settings.")},
+                    ephemeral: true);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("join", "Join an opt-in role.")]
+        public async Task JoinRole([Summary(description: "Existing role to join.")] SocketRole role)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+            var user = (SocketGuildUser)Context.User;
+
+            if (!user.Roles.Any(x => x.Id.Equals(role.Id)))
+            {
+                if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(role.Id.ToString())))
+                {
+                    await user.AddRoleAsync(role);
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Joined Role: {role.Name}",
+                    $"Use ``/leave {role.Name}`` to remove the role if you change your mind." )},
+                        ephemeral: true);
+                }
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
+                    ":warning: Error: Role is not joinable", $"Selected Role \"{role.Name}\" is not in the list of joinable roles.")},
+                        ephemeral: true);
+            }
+            await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
+                ":warning: Warning: Role already joined", $"Selected Role \"{role.Name}\" is already one of your roles!")},
+                    ephemeral: true);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("leave", "Leave an opt-in role.")]
+        public async Task LeaveRole([Summary(description: "Existing role to leave.")] SocketRole role)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+            var user = (SocketGuildUser)Context.User;
+
+            if (user.Roles.Any(x => x.Id.Equals(role.Id)))
+            {
+                if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(role.Id.ToString())))
+                {
+                    await user.RemoveRoleAsync(role);
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Left Role: {role.Name}",
+                    $"Use ``/join {role.Name}`` to rejoin the role if you change your mind." )},
+                        ephemeral: true);
+                }
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
+                    ":warning: Error: Role is not opt-in", $"Selected Role \"{role.Name}\" is not in the list of joinable roles.")},
+                        ephemeral: true);
+            }
+            await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
+                ":warning: Warning: Role not present", $"Selected Role \"{role.Name}\" is not one of your roles!")},
+                    ephemeral: true);
         }
 
         [RequireContext(ContextType.Guild)]

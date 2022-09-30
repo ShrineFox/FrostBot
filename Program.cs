@@ -16,7 +16,7 @@ namespace FrostBot
     {
         private readonly IServiceProvider _services;
         public static Settings settings;
-        public static string settingsPath = "_settings.json";
+        public static string JsonPath = "_settings.json";
 
         private readonly DiscordSocketConfig _socketConfig = new DiscordSocketConfig()
         {
@@ -44,7 +44,7 @@ namespace FrostBot
         public async Task RunAsync()
         {
             settings = new Settings();
-            settings.Load(settingsPath);
+            settings.Load();
 
             var client = _services.GetRequiredService<DiscordSocketClient>();
 
@@ -98,7 +98,7 @@ namespace FrostBot
                 }
             }
             Output.Log("Done updating server settings.", ConsoleColor.DarkGray);
-            settings.Save(settingsPath);
+            settings.Save();
         }
 
         private async Task LogAsync(LogMessage message)
