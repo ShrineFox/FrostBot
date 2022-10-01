@@ -58,6 +58,7 @@ namespace FrostBot
                         imgUrl: components.First(x => x.CustomId == "embed_img").Value,
                         color: Embeds.GetDiscordColor(components.First(x => x.CustomId == "embed_color").Value)
                         );
+                    await modal.Channel.SendMessageAsync(text, false, embed, components: cmpnt, allowedMentions: mentions);
                     break;
                 case "embed_menu_author":
                     embed = Embeds.Build(
@@ -69,13 +70,29 @@ namespace FrostBot
                         authorName: modal.User.Username,
                         authorImgUrl: modal.User.GetAvatarUrl()
                         );
+                    await modal.Channel.SendMessageAsync(text, false, embed, components: cmpnt, allowedMentions: mentions);
+                    break;
+                case "report_menu":
+                    embed = Embeds.Build(
+                        title: "Report Details",
+                        desc: $"**Report Reason**: {components.First(x => x.CustomId == "report_reason").Value}" +
+                        $"\n**Action Requested:** {components.First(x => x.CustomId == "report_action").Value}" +
+                        $"\n**Followup**:{components.First(x => x.CustomId == "report_followup").Value}",
+                        color: Discord.Color.Blue,
+                        authorName: modal.User.Username,
+                        authorImgUrl: modal.User.GetAvatarUrl()
+                        );
+                    var guild = _client.Guilds.First(x => x.Id.Equals(modal.GuildId));
+                    Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(guild.Id.ToString()));
+                    var modChannel = guild.GetTextChannel(Convert.ToUInt64(serverSettings.ModMailChannel.ID));
+                    await modChannel.SendMessageAsync(text, false, embed, components: cmpnt, allowedMentions: mentions);
                     break;
                 default:
                     break;
             }
 
-            await modal.Channel.SendMessageAsync(text, false, embed, components: cmpnt, allowedMentions: mentions);
-            await modal.RespondAsync();
+            await modal.RespondAsync("", new Embed[] { Embeds.Build(Color.Blue, 
+                desc: "The info you entered has been sent successfully.") }, ephemeral: true);
         }
 
         private async Task LogAsync(LogMessage log)

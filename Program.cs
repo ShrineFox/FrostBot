@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ShrineFox.IO;
 using FrostBot;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace FrostBot
 {
@@ -20,7 +21,7 @@ namespace FrostBot
 
         private readonly DiscordSocketConfig _socketConfig = new DiscordSocketConfig()
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers,
+            GatewayIntents = GatewayIntents.All,
             AlwaysDownloadUsers = true,
         };
 
@@ -57,6 +58,7 @@ namespace FrostBot
 
             client.Log += LogAsync;
             client.Ready += ReadyAsync;
+            client.MessageReceived += MsgReceivedAsync;
 
             // Here we can initialize the service that will register and execute our commands
             await _services.GetRequiredService<InteractionHandler>()
@@ -70,12 +72,29 @@ namespace FrostBot
             await Task.Delay(Timeout.Infinite);
         }
 
+        private Task MsgReceivedAsync(SocketMessage message)
+        {
+            var user = (IGuildUser)message.Author;
+            string text = message.Content;
+            foreach (var embed in message.Embeds)
+                text += $"\nEmbed: {JsonConvert.SerializeObject(embed)}";
+            foreach (var attachment in message.Attachments)
+                text += $"\nAttachment: {JsonConvert.SerializeObject(attachment)}";
+            foreach (var sticker in message.Stickers)
+                text += $"\nSticker: {JsonConvert.SerializeObject(sticker)}";
+
+            Output.Log($"{user.DisplayName} ({user.Id}) in {user.Guild.Name} #{message.Channel}: {text}");
+
+            return Task.CompletedTask;
+        }
+
         private async Task ReadyAsync()
         {
             UpdateServerList();
             if (IsDebug())
             {
                 settings.Servers.First(x => x.ServerID.Equals("866656658774949898")).PinChannel = new Channel { ID = "866656775133593610", Name = "Pins" };
+                settings.Servers.First(x => x.ServerID.Equals("866656658774949898")).ModMailChannel = new Channel { ID = "1017200068480204880", Name = "ModMail" };
             }
             await Task.CompletedTask;
         }

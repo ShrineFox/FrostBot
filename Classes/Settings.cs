@@ -52,6 +52,7 @@ namespace FrostBot
         public string ServerName { get; set; } = "";
         public string ServerID { get; set; } = "";
         public Channel BotLogChannel { get; set; } = new Channel();
+        public Channel ModMailChannel { get; set; } = new Channel();
         public Channel PinChannel { get; set; } = new Channel();
         public WarnSettings WarnOptions { get; set; } = new WarnSettings();
         public List<OptInRole> OptInRoles { get; set; } = new List<OptInRole>();

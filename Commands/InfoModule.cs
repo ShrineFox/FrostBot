@@ -360,6 +360,42 @@ namespace FrostBot
         }
 
         [RequireContext(ContextType.Guild)]
+        [MessageCommand("Report Message to Mods")]
+        public async Task ReportMessage(IMessage message)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+
+            if (serverSettings.ModMailChannel.ID != "")
+            {
+                var msgChannel = Context.Guild.GetTextChannel(message.Channel.Id);
+                var modChannel = Context.Guild.GetTextChannel(Convert.ToUInt64(serverSettings.ModMailChannel.ID));
+
+                var mb = new ModalBuilder()
+                .WithTitle("Report Message to Mods")
+                .WithCustomId("report_menu")
+                .AddTextInput("Reason for report", "report_reason", TextInputStyle.Paragraph)
+                .AddTextInput("Action you'd like taken", "report_action", TextInputStyle.Paragraph, required: false)
+                .AddTextInput("Want a mod to follow up with you?", "report_followup", required: false);
+
+                await modChannel.SendMessageAsync(embed: Embeds.Build(Discord.Color.Red,
+                    title: $"Post Reported: #{msgChannel.Name} ({message.Timestamp.DateTime})",
+                    url: message.GetJumpUrl(),
+                    desc: message.Content,
+                    foot: $"Reported by {Context.User.Username} on {DateTime.Now}",
+                    authorName: message.Author.Username,
+                    authorImgUrl: message.Author.GetAvatarUrl()));
+
+                await Context.Interaction.RespondWithModalAsync(mb.Build());
+            }
+            else
+            {
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Red,
+                    desc: $":warning: **Error**: No mod mail channel set!" )},
+                    ephemeral: true);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.BanMembers)]
         [RequireBotPermission(GuildPermission.BanMembers)]
         [SlashCommand("forum", "Make the bot sync the forum.")]
