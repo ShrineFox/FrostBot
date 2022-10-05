@@ -105,11 +105,16 @@ namespace FrostBot
         {
             // Context & Slash commands can be automatically registered, but this process needs to happen after the client enters the READY state.
             // Since Global Commands take around 1 hour to register, we should use a test guild to instantly update and test our commands.
-#if DEBUG
-            await _handler.RegisterCommandsToGuildAsync(866656658774949898, true);
-#else
+            foreach (var server in Program.settings.Servers)
+            {
+                await _handler.RegisterCommandsToGuildAsync(Convert.ToUInt64(server.ServerID), true);
+                Output.Log($"Registered commands in server \"{server.ServerName}\".", ConsoleColor.Green);
+#if !DEBUG
             await _handler.RegisterCommandsGloballyAsync(true);
+            Output.Log($"Registered commands globally.", Color.Green);
 #endif
+            }
+
         }
 
         private async Task HandleInteraction(SocketInteraction interaction)

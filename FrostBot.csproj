@@ -127,6 +127,7 @@
     <Compile Include="Classes\Phpbb.cs" />
     <Compile Include="Commands\InfoModule.cs" />
     <Compile Include="Commands\InteractionHandler.cs" />
+    <Compile Include="Events.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Classes\Settings.cs" />

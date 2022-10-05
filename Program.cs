@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 
 namespace FrostBot
 {
-    public class Program
+    public partial class Program
     {
         private readonly IServiceProvider _services;
         public static Settings settings;
@@ -45,9 +45,8 @@ namespace FrostBot
         public async Task RunAsync(string[] args)
         {
             settings = new Settings();
-            if (!IsDebug() || args.Length == 0)
-                settings.Load();
-            else
+            settings.Load();
+            if (args.Length > 0 && args[0] != "")
             {
                 // Get token from commandline argument instead of loading settings file
                 settings.Token = args[0];
@@ -59,6 +58,29 @@ namespace FrostBot
             client.Log += LogAsync;
             client.Ready += ReadyAsync;
             client.MessageReceived += MsgReceivedAsync;
+            client.ApplicationCommandCreated += AppCmdCreated;
+            client.ApplicationCommandDeleted += AppCmdDeleted;
+            client.ApplicationCommandUpdated += AppCmdUpdated;
+            client.GuildUnavailable += GuildUnavailable;
+            client.GuildAvailable += GuildAvailable;
+            client.InteractionCreated += InteractionCreated;
+            client.ReactionAdded += ReactionAdded;
+            client.ReactionRemoved += ReactionRemoved;
+            client.UserJoined += UserJoined;
+            client.UserLeft += UserLeft;
+            client.JoinedGuild += JoinedGuild;
+            client.LeftGuild += LeftGuild;
+            client.MessageDeleted += MessageDeleted;
+            client.MessageUpdated += MessageUpdated;
+            client.SlashCommandExecuted += SlashCommandExecuted;
+            client.UserCommandExecuted += UsercommandExecuted;
+            client.MessageCommandExecuted += MessageCommandExecuted;
+            client.ThreadCreated += ThreadCreated;
+            client.ThreadDeleted += ThreadDeleted;
+            client.ThreadUpdated += ThreadUpdated;
+            client.ChannelCreated += ChannelCreated;
+            client.ChannelDestroyed += ChannelDestroyed;
+            client.ChannelUpdated += ChannelUpdated;
 
             // Here we can initialize the service that will register and execute our commands
             await _services.GetRequiredService<InteractionHandler>()
@@ -72,9 +94,8 @@ namespace FrostBot
             await Task.Delay(Timeout.Infinite);
         }
 
-        private Task MsgReceivedAsync(SocketMessage message)
+        private string GetMessageContents(IMessage message)
         {
-            var user = (IGuildUser)message.Author;
             string text = message.Content;
             foreach (var embed in message.Embeds)
                 text += $"\nEmbed: {JsonConvert.SerializeObject(embed)}";
@@ -82,21 +103,7 @@ namespace FrostBot
                 text += $"\nAttachment: {JsonConvert.SerializeObject(attachment)}";
             foreach (var sticker in message.Stickers)
                 text += $"\nSticker: {JsonConvert.SerializeObject(sticker)}";
-
-            Output.Log($"{user.DisplayName} ({user.Id}) in {user.Guild.Name} #{message.Channel}: {text}");
-
-            return Task.CompletedTask;
-        }
-
-        private async Task ReadyAsync()
-        {
-            UpdateServerList();
-            if (IsDebug())
-            {
-                settings.Servers.First(x => x.ServerID.Equals("866656658774949898")).PinChannel = new Channel { ID = "866656775133593610", Name = "Pins" };
-                settings.Servers.First(x => x.ServerID.Equals("866656658774949898")).ModMailChannel = new Channel { ID = "1017200068480204880", Name = "ModMail" };
-            }
-            await Task.CompletedTask;
+            return text;
         }
 
         private void UpdateServerList()
@@ -129,12 +136,6 @@ namespace FrostBot
             }
             Output.Log("Done updating server settings.", ConsoleColor.DarkGray);
             settings.Save();
-        }
-
-        private async Task LogAsync(LogMessage message)
-        {
-            Output.Log(message.ToString(), ConsoleColor.DarkGray);
-            await Task.CompletedTask;
         }
 
         public static bool IsDebug()

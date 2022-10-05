@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using ShrineFox.IO;
 
 namespace FrostBot
 {
@@ -14,10 +15,61 @@ namespace FrostBot
         public InteractionService Commands { get; set; }
 
         [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
         [SlashCommand("say", "Repeat a message.")]
         public async Task Say([Summary(description: "Text to repeat.")] string text)
         {
             await ReplyAsync(text);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
+        [SlashCommand("delete", "Deletes a set of messages in the channel.")]
+        public async Task Delete([Summary(description: "ID of first message to delete.")] string startMessageID,
+            [Summary(description: "ID of last message to delete.")] string endMessageID = "", 
+            [Summary(description: "Author of the messages to delete.")] IGuildUser author = null,
+            [Summary(description: "Number of messages to delete.")] int numberToDelete = 100)
+        {
+            if (numberToDelete > 500)
+                await RespondAsync($"Choose a number less than 500 of messages to delete.", ephemeral: true);
+
+            var messages = await Context.Channel.GetMessagesAsync(numberToDelete).FlattenAsync();
+            var msgs = messages.Reverse().ToArray();
+
+            Output.Log($"Downloaded {msgs.Count()} messages.");
+
+            bool foundStartMsg = false;
+            bool foundEndMsg = false;
+            int deletedMessages = 0;
+
+            for (int i = 0; i < msgs.Count(); i++)
+            {
+                if (msgs[i].Id == Convert.ToUInt64(startMessageID))
+                {
+                    Output.Log($"Found start message: {startMessageID}");
+                    foundStartMsg = true;
+                }
+
+                if (foundStartMsg && !foundEndMsg)
+                {
+                    if (author == null || msgs[i].Author.Id == author.Id)
+                    {
+                        Output.Log($"Deleted message from {msgs[i].Author.Username} in \"{Context.Guild.Name}\" #{Context.Channel.Name}: " + msgs[i].Content, ConsoleColor.Red);
+                        await msgs[i].DeleteAsync();
+                        deletedMessages++;
+                    }
+                }
+
+                if (endMessageID != "")
+                    if (msgs[i].Id == Convert.ToUInt64(endMessageID))
+                    {
+                        Output.Log($"Found end message: {endMessageID}");
+                        foundEndMsg = true;
+                    }
+            }
+            await RespondAsync($":ok_hand: Deleted {deletedMessages} messages.", ephemeral: true);
         }
 
         [RequireContext(ContextType.Guild)]
@@ -310,6 +362,8 @@ namespace FrostBot
         }
 
         [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
         [SlashCommand("clear-warn", "Clear one of a user's warns.")]
         public async Task CheckWarns([Summary(description: "Number of the warn to clear.")] int warnNumber, 
             [Summary(description: "User whose warn to clear.")] SocketGuildUser user = null)
@@ -360,7 +414,7 @@ namespace FrostBot
         }
 
         [RequireContext(ContextType.Guild)]
-        [MessageCommand("Report Message to Mods")]
+        [MessageCommand("Report Message")]
         public async Task ReportMessage(IMessage message)
         {
             Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
