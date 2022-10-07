@@ -32,7 +32,10 @@ namespace FrostBot
 
         public static Discord.Color GetDiscordColor(string hexColor)
         {
-            return new Discord.Color(uint.Parse(hexColor.TrimStart('#'), NumberStyles.HexNumber));
+            var color = new Discord.Color(uint.Parse(hexColor.TrimStart('#'), NumberStyles.HexNumber));
+            if (color == null)
+                color = Color.Blue;
+            return color;
         }
 
         public static string GetHexColor(Color color)
