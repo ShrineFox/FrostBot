@@ -9,8 +9,6 @@ namespace FrostBot
 {
     public class Settings
     {
-        
-
         public string Token { get; set; } = "";
 
         public List<Server> Servers { get; set; } = new List<Server>();
@@ -54,6 +52,8 @@ namespace FrostBot
         public Channel BotLogChannel { get; set; } = new Channel();
         public Channel ModMailChannel { get; set; } = new Channel();
         public Channel PinChannel { get; set; } = new Channel();
+        public Channel AutoMarkovChannel { get; set; } = new Channel();
+        public int AutoMarkovRate { get; set; } = 0;
         public WarnSettings WarnOptions { get; set; } = new WarnSettings();
         public List<OptInRole> OptInRoles { get; set; } = new List<OptInRole>();
         public List<Warn> Warns { get; set; } = new List<Warn>();
