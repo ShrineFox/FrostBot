@@ -54,13 +54,10 @@ namespace FrostBot
         public Channel PinChannel { get; set; } = new Channel();
         public Channel AutoMarkovChannel { get; set; } = new Channel();
         public int AutoMarkovRate { get; set; } = 0;
+        public int AutoMarkovLength { get; set; } = 10;
         public WarnSettings WarnOptions { get; set; } = new WarnSettings();
         public List<OptInRole> OptInRoles { get; set; } = new List<OptInRole>();
         public List<Warn> Warns { get; set; } = new List<Warn>();
-        public string ForumURL { get; set; } = "";
-        public string ForumUserName { get; set; } = "";
-        public string ForumUserPassword { get; set; } = "";
-        public List<ForumChannel> ForumChannelIds { get; set; } = new List<ForumChannel>();
     }
 
     public class Channel
@@ -90,27 +87,5 @@ namespace FrostBot
         public string Date { get; set; } = "";
         public string Reason { get; set; } = "";
         public string ModeratorName { get; set; } = "";
-    }
-
-    public class ForumChannel
-    {
-        public string ChannelID { get; set; } = "";
-        public string PhpbbForumID { get; set; } = "";
-        public List<ForumThread> ThreadCache { get; set; } = new List<ForumThread>();
-    }
-
-    public class ForumThread
-    {
-        public string ThreadURL { get; set; } = "";
-        public string ChannelThreadID { get; set; } = "";
-        public List<ForumPost> ThreadPosts {get; set;} = new List<ForumPost>();
-    }
-
-    public class ForumPost
-    {
-        public string PostAuthor { get; set; } = "";
-        public string PostAuthorURL { get; set; } = "";
-        public string MessageContents { get; set; } = "";
-        public string ChannelMessageID { get; set; } = "";
     }
 }

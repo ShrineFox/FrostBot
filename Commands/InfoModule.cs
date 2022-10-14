@@ -19,7 +19,7 @@ namespace FrostBot
         {
             [RequireContext(ContextType.Guild)]
             [SlashCommand("color", "Change your username color.")]
-            public async Task SetColor([Summary(description: "Existing color role to use.")] SocketRole existingRole = null,
+            public async Task SetColor([Summary(description: "Existing color role to use.")] SocketRole role = null,
             [Summary(description: "Name of the role to create.")] string colorName = "",
             [Summary(description: "RGB value in hex of the role color.")] string hexValue = "")
             {
@@ -31,10 +31,10 @@ namespace FrostBot
                 if (String.IsNullOrEmpty(colorName) || String.IsNullOrEmpty(hexValue))
                 {
                     // If user chose an existing role...
-                    if (existingRole != null)
+                    if (role != null)
                     {
                         // Ensure role doesn't have any permissions
-                        if (existingRole.Name.StartsWith("Color: ") && existingRole.Permissions.ToList().Count == 0)
+                        if (role.Name.StartsWith("Color: ") && role.Permissions.ToList().Count == 0)
                         {
                             await Task.Run(async () =>
                             {
@@ -43,17 +43,17 @@ namespace FrostBot
                                     if (userRole.Name.StartsWith("Color: "))
                                         await user.RemoveRoleAsync(userRole);
                                 // Grant new color role to user
-                                await user.AddRoleAsync(existingRole);
+                                await user.AddRoleAsync(role);
                             });
-
-                            await RespondAsync("­", new Embed[] { Embeds.Build(existingRole.Color,
-                            $":art: Joined Color Role: {existingRole.Name.Replace("Color: ","")} (#{Embeds.GetHexColor(existingRole.Color)})",
+                            await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Changed username color** using the role: {role.Name} (#{Embeds.GetHexColor(role.Color)})", role.Color, Context.User);
+                            await RespondAsync("­", new Embed[] { Embeds.Build(role.Color,
+                            $":art: Joined Color Role: {role.Name.Replace("Color: ","")} (#{Embeds.GetHexColor(role.Color)})",
                             "Any other Color Roles you had previously have been removed." )},
                                 ephemeral: true);
                         }
                         else
                             await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
-                            ":warning: Error: Could not assign Role", $"Selected Role \"{existingRole.Name}\" is not a Color Role.")},
+                            ":warning: Error: Could not assign Role", $"Selected Role \"{role.Name}\" is not a Color Role.")},
                                 ephemeral: true);
                     }
                     else
@@ -76,6 +76,8 @@ namespace FrostBot
                         // Grant new color role
                         await user.AddRoleAsync(colorRole);
 
+                        await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Created a username color role**: {colorRole.Name} (#{Embeds.GetHexColor(colorRole.Color)})", colorRole.Color, Context.User);
+
                         // Reorder Color Roles by color value
                         var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x =>
                             System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
@@ -96,31 +98,32 @@ namespace FrostBot
             [RequireUserPermission(GuildPermission.BanMembers)]
             [RequireBotPermission(GuildPermission.BanMembers)]
             [SlashCommand("joinable-role", "Add a role to the joinable roles list.")]
-            public async Task SetJoinableRole([Summary(description: "Existing role to make joinable.")] SocketRole existingRole)
+            public async Task SetJoinableRole([Summary(description: "Existing role to make joinable.")] SocketRole role)
             {
                 Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
 
                 // Ensure role doesn't have admin permissions
-                if (!existingRole.Permissions.ToList().Any(x =>
+                if (!role.Permissions.ToList().Any(x =>
                 x.Equals(GuildPermission.Administrator) || x.Equals(GuildPermission.ModerateMembers) || x.Equals(GuildPermission.BanMembers) || x.Equals(GuildPermission.KickMembers)))
                 {
-                    if (!serverSettings.OptInRoles.Any(x => x.RoleID.Equals(existingRole.Id.ToString())))
+                    if (!serverSettings.OptInRoles.Any(x => x.RoleID.Equals(role.Id.ToString())))
                     {
-                        Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).OptInRoles.Add(new OptInRole { RoleID = existingRole.Id.ToString(), RoleName = existingRole.Name });
+                        Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).OptInRoles.Add(new OptInRole { RoleID = role.Id.ToString(), RoleName = role.Name });
                         Program.settings.Save();
+                        await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **{role.Name} added as Joinable Role**", Color.Green, Context.User);
                         await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
-                    $":busts_in_silhouette: Role has been made joinable: {existingRole.Name}",
+                    $":busts_in_silhouette: Role has been made joinable: {role.Name}",
                     "Selected Role has been added to the bot's server settings." )},
                             ephemeral: true);
                     }
                     else
                         await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
-                    ":warning: Warning: Role is already joinable", $"Selected Role \"{existingRole.Name}\" is present in the bot's server settings.")},
+                    ":warning: Warning: Role is already joinable", $"Selected Role \"{role.Name}\" is present in the bot's server settings.")},
                             ephemeral: true);
                 }
                 else
                     await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Red,
-                    ":warning: Error: Could not make Role joinable", $"Selected Role \"{existingRole.Name}\" has administrative or moderation permissions (kick/ban/timeout).")},
+                    ":warning: Error: Could not make Role joinable", $"Selected Role \"{role.Name}\" has administrative or moderation permissions (kick/ban/timeout).")},
                             ephemeral: true);
             }
 
@@ -172,32 +175,89 @@ namespace FrostBot
                 if (percentChance < 0)
                     percentChance = 0;
 
-                await SetInt("AutoMarkovRate", percentChance);
-            }
-
-            private async Task SetInt(string settingName, int value)
-            {
-                Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
-                int currentValue = (int)serverSettings.GetType().GetProperty(settingName).GetValue(serverSettings, null);
-
-                serverSettings.GetType().GetProperty(settingName).SetValue(serverSettings, value);
-                for (int i = 0; i < Program.settings.Servers.Count; i++)
-                    if (Program.settings.Servers[i].ServerID == serverSettings.ServerID)
-                        Program.settings.Servers[i] = serverSettings; Program.settings.Save();
-
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).AutoMarkovRate = percentChance;
                 Program.settings.Save();
+
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **AutoMarkov Rate Set** to: {percentChance}%", Color.Green, Context.User);
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
-                    $":busts_in_silhouette: {settingName} has been set to: {value}" )},
+                    $":busts_in_silhouette: AutoMarkov Rate has been set to: {percentChance}%" )},
                     ephemeral: true);
             }
 
             [RequireContext(ContextType.Guild)]
             [RequireUserPermission(GuildPermission.BanMembers)]
             [RequireBotPermission(GuildPermission.BanMembers)]
-            [SlashCommand("automarkov-length", "Minimum number of characters randomized messages should be.")]
-            public async Task SetAutoMarkovRate([Summary(description: "Existing channel to send randomized messages to.")] SocketChannel channel)
+            [SlashCommand("automarkov-length", "Set minimum number of characters randomized messages should be.")]
+            public async Task SetAutoMarkovLength([Summary(description: "Number of characters that should be in random response.")] int chars)
             {
-                await SetChannel("AutoMarkovChannel", channel.Id.ToString());
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).AutoMarkovLength = chars;
+                Program.settings.Save();
+
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Default Length of Auto-Markov Set** to: {chars} characters", Color.Green, Context.User);
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: AutoMarkov Message Length has been set to: {chars} characters" )},
+                    ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("timeout-after", "Set the number of warns required before bot will time a user out.")]
+            public async Task SetTimeOutAfter([Summary(description: "Number of warns required to automatically time out a user.")] int warns)
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.TimeOutAfter = warns;
+                Program.settings.Save();
+
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Timeout Set** to: {warns}", Color.Green, Context.User);
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Users will be timed out after receiving {warns} warn(s)." )},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("timeout-length", "Set how long an automatic timeout should last.")]
+            public async Task SetTimeOutLength([Summary(description: "Length of automatic timeout.")] int minutes)
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.TimeOutLength = minutes;
+                Program.settings.Save();
+
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Length of Auto-Timeout Set** to: {minutes} minutes", Color.Green, Context.User);
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Users will be timed out for: {minutes} minutes." )},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("kick-after", "Set number of warns required before bot will kick a user.")]
+            public async Task SetKickAfter([Summary(description: "Number of warns required to automatically kick a user.")] int warns)
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.KickAfter = warns;
+                Program.settings.Save();
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Kick Set** to: {warns}", Color.Green, Context.User);
+
+
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Users will be kicked after receiving {warns} warn(s)." )},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("ban-after", "Set number of warns required before bot will ban a user.")]
+            public async Task SetBanAfter([Summary(description: "Number of warns required to auto-ban a user.")] int warns)
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.BanAfter = warns;
+                Program.settings.Save();
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Ban Set** to: {warns}", Color.Green, Context.User);
+
+                await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Users will be banned after receiving {warns} warn(s)." )},
+                        ephemeral: true);
             }
 
             private async Task SetChannel(string settingName, string value)
@@ -212,6 +272,8 @@ namespace FrostBot
                             Program.settings.Servers[i] = serverSettings;
 
                     Program.settings.Save();
+                    await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **{settingName} Set** to: {value}", Color.Green, Context.User);
+
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: {settingName} has been set: {value}" )},
                         ephemeral: true);
@@ -232,23 +294,24 @@ namespace FrostBot
             [RequireUserPermission(GuildPermission.BanMembers)]
             [RequireBotPermission(GuildPermission.BanMembers)]
             [SlashCommand("joinable-role", "Remove a role from the joinable roles list.")]
-            public async Task UnsetJoinableRole([Summary(description: "Existing role to revoke from being joinable.")] SocketRole existingRole)
+            public async Task UnsetJoinableRole([Summary(description: "Existing role to revoke from being joinable.")] SocketRole role)
             {
                 Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
 
-                if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(existingRole.Id.ToString())))
+                if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(role.Id.ToString())))
                 {
                     Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).OptInRoles.Remove(
-                        serverSettings.OptInRoles.First(x => x.RoleID.Equals(existingRole.Id.ToString())));
+                        serverSettings.OptInRoles.First(x => x.RoleID.Equals(role.Id.ToString())));
                     Program.settings.Save();
+                    await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **{role.Name} Removed as Joinable Role**", Color.Gold, Context.User);
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
-                $":busts_in_silhouette: Joinable Role has been removed: {existingRole.Name}",
+                $":busts_in_silhouette: Joinable Role has been removed: {role.Name}",
                 "Selected Role is no longer in the bot's server settings." )},
                         ephemeral: true);
                 }
                 else
                     await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
-                ":warning: Warning: Role is already not joinable", $"Selected Role \"{existingRole.Name}\" is not present in the bot's server settings.")},
+                ":warning: Warning: Role is already not joinable", $"Selected Role \"{role.Name}\" is not present in the bot's server settings.")},
                         ephemeral: true);
             }
 
@@ -282,7 +345,7 @@ namespace FrostBot
             [RequireContext(ContextType.Guild)]
             [RequireUserPermission(GuildPermission.BanMembers)]
             [RequireBotPermission(GuildPermission.BanMembers)]
-            [SlashCommand("modmail-channel", "Unlink channel where bot replies with randomized messages.")]
+            [SlashCommand("automarkov-channel", "Unlink channel where bot replies with randomized messages.")]
             public async Task UnsetAutoMarkovChannel()
             {
                 await UnsetChannel("AutoMarkovChannel");
@@ -300,6 +363,7 @@ namespace FrostBot
                             Program.settings.Servers[i] = serverSettings;
                     Program.settings.Save();
 
+                    await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **{settingName} Unset**", Color.Green, Context.User);
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: {settingName} has been unset." )},
                         ephemeral: true);
@@ -341,21 +405,86 @@ namespace FrostBot
             [RequireContext(ContextType.Guild)]
             [RequireUserPermission(GuildPermission.BanMembers)]
             [RequireBotPermission(GuildPermission.BanMembers)]
-            [SlashCommand("int", "Show the value of an int from the bot's settings.")]
-            public async Task CheckIntCmd([Summary(description: "Name of the int to check.")] string intName)
-            {
-                await CheckInt(intName);
-            }
-
-            private async Task CheckInt(string settingName)
+            [SlashCommand("markovrate", "Return current percentage chance bot will randomly reply in Auto-Markov channel.")]
+            public async Task CheckMarkovRate()
             {
                 Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
-                int currentValue = (int)serverSettings.GetType().GetProperty(settingName).GetValue(serverSettings, null);
 
-                Program.settings.Save();
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
-                    $":busts_in_silhouette: {settingName} is currently set to: {currentValue}" )},
-                    ephemeral: true);
+                    $":busts_in_silhouette: There is a {serverSettings.AutoMarkovRate}% chance of a random reply." )},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("timeout-after", "Return number of warns required before bot will time a user out.")]
+            public async Task CheckTimeOutAfter()
+            {
+                Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+
+                if (serverSettings.WarnOptions.TimeOutAfter > 0)
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Users will be timed out after receiving {serverSettings.WarnOptions.TimeOutAfter} warn(s)." )},
+                        ephemeral: true);
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Gold,
+                        $":busts_in_silhouette: Users won't be automatically timed out after receiving warns because this is set to 0." )},
+                            ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("timeout-length", "Return how long an automatic timeout is set to last.")]
+            public async Task CheckTimeOutLength()
+            {
+                Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+
+                if (serverSettings.WarnOptions.TimeOutLength > 0)
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                    $":busts_in_silhouette: Users will be timed out for: {serverSettings.WarnOptions.TimeOutLength} minutes." )},
+                        ephemeral: true);
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Gold,
+                        $":busts_in_silhouette: Users won't be automatically timed out after receiving warns because this is set to 0." )},
+                            ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("kick-after", "Return number of warns required before bot will kick a user.")]
+            public async Task CheckKickAfter()
+            {
+                Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+                
+                if (serverSettings.WarnOptions.KickAfter > 0)
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                        $":busts_in_silhouette: Users will be kicked after receiving {serverSettings.WarnOptions.KickAfter} warn(s)." )},
+                            ephemeral: true);
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Gold,
+                        $":busts_in_silhouette: Users won't be auto-kicked after receiving warns because this is set to 0." )},
+                            ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("ban-after", "Return number of warns required before bot will ban a user.")]
+            public async Task CheckBanAfter()
+            {
+                Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+
+                if (serverSettings.WarnOptions.BanAfter > 0)
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
+                        $":busts_in_silhouette: Users will be banned after receiving {serverSettings.WarnOptions.BanAfter} warn(s)." )},
+                            ephemeral: true);
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Gold,
+                        $":busts_in_silhouette: Users won't be auto-banned after receiving warns because this is set to 0." )},
+                            ephemeral: true);
             }
         }
 
@@ -369,7 +498,8 @@ namespace FrostBot
             public async Task ClearWarn([Summary(description: "Number of the warn to clear.")] int warnNumber,
             [Summary(description: "User whose warn to clear.")] SocketGuildUser user = null)
             {
-                List<Warn> warns = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).Warns;
+                Server server = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+                List<Warn> warns = server.Warns;
                 if (user != null)
                     warns = warns.Where(x => x.UserID == user.Id.ToString()).ToList();
 
@@ -378,6 +508,7 @@ namespace FrostBot
                     Warn warn = warns[warnNumber - 1];
                     Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).Warns.Remove(warn);
                     Program.settings.Save();
+                    await Processing.SendToBotLogs(Context.Guild, $":ok_hand: **Warn Cleared**: {warn.Username}: {warn.Reason} ({warn.Date}", Color.Green, Context.User);
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     desc: $":ok_hand: **Warn Cleared**: {warn.Username}: {warn.Reason} ({warn.Date}" )},
                         ephemeral: true);
@@ -395,7 +526,16 @@ namespace FrostBot
         [SlashCommand("say", "Repeat a message.")]
         public async Task Say([Summary(description: "Text to repeat.")] string text)
         {
+            await RespondAsync(":ok_hand:", ephemeral: true);
             await ReplyAsync(text);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("markov", "Respond with a random message.")]
+        public async Task Markov([Summary(description: "Minimum text length.")] int chars = 10)
+        {
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
+            await RespondAsync(Processing.CreateMarkovString(serverSettings, chars));
         }
 
         [RequireContext(ContextType.Guild)]
@@ -444,6 +584,8 @@ namespace FrostBot
                         foundEndMsg = true;
                     }
             }
+
+            await Processing.SendToBotLogs(Context.Guild, $":x: **Deleted {deletedMessages} messages** in #{Context.Channel.Name}", Color.Red, Context.User);
             await RespondAsync($":ok_hand: Deleted {deletedMessages} messages.", ephemeral: true);
         }
 
@@ -479,6 +621,7 @@ namespace FrostBot
                 if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(role.Id.ToString())))
                 {
                     await user.AddRoleAsync(role);
+                    await Processing.SendToBotLogs(Context.Guild, $":calling: **Joined Role:** {role.Name}", Color.Green, Context.User);
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: Joined Role: {role.Name}",
                     $"Use ``/leave {role.Name}`` to remove the role if you change your mind." )},
@@ -506,6 +649,7 @@ namespace FrostBot
                 if (serverSettings.OptInRoles.Any(x => x.RoleID.Equals(role.Id.ToString())))
                 {
                     await user.RemoveRoleAsync(role);
+                    await Processing.SendToBotLogs(Context.Guild, $":dash: **Left Role:** {role.Name}", Color.Gold, Context.User);
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: Left Role: {role.Name}",
                     $"Use ``/join {role.Name}`` to rejoin the role if you change your mind." )},
@@ -540,6 +684,7 @@ namespace FrostBot
             if (warnCount > 1)
                 warnCountMsg += "s";
 
+            await Processing.SendToBotLogs(Context.Guild, $":warning: **{Context.User.Username} Warned {user.Username}** in #{Context.Channel.Name}\nReason: {reason}\n\n{warnCountMsg}", Color.Red, Context.User);
             await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
                     desc: $":warning: Warn {user.Mention}: {reason}",
                     foot: warnCountMsg));
@@ -551,14 +696,16 @@ namespace FrostBot
                 {
                     if (serverSettings.WarnOptions.BanAfter != 0 && warnCount >= serverSettings.WarnOptions.BanAfter)
                     {
+                        await Processing.SendToBotLogs(Context.Guild, $":hammer: **{Context.Client.CurrentUser} Banned {user.Username}** in #{Context.Channel.Name} for accumulating {serverSettings.WarnOptions.BanAfter} or more warns.", Color.Red, Context.Client.CurrentUser);
                         await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
-                            desc: $"\n:hammer: **Banned** automatically for accumulating {serverSettings.WarnOptions.KickAfter} or more warns."
+                            desc: $"\n:hammer: **Banned** automatically for accumulating {serverSettings.WarnOptions.BanAfter} or more warns."
                             ));
 
                         await user.Guild.AddBanAsync(user, 0, reason);
                     }
                     else
                     {
+                        await Processing.SendToBotLogs(Context.Guild, $":boot: **{Context.Client.CurrentUser} Kicked {user.Username}** in #{Context.Channel.Name} for accumulating {serverSettings.WarnOptions.KickAfter} or more warns.", Color.Red, Context.Client.CurrentUser);
                         await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
                             desc: $"\n:boot: **Kicked** automatically for accumulating {serverSettings.WarnOptions.KickAfter} or more warns."
                             ));
@@ -568,6 +715,7 @@ namespace FrostBot
                 }
                 else
                 {
+                    await Processing.SendToBotLogs(Context.Guild, $":mute: **{Context.Client.CurrentUser} Muted {user.Username}** in #{Context.Channel.Name} for {serverSettings.WarnOptions.TimeOutLength} minutes for accumulating {serverSettings.WarnOptions.TimeOutAfter} or more warns.", Color.Red, Context.Client.CurrentUser);
                     await user.SetTimeOutAsync(new TimeSpan(0, serverSettings.WarnOptions.TimeOutLength, 0, 0));
 
                     await ReplyAsync(embed: Embeds.Build(Discord.Color.Red,
@@ -644,16 +792,6 @@ namespace FrostBot
                     desc: $":warning: **Error**: No mod mail channel set!" )},
                     ephemeral: true);
             }
-        }
-
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.BanMembers)]
-        [RequireBotPermission(GuildPermission.BanMembers)]
-        [SlashCommand("forum", "Make the bot sync the forum.")]
-        public async Task ForumSync()
-        {
-            Phpbb.ForumSync();
-            await ReplyAsync("Forum sync complete.");
         }
     }
 }

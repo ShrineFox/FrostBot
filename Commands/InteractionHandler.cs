@@ -111,7 +111,7 @@ namespace FrostBot
                 Output.Log($"Registered commands in server \"{server.ServerName}\".", ConsoleColor.Green);
 #if !DEBUG
             await _handler.RegisterCommandsGloballyAsync(true);
-            Output.Log($"Registered commands globally.", Color.Green);
+            Output.Log($"Registered commands globally.", ConsoleColor.Green);
 #endif
             }
 

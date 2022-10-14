@@ -1,9 +1,11 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using ShrineFox.IO;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,14 +26,25 @@ namespace FrostBot
             await Task.CompletedTask;
         }
 
-        private Task MsgReceivedAsync(SocketMessage message)
+        private async Task MsgReceivedAsync(SocketMessage message)
         {
             var user = (IGuildUser)message.Author;
             string text = GetMessageContents(message);
 
-            Output.Log($"{user.DisplayName} ({user.Id}) in \"{user.Guild.Name}\" #{message.Channel}: {text}");
+            // Log incoming message
+            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
+            string path = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), serverSettings.ServerID), "MsgReceived.txt");
+            Output.Log($"{user.DisplayName} ({user.Id}) in \"{user.Guild.Name}\" #{message.Channel}: {text}", ConsoleColor.White, path);
 
-            return Task.CompletedTask;
+            // Send auto-markov if in designated channel
+            if (!user.IsBot)
+            {
+                Processing.FeedMarkovString(serverSettings, text);
+                if (serverSettings.AutoMarkovChannel.ID == message.Channel.Id.ToString())
+                    await message.Channel.SendMessageAsync(Processing.CreateMarkovString(serverSettings));
+            }
+
+            await Task.CompletedTask;
         }
 
         private Task ChannelUpdated(SocketChannel channel, SocketChannel updatedChannel)
@@ -86,11 +99,23 @@ namespace FrostBot
 
         private async Task MessageDeleted(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
-            /*
+            var client = _services.GetRequiredService<DiscordSocketClient>();
+            // Get server the message is from
+            SocketGuild server = null;
+            foreach (var guild in client.Guilds)
+                foreach (var chan in guild.Channels)
+                    if (chan.Id == channel.Id)
+                        server = guild;
+
+            // Get message contents if cached
             IMessageChannel chnl = await channel.GetOrDownloadAsync();
             IMessage msg = await message.GetOrDownloadAsync();
-            Output.Log($"Message deleted in #{chnl}:\n{GetMessageContents(msg)}", ConsoleColor.DarkRed);
-            */
+            string deletedText = GetMessageContents(msg);
+
+            // Log message deleted
+            Output.Log($"Message deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}", ConsoleColor.DarkRed);
+            await Processing.SendToBotLogs(server, $":x: **Message Deleted** in #{chnl.Name}:\n{deletedText}", Color.Red, msg.Author);
+            
             await Task.CompletedTask;
         }
 
@@ -108,16 +133,20 @@ namespace FrostBot
             return Task.CompletedTask;
         }
 
-        private Task UserLeft(SocketGuild guild, SocketUser user)
+        private async Task UserLeft(SocketGuild guild, SocketUser user)
         {
-            Output.Log($"{user.Username} ({user.Id}) has left the server: \"{guild.Name}\"", ConsoleColor.DarkYellow);
-            return Task.CompletedTask;
+            Output.Log($"{user.Username}#{user.Discriminator} ({user.Id}) has left the server: \"{guild.Name}\"", ConsoleColor.DarkYellow);
+            await Processing.SendToBotLogs(guild, $":door: {user.Username}#{user.Discriminator} ({user.Id}) has left.", Color.Red);
+
+            await Task.CompletedTask;
         }
 
-        private Task UserJoined(SocketGuildUser user)
+        private async Task UserJoined(SocketGuildUser user)
         {
             Output.Log($"{user.Username} ({user.Id}) has joined the server: \"{user.Guild.Name}\"", ConsoleColor.DarkCyan);
-            return Task.CompletedTask;
+            await Processing.SendToBotLogs(user.Guild, $":door: {user.Username}#{user.Discriminator} ({user.Id}) has joined.", Color.Green);
+
+            await Task.CompletedTask;
         }
 
         private Task ReactionRemoved(Cacheable<IUserMessage, ulong> msg, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)

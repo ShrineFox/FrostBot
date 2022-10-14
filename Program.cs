@@ -10,6 +10,7 @@ using ShrineFox.IO;
 using FrostBot;
 using System.Linq;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace FrostBot
 {
@@ -23,6 +24,7 @@ namespace FrostBot
         {
             GatewayIntents = GatewayIntents.All,
             AlwaysDownloadUsers = true,
+            MessageCacheSize = 100
         };
 
         public Program()
@@ -98,11 +100,11 @@ namespace FrostBot
         {
             string text = message.Content;
             foreach (var embed in message.Embeds)
-                text += $"\nEmbed: {JsonConvert.SerializeObject(embed)}";
+                text += $"\n\tEmbed: {JsonConvert.SerializeObject(embed)}";
             foreach (var attachment in message.Attachments)
-                text += $"\nAttachment: {JsonConvert.SerializeObject(attachment)}";
+                text += $"\n\tAttachment: {JsonConvert.SerializeObject(attachment)}";
             foreach (var sticker in message.Stickers)
-                text += $"\nSticker: {JsonConvert.SerializeObject(sticker)}";
+                text += $"\n\tSticker: {JsonConvert.SerializeObject(sticker)}";
             return text;
         }
 
@@ -151,7 +153,8 @@ namespace FrostBot
         {
             Console.OutputEncoding = System.Text.Encoding.Unicode;
             Output.Logging = true;
-            Output.LogPath = "FrostBot_Log.txt";
+            Output.LogToFile = true;
+            Output.LogPath = Path.Combine(Exe.Directory(), "FrostBot_Log.txt");
             if (IsDebug())
                 Output.VerboseLogging = true;
         }
