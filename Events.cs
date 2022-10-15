@@ -113,9 +113,14 @@ namespace FrostBot
             string deletedText = GetMessageContents(msg);
 
             // Log message deleted
-            Output.Log($"Message deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}", ConsoleColor.DarkRed);
-            await Processing.SendToBotLogs(server, $":x: **Message Deleted** in #{chnl.Name}:\n{deletedText}", Color.Red, msg.Author);
-            
+            if (msg != null)
+            {
+                Output.Log($"Message by {msg.Author.Username}#{msg.Author.Discriminator} deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}", ConsoleColor.DarkRed);
+                await Processing.SendToBotLogs(server, $":x: **Message by {msg.Author.Username}#{msg.Author.Discriminator} Deleted** in #{chnl.Name}:\n{deletedText}", Color.Red, msg.Author);
+            }
+            else
+                Output.Log($"Message Deleted in \"{server.Name}\" #{chnl.Name}", ConsoleColor.Red);
+
             await Task.CompletedTask;
         }
 

@@ -98,13 +98,17 @@ namespace FrostBot
 
         private string GetMessageContents(IMessage message)
         {
-            string text = message.Content;
-            foreach (var embed in message.Embeds)
-                text += $"\n\tEmbed: {JsonConvert.SerializeObject(embed)}";
-            foreach (var attachment in message.Attachments)
-                text += $"\n\tAttachment: {JsonConvert.SerializeObject(attachment)}";
-            foreach (var sticker in message.Stickers)
-                text += $"\n\tSticker: {JsonConvert.SerializeObject(sticker)}";
+            string text = "";
+            if (message != null)
+            {
+                text = message.Content;
+                foreach (var embed in message.Embeds)
+                    text += $"\n\tEmbed: {JsonConvert.SerializeObject(embed)}";
+                foreach (var attachment in message.Attachments)
+                    text += $"\n\tAttachment: {JsonConvert.SerializeObject(attachment)}";
+                foreach (var sticker in message.Stickers)
+                    text += $"\n\tSticker: {JsonConvert.SerializeObject(sticker)}";
+            }
             return text;
         }
 

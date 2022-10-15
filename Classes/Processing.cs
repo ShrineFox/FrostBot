@@ -69,9 +69,9 @@ namespace FrostBot
         public static async Task SendToBotLogs(SocketGuild guild, string text, Discord.Color color, IUser user = null)
         {
             Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(guild.Id.ToString()));
-            var botLogs = guild.GetTextChannel(Convert.ToUInt64(serverSettings.BotLogChannel.ID));
-            if (botLogs != null)
+            if (!string.IsNullOrEmpty(serverSettings.BotLogChannel.ID))
             {
+                var botLogs = guild.GetTextChannel(Convert.ToUInt64(serverSettings.BotLogChannel.ID));
                 if (user != null)
                     await botLogs.SendMessageAsync(embed: Embeds.Build(color,
                     desc: text, authorName: user.Username, authorImgUrl: user.GetAvatarUrl()));
