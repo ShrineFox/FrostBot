@@ -60,6 +60,7 @@ namespace FrostBot
             client.Log += LogAsync;
             client.Ready += ReadyAsync;
             client.MessageReceived += MsgReceivedAsync;
+            client.MessageUpdated += MsgUpdatedAsync;
             client.ApplicationCommandCreated += AppCmdCreated;
             client.ApplicationCommandDeleted += AppCmdDeleted;
             client.ApplicationCommandUpdated += AppCmdUpdated;

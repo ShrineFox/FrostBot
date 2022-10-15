@@ -4,6 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using ShrineFox.IO;
 using Discord.WebSocket;
+using Discord;
 
 namespace FrostBot
 {
@@ -12,6 +13,9 @@ namespace FrostBot
         public string Token { get; set; } = "";
 
         public List<Server> Servers { get; set; } = new List<Server>();
+        public UserStatus Status { get; set; } = UserStatus.Online;
+        public ActivityType Activity { get; set; } = ActivityType.CustomStatus;
+        public string Game { get; set; } = "hee-ho!";
 
         public void Load()
         {

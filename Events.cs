@@ -17,7 +17,21 @@ namespace FrostBot
         private async Task ReadyAsync()
         {
             UpdateServerList();
+            await UpdateStatus();
+
             await Task.CompletedTask;
+        }
+
+        private async Task UpdateStatus()
+        {
+            var client = _services.GetRequiredService<DiscordSocketClient>();
+
+            await client.SetGameAsync(settings.Game);
+            if (!string.IsNullOrEmpty(settings.Game))
+                await client.SetActivityAsync(new Game(client.Activity.Name, settings.Activity));
+            await client.SetStatusAsync(settings.Status);
+
+            Output.Log("Updated online status and activity from settings");
         }
 
         private async Task LogAsync(LogMessage message)
@@ -32,7 +46,7 @@ namespace FrostBot
             string text = GetMessageContents(message);
 
             // Log incoming message
-            Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
+            Server serverSettings = settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
             string path = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), serverSettings.ServerID), "MsgReceived.txt");
             Output.Log($"{user.DisplayName} ({user.Id}) in \"{user.Guild.Name}\" #{message.Channel}: {text}", ConsoleColor.White, path);
 
@@ -44,6 +58,16 @@ namespace FrostBot
                     await message.Channel.SendMessageAsync(Processing.CreateMarkovString(serverSettings));
             }
 
+            await Task.CompletedTask;
+        }
+
+        private async Task MsgUpdatedAsync(Cacheable<IMessage, ulong> message, SocketMessage msgEdit, ISocketMessageChannel channel)
+        {
+            var user = (IGuildUser)msgEdit.Author;
+            string text = GetMessageContents(message.Value);
+            Server serverSettings = settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
+            string path = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), serverSettings.ServerID), "MsgEdited.txt");
+            Output.Log($"{msgEdit.Author.Username} ({user.Id}) edited their message in \"{user.Guild}\" #{channel.Name}:\n\tOld Message: {{ {text} }}\n\tNew Message: {{ {msgEdit.Content} }}", ConsoleColor.Yellow, path);
             await Task.CompletedTask;
         }
 

@@ -164,6 +164,57 @@ namespace FrostBot
             }
 
             [RequireContext(ContextType.Guild)]
+            [SlashCommand("status", "Set the bot's online status.")]
+            public async Task SetStatus(UserStatus status)
+            {
+                var client = Context.Client;
+                await client.SetStatusAsync(status);
+                Program.settings.Status = status;
+                Program.settings.Save();
+                await Processing.SendToBotLogs(Context.Guild, $":ok_hand: **Online Status** set to: {status}", Color.Green, Context.User);
+                await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Green,
+                    $":ok_hand: Online Status set to: {status}")},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [SlashCommand("activity", "Set the bot's activity type.")]
+            public async Task SetActivity(ActivityType activity)
+            {
+                var client = Context.Client;
+                if (client.Activity != null)
+                {
+                    await client.SetActivityAsync(new Game(client.Activity.Name, activity));
+                    Program.settings.Activity = activity;
+                    Program.settings.Save();
+                    await Processing.SendToBotLogs(Context.Guild, $":ok_hand: **Activity Type** set to: {activity}", Color.Green, Context.User);
+
+                    await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Green,
+                    $":ok_hand: **Activity Type** set to: {activity}")},
+                        ephemeral: true);
+                }
+                else
+                    await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Gold,
+                    ":warning: Error: Use ``/set game`` first!")},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [SlashCommand("game", "Set the bot's current activity name.")]
+            public async Task SetGame(string game)
+            {
+                var client = Context.Client;
+                await client.SetGameAsync(game);
+                Program.settings.Game = game;
+                await Processing.SendToBotLogs(Context.Guild, $":ok_hand: **Activity Name** set to: {game}", Color.Green, Context.User);
+
+                Program.settings.Save();
+                await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Green,
+                    $":ok_hand: Activity Name set to: {game}")},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
             [RequireUserPermission(GuildPermission.BanMembers)]
             [RequireBotPermission(GuildPermission.BanMembers)]
             [SlashCommand("automarkov-rate", "Set percentage chance to send a random message in reply.")]
@@ -178,7 +229,7 @@ namespace FrostBot
                 Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).AutoMarkovRate = percentChance;
                 Program.settings.Save();
 
-                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **AutoMarkov Rate Set** to: {percentChance}%", Color.Green, Context.User);
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **AutoMarkov Rate** set to: {percentChance}%", Color.Green, Context.User);
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: AutoMarkov Rate has been set to: {percentChance}%" )},
                     ephemeral: true);
@@ -193,7 +244,7 @@ namespace FrostBot
                 Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).AutoMarkovLength = chars;
                 Program.settings.Save();
 
-                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Default Length of Auto-Markov Set** to: {chars} characters", Color.Green, Context.User);
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Default Length of Auto-Markov** set to: {chars} characters", Color.Green, Context.User);
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: AutoMarkov Message Length has been set to: {chars} characters" )},
                     ephemeral: true);
@@ -208,7 +259,7 @@ namespace FrostBot
                 Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.TimeOutAfter = warns;
                 Program.settings.Save();
 
-                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Timeout Set** to: {warns}", Color.Green, Context.User);
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Timeout** set to: {warns}", Color.Green, Context.User);
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: Users will be timed out after receiving {warns} warn(s)." )},
                         ephemeral: true);
@@ -223,7 +274,7 @@ namespace FrostBot
                 Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.TimeOutLength = minutes;
                 Program.settings.Save();
 
-                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Length of Auto-Timeout Set** to: {minutes} minutes", Color.Green, Context.User);
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Length of Auto-Timeout** set to: {minutes} minutes", Color.Green, Context.User);
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: Users will be timed out for: {minutes} minutes." )},
                         ephemeral: true);
@@ -237,8 +288,7 @@ namespace FrostBot
             {
                 Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.KickAfter = warns;
                 Program.settings.Save();
-                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Kick Set** to: {warns}", Color.Green, Context.User);
-
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Kick** set to: {warns}", Color.Green, Context.User);
 
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: Users will be kicked after receiving {warns} warn(s)." )},
@@ -253,7 +303,7 @@ namespace FrostBot
             {
                 Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).WarnOptions.BanAfter = warns;
                 Program.settings.Save();
-                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Ban Set** to: {warns}", Color.Green, Context.User);
+                await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Warns Required for Auto-Ban** set to: {warns}", Color.Green, Context.User);
 
                 await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: Users will be banned after receiving {warns} warn(s)." )},
@@ -272,7 +322,7 @@ namespace FrostBot
                             Program.settings.Servers[i] = serverSettings;
 
                     Program.settings.Save();
-                    await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **{settingName} Set** to: {value}", Color.Green, Context.User);
+                    await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **{settingName}** set to: {value}", Color.Green, Context.User);
 
                     await RespondAsync("­", new Embed[] { Embeds.Build(Discord.Color.Green,
                     $":busts_in_silhouette: {settingName} has been set: {value}" )},
