@@ -77,14 +77,6 @@ namespace FrostBot
                         await user.AddRoleAsync(colorRole);
 
                         await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Created a username color role**: {colorRole.Name} (#{Embeds.GetHexColor(colorRole.Color)})", colorRole.Color, Context.User);
-
-                        // Reorder Color Roles by color value
-                        var orderedRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith("Color: ")).OrderBy(x =>
-                            System.Drawing.Color.FromArgb(x.Color.R, x.Color.R, x.Color.G, x.Color.B).GetHue());
-                        // Move to highest possible position before moderator roles
-                        var lowestModeratorRole = Context.Guild.Roles.FirstOrDefault(x => !x.Permissions.Administrator).Position;
-                        foreach (var clrRole in orderedRoles)
-                            await clrRole.ModifyAsync(x => x.Position = lowestModeratorRole - 1);
                     });
 
                     await RespondAsync("­", new Embed[] { Embeds.Build(new Discord.Color(Embeds.GetRoleColor(colorRole)),

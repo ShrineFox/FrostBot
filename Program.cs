@@ -74,7 +74,6 @@ namespace FrostBot
             client.JoinedGuild += JoinedGuild;
             client.LeftGuild += LeftGuild;
             client.MessageDeleted += MessageDeleted;
-            client.MessageUpdated += MessageUpdated;
             client.SlashCommandExecuted += SlashCommandExecuted;
             client.UserCommandExecuted += UsercommandExecuted;
             client.MessageCommandExecuted += MessageCommandExecuted;

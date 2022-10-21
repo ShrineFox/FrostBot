@@ -16,13 +16,13 @@ namespace FrostBot
         public static string CreateMarkovString(Server server, int length = 0)
         {
             string markov = "";
-            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), "markov.bin");
+            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), "markov");
             if (!Directory.Exists(Path.GetDirectoryName(markovBin)))
                 Directory.CreateDirectory(Path.GetDirectoryName(markovBin));
 
             // Create markov object, attempt to load from path
             Markov mkv = new Markov();
-            if (!File.Exists(markovBin))
+            if (!File.Exists(markovBin + ".bin"))
             {
                 mkv.Feed("hee-ho");
                 mkv.SaveChainState(markovBin);
@@ -37,24 +37,26 @@ namespace FrostBot
             markov = MarkovGenerator.Create(mkv);
             // Try to get string longer than character limit (up to 10 tries)
             int runs = 0;
-            while (markov.Length < length && runs < 10)
+            while (string.IsNullOrEmpty(markov) || (markov.Length < length && runs < 10))
             {
-                markov = MarkovGenerator.Create(length, mkv);
+                markov = MarkovGenerator.Create(mkv);
                 runs++;
             }
+            if (string.IsNullOrEmpty(markov))
+                return "hee-ho";
 
             return markov;
         }
 
         public static void FeedMarkovString(Server server, string input)
         {
-            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), "markov.bin");
+            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), "markov");
             if (!Directory.Exists(Path.GetDirectoryName(markovBin)))
                 Directory.CreateDirectory(Path.GetDirectoryName(markovBin));
 
             // Create markov object, attempt to load from path
             Markov mkv = new Markov();
-            if (!File.Exists(markovBin))
+            if (!File.Exists(markovBin + ".bin"))
             {
                 mkv.Feed("hee-ho");
                 mkv.SaveChainState(markovBin);

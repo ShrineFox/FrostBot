@@ -116,11 +116,6 @@ namespace FrostBot
             return Task.CompletedTask;
         }
 
-        private Task MessageUpdated(Cacheable<IMessage, ulong> msg, SocketMessage updatedMsg, ISocketMessageChannel channel)
-        {
-            return Task.CompletedTask;
-        }
-
         private async Task MessageDeleted(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
             var client = _services.GetRequiredService<DiscordSocketClient>();
@@ -134,13 +129,20 @@ namespace FrostBot
             // Get message contents if cached
             IMessageChannel chnl = await channel.GetOrDownloadAsync();
             IMessage msg = await message.GetOrDownloadAsync();
-            string deletedText = GetMessageContents(msg);
+            string deletedText = msg.Content;
+            string attachment = "";
+            if (msg.Attachments.Count > 0)
+            {
+                attachment = msg.Attachments.First().Url;
+            }
 
             // Log message deleted
             if (msg != null)
             {
-                Output.Log($"Message by {msg.Author.Username}#{msg.Author.Discriminator} deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}", ConsoleColor.DarkRed);
-                await Processing.SendToBotLogs(server, $":x: **Message by {msg.Author.Username}#{msg.Author.Discriminator} Deleted** in #{chnl.Name}:\n{deletedText}", Color.Red, msg.Author);
+                Output.Log($"Message by {msg.Author.Username}#{msg.Author.Discriminator} deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}\n{attachment}", ConsoleColor.DarkRed);
+                // NQN Emote workaround
+                if (!deletedText.StartsWith(":") && deletedText.EndsWith(":"))
+                    await Processing.SendToBotLogs(server, $":x: **Message by {msg.Author.Username}#{msg.Author.Discriminator} Deleted** in #{chnl.Name}:\n{deletedText}\n{attachment}", Color.Red, msg.Author);
             }
             else
                 Output.Log($"Message Deleted in \"{server.Name}\" #{chnl.Name}", ConsoleColor.Red);
