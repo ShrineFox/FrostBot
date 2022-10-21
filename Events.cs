@@ -129,23 +129,26 @@ namespace FrostBot
             // Get message contents if cached
             IMessageChannel chnl = await channel.GetOrDownloadAsync();
             IMessage msg = await message.GetOrDownloadAsync();
-            string deletedText = msg.Content;
-            string attachment = "";
-            if (msg.Attachments.Count > 0)
+            
+            if (msg != null && (!string.IsNullOrEmpty(msg.Content) || msg.Attachments.Count > 0 || msg.Embeds.Count > 0))
             {
-                attachment = msg.Attachments.First().Url;
-            }
+                string deletedText = GetMessageContents(msg);
+                string attachmentUrls = "";
+                if (msg.Attachments.Count > 0)
+                    foreach (var attachment in msg.Attachments)
+                        attachmentUrls += $"\n{attachment.Url}";
 
-            // Log message deleted
-            if (msg != null)
-            {
-                Output.Log($"Message by {msg.Author.Username}#{msg.Author.Discriminator} deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}\n{attachment}", ConsoleColor.DarkRed);
-                // NQN Emote workaround
-                if (!deletedText.StartsWith(":") && deletedText.EndsWith(":"))
-                    await Processing.SendToBotLogs(server, $":x: **Message by {msg.Author.Username}#{msg.Author.Discriminator} Deleted** in #{chnl.Name}:\n{deletedText}\n{attachment}", Color.Red, msg.Author);
+                // Log message deleted
+                if (!string.IsNullOrEmpty(deletedText))
+                {
+                    Output.Log($"Message by {msg.Author.Username}#{msg.Author.Discriminator} deleted in \"{server.Name}\" #{chnl.Name}:\n{deletedText}", ConsoleColor.DarkRed);
+                    // NQN Emote workaround
+                    if (!deletedText.StartsWith(":") && !deletedText.EndsWith(":"))
+                        await Processing.SendToBotLogs(server, $":x: **Message by {msg.Author.Username}#{msg.Author.Discriminator} Deleted** in #{chnl.Name}:\n{msg.Content}\n{attachmentUrls}", Color.Red, msg.Author);
+                }
+                else
+                    Output.Log($"Message Deleted in \"{server.Name}\" #{chnl.Name}", ConsoleColor.Red);
             }
-            else
-                Output.Log($"Message Deleted in \"{server.Name}\" #{chnl.Name}", ConsoleColor.Red);
 
             await Task.CompletedTask;
         }

@@ -76,6 +76,13 @@ namespace FrostBot
                         // Grant new color role
                         await user.AddRoleAsync(colorRole);
 
+                        // Move to lowest possible position above the first managed role
+                        if (Context.Guild.Roles.Any(x => x.IsManaged))
+                        {
+                            var lowestManagedRole = Context.Guild.Roles.OrderBy(x => x.Position).LastOrDefault(x => x.IsManaged).Position;
+                            await colorRole.ModifyAsync(x => x.Position = lowestManagedRole + 1);
+                        }
+
                         await Processing.SendToBotLogs(Context.Guild, $":busts_in_silhouette: **Created a username color role**: {colorRole.Name} (#{Embeds.GetHexColor(colorRole.Color)})", colorRole.Color, Context.User);
                     });
 
