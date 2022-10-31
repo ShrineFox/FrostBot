@@ -51,7 +51,7 @@ namespace FrostBot
             Output.Log($"{user.DisplayName} ({user.Id}) in \"{user.Guild.Name}\" #{message.Channel}: {text}", ConsoleColor.White, path);
 
             // Send auto-markov if in designated channel
-            if (!user.IsBot && !string.IsNullOrEmpty(text))
+            if (!user.IsBot && !string.IsNullOrEmpty(text) && serverSettings.FeedMarkov)
             {
                 Processing.FeedMarkovString(serverSettings, text);
                 if (serverSettings.AutoMarkovChannel.ID == message.Channel.Id.ToString())
