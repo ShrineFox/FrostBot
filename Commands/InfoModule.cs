@@ -209,7 +209,39 @@ namespace FrostBot
 
                 Program.settings.Save();
                 await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Green,
-                    $":ok_hand: Activity Name set to: {game}")},
+                    $":ok_hand: **Activity Name** set to: {game}")},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("markov-filename", "Set the markov.bin the bot is using.")]
+            public async Task SetMarkovName(string filename = "markov")
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).MarkovFileName = filename;
+                Program.settings.Save();
+                await Processing.SendToBotLogs(Context.Guild, $":ok_hand: **Markov FileName** set to: {filename}.bin", Color.Green, Context.User);
+
+                Program.settings.Save();
+                await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Green,
+                    $":ok_hand: **Markov FileName** set to: {filename}.bin")},
+                        ephemeral: true);
+            }
+
+            [RequireContext(ContextType.Guild)]
+            [RequireUserPermission(GuildPermission.BanMembers)]
+            [RequireBotPermission(GuildPermission.BanMembers)]
+            [SlashCommand("markov-feed", "Set whether or not to update markov bin with incoming messages.")]
+            public async Task SetMarkovFeed(bool feed)
+            {
+                Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString())).FeedMarkov = feed;
+                Program.settings.Save();
+                await Processing.SendToBotLogs(Context.Guild, $":ok_hand: **Markov Feed** set to: {feed}", Color.Green, Context.User);
+
+                Program.settings.Save();
+                await RespondAsync("­", new Embed[] { Embeds.Build( Discord.Color.Green,
+                    $":ok_hand: **Markov Feed** set to: {feed}")},
                         ephemeral: true);
             }
 

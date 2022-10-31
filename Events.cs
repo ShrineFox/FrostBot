@@ -43,7 +43,7 @@ namespace FrostBot
         private async Task MsgReceivedAsync(SocketMessage message)
         {
             var user = (IGuildUser)message.Author;
-            string text = GetMessageContents(message);
+            string text = message.CleanContent;
 
             // Log incoming message
             Server serverSettings = settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
@@ -51,7 +51,7 @@ namespace FrostBot
             Output.Log($"{user.DisplayName} ({user.Id}) in \"{user.Guild.Name}\" #{message.Channel}: {text}", ConsoleColor.White, path);
 
             // Send auto-markov if in designated channel
-            if (!user.IsBot)
+            if (!user.IsBot && !string.IsNullOrEmpty(text))
             {
                 Processing.FeedMarkovString(serverSettings, text);
                 if (serverSettings.AutoMarkovChannel.ID == message.Channel.Id.ToString())
