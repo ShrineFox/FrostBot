@@ -16,7 +16,7 @@ namespace FrostBot
         public static string CreateMarkovString(Server server, int length = 0)
         {
             string markov = "";
-            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), "markov");
+            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), server.MarkovFileName);
             if (!Directory.Exists(Path.GetDirectoryName(markovBin)))
                 Directory.CreateDirectory(Path.GetDirectoryName(markovBin));
 
@@ -50,7 +50,7 @@ namespace FrostBot
 
         public static void FeedMarkovString(Server server, string input)
         {
-            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), "markov");
+            string markovBin = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), server.ServerID), server.MarkovFileName);
             if (!Directory.Exists(Path.GetDirectoryName(markovBin)))
                 Directory.CreateDirectory(Path.GetDirectoryName(markovBin));
 
