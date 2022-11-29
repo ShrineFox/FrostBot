@@ -144,6 +144,7 @@
   <ItemGroup>
     <Compile Include="Classes\ConsoleLog.cs" />
     <Compile Include="Classes\Embeds.cs" />
+    <Compile Include="Classes\Flags.cs" />
     <Compile Include="Classes\Processing.cs" />
     <Compile Include="Commands\InfoModule.cs" />
     <Compile Include="Commands\InteractionHandler.cs" />

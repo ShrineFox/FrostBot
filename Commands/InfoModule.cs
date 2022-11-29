@@ -874,5 +874,35 @@ namespace FrostBot
                     ephemeral: true);
             }
         }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        [RequireBotPermission(GuildPermission.BanMembers)]
+        [SlashCommand("bitconv", "Converts between Royal and Vanilla and prints a bitflag value.")]
+        public async Task BitConv([Summary(description: "Flag ID")] string text, [Summary(description: "Whether incoming flag is from Royal or Vanilla.")]  bool royalInput = false, [Summary(description: "Whether to convert ID to Royal from Vanilla.")] bool royalOutput = false, [Summary(description: "Whether to format as section + offset or raw ID.")] bool useSections = true)
+        {
+            string response = ":triangular_flag_on_post: **Input** ";
+            if (royalInput)
+                response += $"(Royal): {text}\n";
+            else
+                response += $"(Vanilla): {text}\n\n";
+            response += "**Output** ";
+            if (royalOutput)
+                response += $"(Royal):\n";
+            else
+                response += $"(Vanilla):\n";
+
+            string result = Flags.GetBitConv(text, royalInput, royalOutput, useSections);
+            if (result.Contains("**Error**"))
+            {
+                await ReplyAsync("­", embed: Embeds.Build(Discord.Color.Red,
+                    desc: $"{response}:warning: {result}"));
+            }
+            else
+            {
+                await ReplyAsync("", embed: Embeds.Build(Discord.Color.Green,
+                    desc: response + result));
+            }
+        }
     }
 }
