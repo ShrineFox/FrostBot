@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace FrostBot
@@ -44,6 +45,21 @@ namespace FrostBot
             }
             if (string.IsNullOrEmpty(markov))
                 return "hee-ho";
+
+            // Embed emotes when possible
+            if (markov.Contains(":"))
+            {
+                var matches = Regex.Matches(markov, @":(.+?):");
+                foreach (var guild in Program.client.Guilds.Where(x => x.Id == Convert.ToUInt64(server.ServerID)))
+                {
+                    foreach (var match in matches)
+                    {
+                        string name = match.ToString().Replace(":", "");
+                        if (guild.Emotes.Any(x => x.Name == name))
+                            markov = markov.Replace(match.ToString(), $"{guild.Emotes.First(x => x.Name == name)}");
+                    }
+                }
+            }
 
             return markov;
         }

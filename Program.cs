@@ -19,6 +19,7 @@ namespace FrostBot
         private readonly IServiceProvider _services;
         public static Settings settings;
         public static string JsonPath = "_settings.json";
+        public static DiscordSocketClient client;
 
         private readonly DiscordSocketConfig _socketConfig = new DiscordSocketConfig()
         {
@@ -55,7 +56,7 @@ namespace FrostBot
                 Output.Log("Got token from commandline args!", ConsoleColor.Green);
             }
 
-            var client = _services.GetRequiredService<DiscordSocketClient>();
+            client = _services.GetRequiredService<DiscordSocketClient>();
 
             client.Log += LogAsync;
             client.Ready += ReadyAsync;
@@ -114,7 +115,7 @@ namespace FrostBot
 
         private void UpdateServerList()
         {
-            var client = _services.GetRequiredService<DiscordSocketClient>();
+            client = _services.GetRequiredService<DiscordSocketClient>();
 
             foreach (var server in client.Guilds)
             {
