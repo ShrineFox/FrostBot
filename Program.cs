@@ -31,6 +31,7 @@ namespace FrostBot
         public Program()
         {
             SetupAppearance();
+            CopyDependencies();
 
             _services = new ServiceCollection()
                 .AddSingleton(_socketConfig)
@@ -38,6 +39,19 @@ namespace FrostBot
                 .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
                 .AddSingleton<InteractionHandler>()
                 .BuildServiceProvider();
+        }
+
+        private void CopyDependencies()
+        {
+            if (Directory.Exists("./Dependencies"))
+            {
+                foreach (var dll in Directory.GetFiles("./Dependencies", "*.dll", SearchOption.TopDirectoryOnly))
+                {
+                    string newPath = "./" + Path.GetFileName(dll);
+                    if (!File.Exists(newPath))
+                        File.Copy(dll, newPath);
+                }
+            }
         }
 
         static void Main(string[] args)
@@ -147,11 +161,11 @@ namespace FrostBot
 
         public static bool IsDebug()
         {
-            #if DEBUG
-                return true;
-            #else
+#if DEBUG
+            return true;
+#else
                 return false;
-            #endif
+#endif
         }
 
         private void SetupAppearance()

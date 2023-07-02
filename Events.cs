@@ -9,6 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gpt4All;
+using Discord.Commands;
 
 namespace FrostBot
 {
@@ -48,6 +50,7 @@ namespace FrostBot
             // Log incoming message
             Server serverSettings = settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
             string path = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), serverSettings.ServerID), "MsgReceived.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
             Output.Log($"{user.DisplayName} ({user.Id}) in \"{user.Guild.Name}\" #{message.Channel}: {text}", ConsoleColor.White, path);
 
             // Send auto-markov if in designated channel
@@ -68,6 +71,8 @@ namespace FrostBot
             string text = GetMessageContents(message.Value);
             Server serverSettings = settings.Servers.First(x => x.ServerID.Equals(user.Guild.Id.ToString()));
             string path = Path.Combine(Path.Combine(Path.Combine(Exe.Directory(), "Servers"), serverSettings.ServerID), "MsgEdited.txt");
+            string dir = Path.GetDirectoryName(path);
+            Directory.CreateDirectory(dir);
             Output.Log($"{msgEdit.Author.Username} ({user.Id}) edited their message in \"{user.Guild}\" #{channel.Name}:\n\tOld Message: {{ {text} }}\n\tNew Message: {{ {msgEdit.Content} }}", ConsoleColor.Yellow, path);
             await Task.CompletedTask;
         }

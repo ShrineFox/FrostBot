@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using ShrineFox.IO;
 using Discord.WebSocket;
 using Discord;
+using System.Text;
 
 namespace FrostBot
 {
@@ -12,10 +13,11 @@ namespace FrostBot
     {
         public string Token { get; set; } = "";
 
-        public List<Server> Servers { get; set; } = new List<Server>();
         public UserStatus Status { get; set; } = UserStatus.Online;
         public ActivityType Activity { get; set; } = ActivityType.CustomStatus;
         public string Game { get; set; } = "hee-ho!";
+        public GptSettings GPTSettings { get; set; } = new GptSettings();
+        public List<Server> Servers { get; set; } = new List<Server>();
 
         public void Load()
         {
@@ -32,6 +34,7 @@ namespace FrostBot
                 else
                     Output.Log($"Error: No token found! Please set one in: {Program.JsonPath}", ConsoleColor.Red);
                 this.Servers = settings.Servers;
+                this.GPTSettings = settings.GPTSettings;
             }
             else
             {
@@ -93,5 +96,12 @@ namespace FrostBot
         public string Date { get; set; } = "";
         public string Reason { get; set; } = "";
         public string ModeratorName { get; set; } = "";
+    }
+
+    public class GptSettings
+    {
+        public string ModelPath { get; set; } = "";
+        public float Dumbness { get; set; } = 0.7f;
+        public int MaxLength { get; set; } = 128;
     }
 }

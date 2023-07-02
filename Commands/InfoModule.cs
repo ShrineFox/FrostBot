@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Gpt4All;
 using ShrineFox.IO;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace FrostBot
 {
@@ -617,6 +619,35 @@ namespace FrostBot
         {
             Server serverSettings = Program.settings.Servers.First(x => x.ServerID.Equals(Context.Guild.Id.ToString()));
             await RespondAsync(Processing.CreateMarkovString(serverSettings, chars));
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("prompt", "Respond with a well-thought out message.", false, RunMode.Async)]
+        public async Task Prompt([Summary(description: "Text for the bot to respond to.")] string prompt)
+        {
+            if (!string.IsNullOrEmpty(Program.settings.GPTSettings.ModelPath)
+                    && File.Exists(Program.settings.GPTSettings.ModelPath))
+                    {
+                var modelFactory = new Gpt4AllModelFactory();
+                string response = "";
+                using var model = modelFactory.LoadModel(Program.settings.GPTSettings.ModelPath);
+
+                var result = await model.GetStreamingPredictionAsync(
+                    prompt,
+                    new PredictRequestOptions
+                    {
+                        Temperature = Program.settings.GPTSettings.Dumbness,
+                        TopK = 30,
+                        TopP = 0.1f,
+                        TokensToPredict = Program.settings.GPTSettings.MaxLength,
+                        TokensSize = 128
+                    });
+
+                await foreach (var token in result.GetPredictionStreamingAsync())
+                    response += token.ToString();
+                await RespondAsync(":ok_hand:", ephemeral: true);
+                await ReplyAsync(response);
+            }
         }
 
         [RequireContext(ContextType.Guild)]
